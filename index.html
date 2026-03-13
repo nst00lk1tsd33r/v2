@@ -111,7 +111,25 @@ onkeypress="if(event.key==='Enter') login()"
 
 <script>
 
-const HASHED_PASSWORD = "6f8f75d7fe39a8fdc33cf70125dea56b9fd10e8f2486afbdae9b43ffca612f60";
+/* =========================
+   SECURITY CONFIG
+========================= */
+
+const HASH_PARTS = [
+"6f8f75d7fe39a8fd",
+"c33cf70125dea56b",
+"9fd10e8f2486afbd",
+"ae9b43ffca612f60"
+];
+
+const HASHED_PASSWORD = HASH_PARTS.join("");
+
+const MAX_ATTEMPTS = 3;
+const COOLDOWN = 5 * 60 * 1000;
+
+/* =========================
+   UTILITIES
+========================= */
 
 async function sha256(text){
 
@@ -120,31 +138,198 @@ const data = encoder.encode(text);
 
 const hashBuffer = await crypto.subtle.digest("SHA-256", data);
 
-const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-return hashArray.map(b => b.toString(16).padStart(2,"0")).join("");
+return Array.from(new Uint8Array(hashBuffer))
+.map(b => b.toString(16).padStart(2,"0"))
+.join("");
 
 }
 
+/* constant time comparison */
+
+function safeCompare(a,b){
+
+if(a.length !== b.length) return false;
+
+let result = 0;
+
+for(let i=0;i<a.length;i++){
+
+result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+
+}
+
+return result === 0;
+
+}
+
+/* =========================
+   DEVTOOLS DETECTION
+========================= */
+
+function detectDevTools(){
+
+let start = new Date();
+
+debugger;
+
+let end = new Date();
+
+if(end - start > 100){
+
+document.body.innerHTML = "<h1 style='color:red;text-align:center'>Access Blocked</h1>";
+
+}
+
+}
+
+setInterval(detectDevTools,1000);
+
+/* =========================
+   COOLDOWN SYSTEM
+========================= */
+
+function getAttempts(){
+
+return parseInt(localStorage.getItem("ns_attempts")) || 0;
+
+}
+
+function setAttempts(v){
+
+localStorage.setItem("ns_attempts",v);
+
+}
+
+function lockLogin(){
+
+let lockUntil = Date.now() + COOLDOWN;
+
+localStorage.setItem("ns_lock",lockUntil);
+
+}
+
+function getLock(){
+
+return parseInt(localStorage.getItem("ns_lock")) || 0;
+
+}
+
+/* =========================
+   TIMER
+========================= */
+
+function updateCooldown(){
+
+let lock = getLock();
+
+if(!lock) return;
+
+let remaining = lock - Date.now();
+
+if(remaining <= 0){
+
+localStorage.removeItem("ns_lock");
+localStorage.removeItem("ns_attempts");
+
+document.getElementById("error").style.display="none";
+
+document.querySelector("button").disabled=false;
+
+return;
+
+}
+
+let seconds = Math.ceil(remaining/1000);
+
+document.getElementById("error").style.display="block";
+
+document.getElementById("error").innerText =
+"Too many attempts. Try again in " + seconds + "s";
+
+document.querySelector("button").disabled=true;
+
+requestAnimationFrame(updateCooldown);
+
+}
+
+/* =========================
+   LOGIN
+========================= */
+
 async function login(){
+
+let lock = getLock();
+
+if(lock && Date.now() < lock){
+
+updateCooldown();
+
+return;
+
+}
 
 const input = document.getElementById("password").value;
 
-const inputHash = await sha256(input);
+const hash = await sha256(input);
 
-if(inputHash === HASHED_PASSWORD){
+if(safeCompare(hash,HASHED_PASSWORD)){
 
 sessionStorage.setItem("ns_access","granted");
+
+localStorage.removeItem("ns_attempts");
 
 window.location.href="main.html";
 
 }else{
 
-document.getElementById("error").style.display="block";
+let attempts = getAttempts() + 1;
+
+setAttempts(attempts);
+
+let error = document.getElementById("error");
+
+if(attempts >= MAX_ATTEMPTS){
+
+lockLogin();
+
+updateCooldown();
+
+}else{
+
+error.style.display="block";
+error.innerText = "Incorrect Code ("+attempts+"/3)";
 
 }
 
 }
+
+}
+
+/* =========================
+   BLOCK INSPECT SHORTCUTS
+========================= */
+
+document.addEventListener("keydown",function(e){
+
+if(
+e.key==="F12" ||
+(e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key)) ||
+(e.ctrlKey && e.key==="U")
+){
+
+e.preventDefault();
+
+}
+
+});
+
+/* disable right click */
+
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+/* start cooldown check */
+
+updateCooldown();
 
 </script>
 
