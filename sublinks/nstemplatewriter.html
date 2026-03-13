@@ -446,7 +446,7 @@ function checkSession() {
     // Not logged in
     if (!access) {
         alert("Please enter the access code first.");
-        window.location.href="../index.html";
+        window.location.href = "https://nstoolkits.site/index.html";
         return;
     }
 
@@ -457,7 +457,7 @@ function checkSession() {
     if (now - loginTime > SESSION_LIMIT) {
         sessionStorage.clear();
         alert("Your session has expired after 8 hours.");
-        window.location.href="../index.html";
+        window.location.href = "https://nstoolkits.site/index.html";
         return;
     }
 
@@ -465,7 +465,7 @@ function checkSession() {
     if (now - lastActivity > IDLE_LIMIT) {
         sessionStorage.clear();
         alert("You have been logged out due to 1 hour of inactivity.");
-        window.location.href="../index.html";
+        window.location.href = "https://nstoolkits.site/index.html";
         return;
     }
 
