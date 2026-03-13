@@ -262,8 +262,16 @@ function typeEffect(el,text,speed){
 
 function delay(ms){ return new Promise(res=>setTimeout(res,ms)); }
 
-document.addEventListener("keydown",function(e){
-  if(e.key==="F12"||(e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key))||(e.ctrlKey && e.key==="U")){ e.preventDefault(); }
+document.addEventListener("keydown", function(e) {
+    // Disable F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+Shift+T
+    if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C", "T"].includes(e.key.toUpperCase())) ||
+        (e.ctrlKey && e.key.toUpperCase() === "U")
+    ) {
+        e.preventDefault();
+        alert("This action is disabled on this page.");
+    }
 });
 
 cooldown();
