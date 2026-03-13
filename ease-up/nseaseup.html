@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ease AP</title>
+    <link rel="stylesheet" href="easeapstyle.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+<header class="site-header">Ease AP Beta</header>
+
+<div class="holy-grail-body" x-data="{ 
+    isNull: false,
+    activeSection: 'nullset',
+    subjectGender: 'male',
+    accountType: 'personal',
+    mentionMedia: 'public post/s',
+    mentionConnection: 'relative’s',
+
+    relData: {
+        found: null,           /* true (Yes) or false (No) */
+        scope: 'relatives',    /* 'relatives' or 'both' */
+        finding: 'none',       /* 'none' or 'relevant' */
+        rhText: '',            /* The relevant info text */
+        rows: [{name: '', link: ''}]
+    },
+
+    resetForm() {
+        if (confirm('Are you sure you want to discard all report data? Your sticky notes will be saved.')) {
+            // 1. Reset Global Variables
+            this.isNull = false;
+            this.subjectGender = 'male';
+            this.accountType = 'personal';
+            this.mentionMedia = 'public post/s';
+            this.mentionConnection = 'relative’s';
+            
+            // 2. Reset Relatives
+            this.relData = { found: null, scope: 'relatives', finding: 'none', rhText: '', rows: [{name: '', link: ''}] };
+            
+            // 3. Reset All Networks
+            this.networks.forEach(net => {
+                net.checked = false;
+                net.instances = [{}]; // Wipes all clones and resets to a single empty instance
+            });
+            
+            // 4. Return to top of accordion
+            this.activeSection = 'nullset';
+        }
+    },
+    
+/* --- THE STRING GENERATION ENGINE --- */
+    get reportText() {
+        let paragraphs = [];
+        let regularParagraphs = [];
+        let businessParagraphs = [];
+
+        // ==========================================
+        // 1. THE TALLY SYSTEM (For the Final Bullet)
+        // ==========================================
+        let tally = {
+            personalCount: 0,
+            businessCount: 0,
+            possibleSocialCount: 0,
+            hasMentions: false, 
+            hasGoogle: false,
+            hasPossibleGoogle: false,
+            hasGlobalRH: false 
+        };
+
+        if (this.relData.found === true && this.relData.finding === 'relevant') {
+            tally.hasGlobalRH = true;
+        }
+
+        this.networks.forEach(net => {
+            if (net.checked) {
+                net.instances.forEach(data => {
+                    if (!data.initialized) return;
+
+                    if (data.finding === 'relevant') {
+                        tally.hasGlobalRH = true;
+                    }
+
+                    if (net.id === 'goog') {
+                        if (data.matchStatus === 'possible') tally.hasPossibleGoogle = true;
+                        else tally.hasGoogle = true;
+                    } else {
+                        if (data.accountType === 'no-page' || data.accountType === 'no-relative') {
+                            tally.hasMentions = true;
+                        } 
+                        else if (data.matchStatus === 'possible') {
+                            tally.possibleSocialCount++;
+                        }
+                        else if (data.accountType === 'business') {
+                            tally.businessCount++;
+                        }
+                        else {
+                            tally.personalCount++;
+                        }
+                    }
+                });
+            }
+        });
+
+
+        // ==========================================
+        // 2. THE MANDATORY INTRO
+        // ==========================================
+        paragraphs.push(`Searches of multiple social media sites including (but not limited to) Facebook, X (Twitter), Instagram, YouTube, LinkedIn, Pinterest, Tumblr, Foursquare, Strava, and TikTok, in addition to an in-depth Google search, was performed on the subject. All provided information, as well as discovered information, was utilized in the search.`);
+
+
+        // ==========================================
+        // 3. THE RELATIVES SECTION
+        // ==========================================
+        if (this.relData.found === false) {
+            let scopeStr = this.relData.scope === 'both' ? 'relatives and associates' : 'relatives';
+            paragraphs.push(`Searches for the subject's ${scopeStr} were also performed, but none were positively identified at this time.`);
+        } 
+        else if (this.relData.found === true) {
+            let validRows = this.relData.rows.filter(r => (r.name || '').trim() !== '');
+            let count = validRows.length;
+            
+            if (count > 0) {
+                let scopeStr = this.relData.scope === 'both' ? 'relatives and associates' : 'relatives';
+                
+                let nameArray = validRows.map(r => {
+                    let cleanName = (r.name || '').trim();
+                    let rawLink = (r.link || '').trim();
+                    if (rawLink) {
+                        let match = rawLink.match(/href=[\x22']([^\x22']+)[\x22']/);
+                        let url = match ? match[1] : rawLink;
+                        if (!url.startsWith('http')) url = 'https://' + url;
+                        return `<a href='${url}' style='color: #0563c1; text-decoration: underline;'>${cleanName}</a>`;
+                    }
+                    return cleanName;
+                });
+
+                let namesJoined = '';
+                if (count === 1) namesJoined = nameArray[0];
+                else if (count === 2) namesJoined = nameArray[0] + ' and ' + nameArray[1];
+                else namesJoined = nameArray.slice(0, -1).join(', ') + ', and ' + nameArray[count - 1]; 
+
+                let verbId = count === 1 ? 'was' : 'were';
+                let accountNoun = count === 1 ? 'This account was' : 'These accounts were';
+                let pronoun = count === 1 ? 'it' : 'them';
+
+                let relString = `Searches for the subject's ${scopeStr} were also performed and ${count} ${verbId} identified: ${namesJoined}. ${accountNoun} thoroughly investigated and `;
+
+                if (this.relData.finding === 'none') {
+                    relString += `no apparent relevant information regarding the case was found on ${pronoun} at this time.`;
+                } else {
+                    let rh = (this.relData.rhText || '').trim() ? this.relData.rhText.trim() : '(relevant information was found.)';
+                    relString += `<strong>${rh}</strong>`;
+                }
+                paragraphs.push(relString);
+            }
+        }
+
+
+        // ==========================================
+        // 4. MASTER NETWORK GENERATION ENGINE
+        // ==========================================
+        let isMale = this.subjectGender === 'male';
+
+        this.networks.forEach(net => {
+            if (net.checked) {
+                
+                // ----------------------------------------------------
+                // GOOGLE / PUBLIC SEARCH ENGINES (Grouped Logic)
+                // ----------------------------------------------------
+                if (net.id === 'goog') {
+                    let validInstances = net.instances.filter(data => data.initialized);
+                    if (validInstances.length === 0) return;
+
+                    // Helper function to build a single Google sentence
+                    let buildGoogleStr = (data) => {
+                        let isMult = data.resultType === 'multiple';
+                        let isPoss = data.matchStatus === 'possible';
+                        let pseNames = (data.pseNames || '').trim() ? data.pseNames.trim() : '(public search engine)';
+                        let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
+                        
+                        let info = data.infoTypes || {}; 
+                        let iTypes = [];
+                        if (info.personal) iTypes.push('personal');
+                        if (info.employment) iTypes.push('employment related');
+                        if (info.criminal) iTypes.push('criminal related');
+                        if (info.education) iTypes.push('education related');
+                        
+                        let infoStr = '';
+                        if (iTypes.length === 0) infoStr = '(personal/employment related/criminal related/education related)';
+                        else if (iTypes.length === 1) infoStr = iTypes[0];
+                        else if (iTypes.length === 2) infoStr = iTypes[0] + ' and ' + iTypes[1];
+                        else infoStr = iTypes.slice(0, -1).join(', ') + ', and ' + iTypes[iTypes.length - 1];
+
+                        let p = '';
+
+                        if (isPoss) {
+                            let possWord = isMult ? 'Possible public search engine results' : 'A possible public search engine result';
+                            let pron1 = isMult ? 'These search results contain' : 'This search result contains';
+                            let pron2 = isMult ? 'them' : 'it';
+                            
+                            p = `${possWord} on ${pseNames} ${isMult ? 'were' : 'was'} found by ${idByStr}. ${pron1} possible ${infoStr} information about the subject and no apparent relevant information regarding the case was found on ${pron2} at this time.`;
+                        } else {
+                            let resWord = isMult ? 'Public search engine results' : 'A public search engine result';
+                            let pron1 = isMult ? 'These search results contain' : 'This search result contains';
+                            let pron2 = isMult ? 'them' : 'it';
+
+                            p = `${resWord} found on ${pseNames} ${isMult ? 'were' : 'was'} identified by ${idByStr}. ${pron1} ${infoStr} information about the subject`;
+
+                            if (data.finding === 'none') {
+                                p += ` and no apparent relevant information regarding the case was found on ${pron2} at this time.`;
+                            } else {
+                                let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
+                                p += `. <strong>${rh}</strong>`;
+                            }
+                        }
+                        return p;
+                    };
+
+                    // If there's only 1 Google instance, push normally
+                    if (validInstances.length === 1) {
+                        regularParagraphs.push(buildGoogleStr(validInstances[0]));
+                    } 
+                    // If there are CLONES, wrap them in the header and stack them inside one bullet
+                    else {
+                        let header = `Public search engine results were identified by ${validInstances.length} sets of identifiers:`;
+                        let clones = validInstances.map(data => buildGoogleStr(data));
+                        // Joins them cleanly with line breaks inside the single bullet
+                        let combined = header + '<br><br>' + clones.join('<br><br>');
+                        regularParagraphs.push(combined);
+                    }
+                    return; // Exits this iteration so Google isn't processed as Social Media
+                }
+
+
+                // ----------------------------------------------------
+                // SOCIAL MEDIA LOGIC (Regular & Business)
+                // ----------------------------------------------------
+                net.instances.forEach((data, index) => {
+                    if (!data.initialized) return; 
+
+                    let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
+
+                    let ord = '';
+                    if (index > 0) {
+                        let n = index + 1;
+                        if (n === 2) ord = '2nd ';
+                        else if (n === 3) ord = '3rd ';
+                        else ord = n + 'th '; 
+                    }
+
+                    let isPoss = data.matchStatus === 'possible';
+                    let possWord = isPoss ? 'possible ' : '';
+                    let combinedPrefix = ord + possWord; 
+                    let getArt = (n) => /^[AEIOU8]/i.test(n.toString()) ? 'An' : 'A';
+
+                    let netName = net.name;
+                    if (net.id === 'other') {
+                        if (data.subType === 'general' || data.subType === 'ecommerce') netName = data.networkName || 'SOCMED';
+                        else if (data.subType === 'classmates') netName = 'Classmates';
+                        else if (data.subType === 'myspace') netName = 'Myspace';
+                        else if (data.subType === 'mugshot') netName = 'Mugshot';
+                        else if (data.subType === 'zoominfo') netName = 'Zoominfo';
+                    } else if (net.id === 'tw') {
+                        netName = 'X (Twitter)';
+                    }
+
+                    let isBiz = data.accountType === 'business';
+                    let proSubj = isBiz ? 'the business' : (isMale ? 'he' : 'she');
+                    let proSubjCap = isBiz ? 'The business' : (isMale ? 'He' : 'She');
+                    let proPoss = isBiz ? 'its' : (isMale ? 'his' : 'her');
+
+                    let findingsStr = '';
+                    if (data.finding === 'none') {
+                        let isNoAcc = (data.accountType || '').startsWith('no-');
+                        let target = isBiz ? 'it' : (isNoAcc ? 'it/them' : 'this account');
+                        findingsStr = `No apparent relevant information regarding the case was found on ${target} at this time.`;
+                    } else {
+                        let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
+                        findingsStr = `<strong>${rh}</strong>`;
+                    }
+
+                    // BUSINESS ROUTING
+                    if (isBiz) {
+                        let bOrd = ord ? ord : '';
+                        let bp = '';
+
+                        if (isPoss) {
+                            if (net.id === 'other' && data.subType !== 'myspace' && data.subType !== 'classmates' && data.subType !== 'mugshot' && data.subType !== 'zoominfo') {
+                                let wName = (data.networkName || '').trim() ? data.networkName.trim() : 'website';
+                                bp = `A ${bOrd}possible business Website on ${wName} was found by ${idByStr}. ${findingsStr}`;
+                            } else {
+                                bp = `A ${bOrd}possible business page on ${netName} was found by ${idByStr}. ${findingsStr}`;
+                            }
+                            businessParagraphs.push(bp);
+                            return;
+                        }
+
+                        let activeMetrics = [];
+                        if (net.config && net.config.metrics) {
+                            net.config.metrics.forEach(m => {
+                                if (data.metrics[m.k] && data.metrics[m.k].on) {
+                                    activeMetrics.push(`${data.metrics[m.k].val || '#'} ${m.l.toLowerCase()}`);
+                                }
+                            });
+                        } else if (net.id === 'other') {
+                            let map = [];
+                            if (data.subType === 'general') map = [{k:'posts', l:'posts'}, {k:'followers', l:'followers'}, {k:'following', l:'followings'}];
+                            else if (data.subType === 'ecommerce') map = [{k:'listings', l:'listing/s'}, {k:'followers', l:'followers'}, {k:'following', l:'followings'}];
+                            else if (data.subType === 'myspace') map = [{k:'connectedTo', l:'people connected to'}, {k:'connectedBy', l:'people connected by'}];
+                            else if (data.subType === 'zoominfo') map = [{k:'connections', l:'connections'}, {k:'followers', l:'followers'}];
+
+                            map.forEach(m => {
+                                if (data.metrics[m.k] && data.metrics[m.k].on) {
+                                    let v = data.metrics[m.k].val || '#';
+                                    if(data.subType === 'myspace') {
+                                        if(m.k === 'connectedTo') activeMetrics.push(`${v} people ${proSubj}’s connected to`);
+                                        if(m.k === 'connectedBy') activeMetrics.push(`${v} people connected to ${isMale?'him':'her'}`);
+                                    } else {
+                                        activeMetrics.push(`${v} ${m.l}`);
+                                    }
+                                }
+                            });
+                        }
+
+                        let metricsStr = '';
+                        if (activeMetrics.length === 1) metricsStr = activeMetrics[0];
+                        else if (activeMetrics.length === 2) metricsStr = activeMetrics[0] + ' and ' + activeMetrics[1];
+                        else if (activeMetrics.length > 2) metricsStr = activeMetrics.slice(0, -1).join(', ') + ', and ' + activeMetrics[activeMetrics.length - 1];
+
+                        if (net.id === 'other' && data.subType !== 'myspace' && data.subType !== 'classmates' && data.subType !== 'mugshot' && data.subType !== 'zoominfo') {
+                            let wName = (data.networkName || '').trim() ? data.networkName.trim() : 'website';
+                            bp = `A ${bOrd}business Website on ${wName} was identified by ${idByStr}. This website contains information about the business. ${findingsStr}`;
+                        } else {
+                            let metricSentence = metricsStr ? `This page has ${metricsStr}. ` : '';
+                            let actStr = '';
+                            if (data.activity === 'inactive') actStr = `The page is inactive. `;
+                            else if (data.activity === 'private') actStr = `The page is set to private. `;
+                            else if (data.activity === 'active') {
+                                let d = data.actDate || '(Month Day, Year)';
+                                let a = data.actDetails || data.actAction || '(shared a post/photo etc)';
+                                actStr = `The page was last active on ${d} when the page ${a}. `;
+                            }
+                            bp = `A ${bOrd}business page on ${netName} was identified by ${idByStr}. ${metricSentence}${actStr}${findingsStr}`;
+                        }
+                        
+                        businessParagraphs.push(bp);
+                        return; 
+                    }
+
+                    // REGULAR SOCIAL MEDIA ROUTING
+                    if (isPoss) {
+                        let fullNetName = combinedPrefix + netName; 
+                        let pStr = `${getArt(fullNetName)} ${fullNetName} account was found by ${idByStr}. No apparent relevant information regarding the case was found on this possible account at this time.`;
+                        regularParagraphs.push(pStr);
+                        return; 
+                    }
+
+                    if (data.accountType === 'no-page' || data.accountType === 'no-relative') {
+                        let fullNetName = combinedPrefix + netName;
+                        let p = `The subject did not appear to have ${getArt(fullNetName).toLowerCase()} ${fullNetName} account; however, `;
+
+                        if (data.accountType === 'no-page') {
+                            let media = data.mentionMedia || 'public post/s';
+                            p += `${proSubj} was identified on (a) ${media}. `;
+                        } else {
+                            let conn = data.mentionConnection || 'relative’s';
+                            p += `photos of the subject were found on ${proPoss} ${conn} account. `;
+                        }
+
+                        p += `This/These was/were identified by ${idByStr}. ${findingsStr}`;
+                        regularParagraphs.push(p);
+                        return;
+                    }
+
+                    let activeMetrics = [];
+                    if (net.config && net.config.metrics) {
+                        net.config.metrics.forEach(m => {
+                            if (data.metrics[m.k] && data.metrics[m.k].on) {
+                                let v = data.metrics[m.k].val || '#';
+                                activeMetrics.push(`${v} ${m.l.toLowerCase()}`);
+                            }
+                        });
+                    } else if (net.id === 'other') {
+                        let map = [];
+                        if (data.subType === 'general') map = [{k:'posts', l:'posts'}, {k:'followers', l:'followers'}, {k:'following', l:'followings'}];
+                        else if (data.subType === 'ecommerce') map = [{k:'listings', l:'listing/s'}, {k:'followers', l:'followers'}, {k:'following', l:'followings'}];
+                        else if (data.subType === 'myspace') map = [{k:'connectedTo', l:'people connected to'}, {k:'connectedBy', l:'people connected by'}];
+                        else if (data.subType === 'zoominfo') map = [{k:'connections', l:'connections'}, {k:'followers', l:'followers'}];
+
+                        map.forEach(m => {
+                            if (data.metrics[m.k] && data.metrics[m.k].on) {
+                                let v = data.metrics[m.k].val || '#';
+                                if(data.subType === 'myspace') {
+                                    if(m.k === 'connectedTo') activeMetrics.push(`${v} people ${proSubj}’s connected to`);
+                                    if(m.k === 'connectedBy') activeMetrics.push(`${v} people connected to ${isMale?'him':'her'}`);
+                                } else {
+                                    activeMetrics.push(`${v} ${m.l}`);
+                                }
+                            }
+                        });
+                    }
+
+                    let metricsStr = '';
+                    if (activeMetrics.length === 1) metricsStr = activeMetrics[0];
+                    else if (activeMetrics.length === 2) metricsStr = activeMetrics[0] + ' and ' + activeMetrics[1];
+                    else if (activeMetrics.length > 2) metricsStr = activeMetrics.slice(0, -1).join(', ') + ', and ' + activeMetrics[activeMetrics.length - 1];
+                    let metricSentence = metricsStr ? `This account has ${metricsStr}. ` : '';
+
+                    let actStr = '';
+                    if (data.activity === 'inactive') actStr = `The account is inactive. `;
+                    else if (data.activity === 'private') actStr = `The account is set to private. `;
+                    else if (data.activity === 'active') {
+                        let d = data.actDate || '(Month Day, Year)';
+                        let a = data.actDetails || data.actAction || '(shared a post/photo etc)';
+                        if (net.id === 'yt') actStr = `The account was last active on ${d} when the subject ${a}. `;
+                        else if (net.id === 'pin') actStr = `The account was last active on ${d} when the subject saved a pin. `;
+                        else if (net.id === 'other' && data.subType === 'ecommerce') actStr = `The account was last active on ${d}. `;
+                        else actStr = `The account was last active on ${d} when the subject ${a}. `;
+                    }
+
+                    let p = '';
+
+                    if (net.id === 'fb') {
+                        let fName = combinedPrefix + 'Facebook';
+                        p += `${getArt(fName)} ${fName} account was identified by ${idByStr}. ${metricSentence}`;
+                        let lP = data.loc.prev.on ? (data.loc.prev.val || '(City, State)') : '';
+                        let lC = data.loc.curr.on ? (data.loc.curr.val || '(City, State)') : '';
+                        if (lP && lC) p += `The subject was from ${lP} and is currently living in ${lC}. `;
+                        else if (lP) p += `The subject was from ${lP}. `;
+                        else if (lC) p += `The subject is currently living in ${lC}. `;
+
+                        let wN = data.workEd.emp.on ? (data.workEd.nature.val || '(Nature of work)') : '';
+                        let wE = data.workEd.emp.on ? (data.workEd.emp.val || '(Employment)') : '';
+                        let sS = data.workEd.school.on ? (data.workEd.school.val || '(School)') : '';
+                        if (wE && sS) p += `${proSubjCap} works as a/an ${wN} at ${wE} and ${proSubj} studied at ${sS}. `;
+                        else if (wE) p += `${proSubjCap} works as a/an ${wN} at ${wE}. `;
+                        else if (sS) p += `${proSubjCap} studied at ${sS}. `;
+                        p += `${actStr}${findingsStr}`;
+                    }
+                    else if (net.id === 'ig' || net.id === 'tk' || net.id === 'thr') {
+                        let accName = combinedPrefix + netName;
+                        p += `${getArt(accName)} ${accName} account was identified by ${idByStr}. ${metricSentence}${actStr}${findingsStr}`;
+                    }
+                    else if (net.id === 'tw') {
+                        let twName = combinedPrefix + 'X (Twitter)';
+                        p += `${getArt(twName)} ${twName} account was identified by ${idByStr}. ${metricSentence}`;
+                        let lC = data.loc.curr.on ? (data.loc.curr.val || '(City, State)') : '';
+                        let jD = data.joined ? (data.joined || '(Month & Year)') : '';
+                        if (lC && jD) p += `The subject listed ${proPoss} location as ${lC} and joined X (Twitter) in ${jD}. `;
+                        else if (lC) p += `The subject listed ${proPoss} location as ${lC}. `;
+                        else if (jD) p += `The subject joined X (Twitter) in ${jD}. `;
+                        p += `${actStr}${findingsStr}`;
+                    }
+                    else if (net.id === 'yt') {
+                        let yName = combinedPrefix + 'YouTube';
+                        p += `${getArt(yName)} ${yName} account was identified by ${idByStr}. ${metricSentence}`;
+                        let jD = data.joined ? (data.joined || '(Month Day, Year)') : '';
+                        if (jD) p += `It is stated that the subject joined YouTube on ${jD}. `;
+                        p += `${actStr}${findingsStr}`;
+                    }
+                    else if (net.id === 'li') {
+                        let lName = combinedPrefix + 'LinkedIn';
+                        p += `${getArt(lName)} ${lName} account was identified by ${idByStr}. `;
+                        let lC = data.loc.curr.on ? (data.loc.curr.val || '(City, State)') : '';
+                        if (lC) p += `The subject listed ${proPoss} location as ${lC}. `;
+                        p += metricSentence;
+                        let wN = data.workEd.emp.on ? (data.workEd.nature.val || '(Nature of work)') : '';
+                        let wE = data.workEd.emp.on ? (data.workEd.emp.val || '(Employment)') : '';
+                        if (wE) p += `It is stated that the subject works as a/an ${wN} at ${wE}. `;
+                        let sS = data.workEd.school.on ? (data.workEd.school.val || '(School)') : '';
+                        if (sS) p += `${proSubjCap} studied at ${sS}. `;
+                        p += findingsStr;
+                    }
+                    else if (net.id === 'pin') {
+                        let pName = combinedPrefix + 'Pinterest';
+                        p += `${getArt(pName)} ${pName} account was identified by ${idByStr}. ${metricSentence}${actStr}${findingsStr}`;
+                    }
+                    else if (net.id === 'other') {
+                        if (data.subType === 'general' || data.subType === 'ecommerce' || data.subType === 'myspace') {
+                            let nName = data.subType === 'myspace' ? 'Myspace' : (data.networkName || 'SOCMED');
+                            let accName = combinedPrefix + nName;
+                            p += `${getArt(accName)} ${accName} account was identified by ${idByStr}. ${metricSentence}`;
+                            let lC = data.loc || '';
+                            if (lC) p += `The subject listed ${proPoss} location as ${lC}. `;
+                            p += `${actStr}${findingsStr}`;
+                        }
+                        else if (data.subType === 'zoominfo') {
+                            let zName = combinedPrefix + 'Zoominfo';
+                            p += `${getArt(zName)} ${zName} account was identified by ${idByStr}. `;
+                            let lC = data.loc || '';
+                            if (lC) p += `The subject listed ${proPoss} location as ${lC}. `;
+                            p += metricSentence;
+                            let wN = (data.workEd && data.workEd.emp.on) ? (data.workEd.nature.val || '(Nature of work)') : '';
+                            let wE = (data.workEd && data.workEd.emp.on) ? (data.workEd.emp.val || '(Employment)') : '';
+                            if (wE) p += `It is stated that the subject works as a/an ${wN} at ${wE}. `;
+                            let sS = (data.workEd && data.workEd.school.on) ? (data.workEd.school.val || '(School)') : '';
+                            if (sS) p += `${proSubjCap} studied at ${sS}. `;
+                            p += findingsStr;
+                        }
+                        else if (data.subType === 'classmates') {
+                            let cName = combinedPrefix + 'Classmates';
+                            p += `${getArt(cName)} ${cName} account was identified by ${idByStr}. `;
+                            let sch = data.school || '(School)';
+                            let yr = data.classYear || '(Year)';
+                            p += `It is stated that the subject went to ${sch}, Class of ${yr}. ${findingsStr}`;
+                        }
+                        else if (data.subType === 'mugshot') {
+                            let mName = combinedPrefix + 'Mugshot';
+                            p += `${getArt(mName)} ${mName} was identified by ${idByStr}. `;
+                            let cS = data.countyState || 'Hillsborough County, Florida';
+                            let aD = data.arrestDate || '11/05/2002';
+                            let ch = data.charge || '(Charge Description)';
+                            p += `The subject was booked in ${cS} on ${aD} for ${ch}. ${findingsStr}`;
+                        }
+                    }
+                    else {
+                        let accName = combinedPrefix + netName;
+                        p += `${getArt(accName)} ${accName} account was identified by ${idByStr}. ${metricSentence}`;
+                        let lC = data.loc && data.loc.curr && data.loc.curr.on ? (data.loc.curr.val || '(City, State)') : '';
+                        if (lC) p += `The subject listed ${proPoss} location as ${lC}. `;
+                        p += `${actStr}${findingsStr}`;
+                    }
+
+                    regularParagraphs.push(p);
+                });
+            }
+        });
+
+        // MERGE ARRAYS (Puts all businesses at the end!)
+        paragraphs.push(...regularParagraphs, ...businessParagraphs);
+
+
+        // ==========================================
+        // 5. THE MANDATORY CLOSING BULLET (DYNAMIC)
+        // ==========================================
+        let closingComponents = [];
+
+        if (tally.personalCount > 0) {
+            let profWord = tally.personalCount === 1 ? 'profile' : 'profiles';
+            closingComponents.push(`${tally.personalCount} personal social media ${profWord}`);
+        }
+        if (tally.businessCount > 0) {
+            let bizWord = tally.businessCount === 1 ? 'page' : 'pages';
+            closingComponents.push(`${tally.businessCount} business ${bizWord}`);
+        }
+        if (tally.hasMentions) {
+            closingComponents.push(`public photos/videos/mentions`);
+        }
+        if (tally.possibleSocialCount > 0) {
+            let possWord = tally.possibleSocialCount === 1 ? 'account' : 'accounts';
+            closingComponents.push(`${tally.possibleSocialCount} possible social media ${possWord}`);
+        }
+        if (tally.hasGoogle || tally.hasPossibleGoogle) {
+            if (tally.hasGoogle && tally.hasPossibleGoogle) closingComponents.push(`public search engine results (including possible public search results)`);
+            else if (tally.hasPossibleGoogle) closingComponents.push(`possible public search engine results`);
+            else closingComponents.push(`public search engine results`);
+        }
+
+        // Format the components grammatically
+        let listStr = '';
+        if (closingComponents.length === 0) listStr = 'no accounts or results'; 
+        else if (closingComponents.length === 1) listStr = closingComponents[0];
+        else if (closingComponents.length === 2) listStr = closingComponents[0] + ' and ' + closingComponents[1];
+        else listStr = closingComponents.slice(0, -1).join(', ') + ', and ' + closingComponents[closingComponents.length - 1];
+
+        // Construct Final Sentence
+        let finalBullet = `In summation, ${listStr} were identified/discovered for the subject. After a thorough investigation, `;
+        
+        if (tally.hasGlobalRH) {
+            finalBullet += `<strong>(state the relevant information).</strong>`;
+        } else {
+            finalBullet += `<strong>no apparent relevant information regarding the case was found at this time.</strong>`;
+        }
+
+        paragraphs.push(`<strong>${finalBullet}</strong>`);
+
+
+        // ==========================================
+        // 6. FORMATTING THE OUTPUT
+        // ==========================================
+        let listItems = paragraphs.map(p => `<li style='margin-bottom: 0;'>${p}</li>`);
+
+        return `<ul style='list-style-type: disc; padding-left: 20px; margin: 0;'>
+                    ${listItems.join(`<li style='list-style: none; margin: 0;'><br></li>`)}
+                </ul>`;
+    },
+    /* --- END ENGINE --- */
+
+    networks: [
+        { id: 'fb', name: 'Facebook', checked: false, color: '#1877F2', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'friends', l:'Friends'}, {k:'following', l:'Following'}, {k:'photos', l:'Photos'}, {k:'videos', l:'Videos'}, {k:'likes', l:'Likes'}], 
+            locPrev: true, locCurr: true, workEd: true, joined: false, activity: true 
+        }},
+        { id: 'ig', name: 'Instagram', checked: false, color: '#E1306C', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: false, workEd: false, joined: false, activity: true 
+        }},
+        { id: 'tw', name: 'Twitter', checked: false, color: '#1DA1F2', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts/Tweets'}, {k:'following', l:'Following'}, {k:'followers', l:'Followers'}, {k:'photos', l:'Photos'}], 
+            locPrev: false, locCurr: true, workEd: false, joined: true, activity: true 
+        }},
+        { id: 'yt', name: 'Youtube', checked: false, color: '#FF0000', instances: [{}], config: { 
+            metrics: [{k:'videos', l:'Videos'}, {k:'subscribers', l:'Subscribers'}], 
+            locPrev: false, locCurr: false, workEd: false, joined: true, activity: true 
+        }},
+        { id: 'li', name: 'LinkedIn', checked: false, color: '#0A66C2', instances: [{}], config: { 
+            metrics: [{k:'connections', l:'Connections'}, {k:'followers', l:'Followers'}], 
+            locPrev: false, locCurr: true, workEd: true, joined: false, activity: false 
+        }},
+        { id: 'tk', name: 'Tiktok', checked: false, color: '#000000', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: false, workEd: false, joined: false, activity: true 
+        }},
+        { id: 'pin', name: 'Pinterest', checked: false, color: '#E60023', instances: [{}], config: { 
+            metrics: [{k:'pins', l:'Pins'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: false, workEd: false, joined: false, activity: true 
+        }},
+        { id: 'str', name: 'Strava', checked: false, color: '#FC4C02', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: true, workEd: false, joined: false, activity: true 
+        }},
+        { id: 'fs', name: 'Foursquare', checked: false, color: '#F94877', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: true, workEd: false, joined: false, activity: true 
+        }},
+        { id: 'tum', name: 'Tumblr', checked: false, color: '#36465D', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: true, workEd: false, joined: false, activity: true 
+        }},
+        { id: 'thr', name: 'Threads', checked: false, color: '#000000', instances: [{}], config: { 
+            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            locPrev: false, locCurr: false, workEd: false, joined: false, activity: true 
+        }},
+
+        { id: 'goog', name: 'Google', checked: false, color: '#4285F4', instances: [{}] },
+        { id: 'other', name: 'Others', checked: false, color: '#9b59b6', instances: [{}] }
+        
+    ]
+}">
+        
+        <nav class="networks">
+            <h3>Networks</h3>
+            <div class="network-grid">
+                <template x-for="(net, nIndex) in networks" :key="net.id">
+                    <div class="network-group" :class="(isNull && net.id !== 'goog') ? 'dimmed-row' : ''">
+                        <fieldset :disabled="isNull && net.id !== 'goog'" style="border: none; padding: 0; margin: 0; min-width: 0;">
+                            
+                            <div class="main-row">
+                                <label class="network-switch-label">
+                                    <input type="checkbox" 
+                                           x-model="net.checked" 
+                                           :disabled="net.instances.length > 1" 
+                                           class="network-hidden-checkbox">
+                                    <span class="network-toggle" 
+                                          :style="net.checked ? 'background-color: ' + net.color : ''"></span>
+                                    <span x-text="net.name" class="network-name"></span>
+                                </label>
+                                <button type="button" class="add-more-btn" @click="net.instances.push({}); $nextTick(() => document.getElementById('details-' + net.id).open = true)" x-show="net.checked" x-transition>+</button>
+                            </div>
+
+                            <details :id="'details-' + net.id" x-show="net.checked && net.instances.length > 1" class="clone-details" x-transition>
+                                <summary class="clone-summary">Networks (<span x-text="net.instances.length - 1"></span>)</summary>
+                                <div class="sub-rows-container">
+                                    <template x-for="(instance, index) in net.instances" :key="index">
+                                        <div class="clone-row" x-show="index > 0">
+                                            <span class="clone-label"><span x-text="net.name"></span> <span x-text="index + 1"></span></span>
+                                            <button type="button" class="remove-clone-btn" @click="net.instances.splice(index, 1)">−</button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </details>
+                            
+                        </fieldset>
+                    </div>
+                </template>
+            </div>
+        </nav>
+
+        <section class="fill-up-form">
+        <h3>Fill Up Form</h3>
+
+        <details class="styled-details" :open="activeSection === 'nullset'">
+            <summary @click.prevent="activeSection = activeSection === 'nullset' ? '' : 'nullset'">Null Set</summary>
+            <form action="" class="details-content">
+                <fieldset class="custom-fieldset">
+                    <legend>Null?</legend>
+                    <div class="checkbox-group">
+                        <label class="custom-checkbox">
+                            <input type="radio" name="null-status" @change="isNull = true">
+                            <span class="checkmark"></span> Yes
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="radio" name="null-status" @change="isNull = false" checked>
+                            <span class="checkmark"></span> No
+                        </label>
+                    </div>
+                </fieldset>
+            </form>
+        </details>
+
+        <details class="styled-details" :open="activeSection === 'subject'">
+            <summary @click.prevent="activeSection = activeSection === 'subject' ? '' : 'subject'">Profile</summary>
+            <form action="" class="details-content">
+                <fieldset class="custom-fieldset">
+                    <legend>Gender</legend>
+                    <div class="gender-switch" style="margin-top: 5px;">
+                        <input type="radio" id="gender-m" name="subject-gender" value="male" x-model="subjectGender">
+                        <label for="gender-m">Male</label>
+                    
+                        <input type="radio" id="gender-f" name="subject-gender" value="female" x-model="subjectGender">
+                        <label for="gender-f">Female</label>
+                    </div>
+                </fieldset>
+            </form>
+        </details>
+
+
+        <details class="styled-details" :open="activeSection === 'relative'">
+            <summary @click.prevent="activeSection = activeSection === 'relative' ? '' : 'relative'">Relatives & Associates</summary>
+            
+            <form action="" class="details-content">
+                
+                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                    <legend>Identified Relatives?</legend>
+                    <div class="checkbox-group" style="margin-top: 0;">
+                        <label class="custom-checkbox">
+                            <input type="radio" name="rel-status" @change="relData.found = true" :checked="relData.found === true">
+                            <span class="checkmark"></span> Yes
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="radio" name="rel-status" @change="relData.found = false" :checked="relData.found === false">
+                            <span class="checkmark"></span> No
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div x-show="relData.found === true" x-transition>
+                    
+                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                        <legend>Search Scope</legend>
+                        <div class="checkbox-group" style="margin-top: 0;">
+                            <label class="custom-checkbox">
+                                <input type="radio" name="rel-scope" value="relatives" x-model="relData.scope">
+                                <span class="checkmark"></span> Relatives Only
+                            </label>
+                            <label class="custom-checkbox">
+                                <input type="radio" name="rel-scope" value="both" x-model="relData.scope">
+                                <span class="checkmark"></span> Relatives & Associates
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                        <legend>Names & Links</legend>
+                        <div id="names-container" class="input-stack" style="margin-top: 0;">
+                            <template x-for="(row, index) in relData.rows" :key="index">
+                                <div class="input-row">
+                                    <input type="text" class="custom-text-input" placeholder="Enter Name" x-model="row.name">
+                                    <div class="custom-text-input" 
+                                         contenteditable="true" 
+                                         data-placeholder="Hyperlink"
+                                         style="min-height: 40px; display: block; overflow-y: auto;"
+                                         x-init="$el.innerHTML = row.link"
+                                         @input="row.link = $el.innerHTML"
+                                         @paste.prevent="
+                                             let p = $event.clipboardData || window.clipboardData;
+                                             let h = p.getData('text/html');
+                                             if(!h) { document.execCommand('insertText', false, p.getData('text/plain')); } 
+                                             else { document.execCommand('insertHTML', false, h.replace(/<\/?(?!(a|A)\b)[^>]*>/gi, '')); }
+                                         "></div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="action-area">
+                            <button type="button" class="add-btn" @click="relData.rows.push({name: '', link: ''})">
+                                <span class="plus-icon">+</span> Add Another
+                            </button>
+                            <button type="button" class="remove-btn-secondary" @click="relData.rows.pop()" x-show="relData.rows.length > 1">
+                                <span class="minus-icon">−</span> Remove Recent
+                            </button>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="custom-fieldset">
+                        <legend>Findings</legend>
+                        <div class="checkbox-group" style="margin-bottom: 10px; margin-top: 0;">
+                            <label class="custom-checkbox">
+                                <input type="radio" name="rel-findings" value="relevant" x-model="relData.finding">
+                                <span class="checkmark"></span> Relevant Info
+                            </label>
+                            <label class="custom-checkbox">
+                                <input type="radio" name="rel-findings" value="none" x-model="relData.finding">
+                                <span class="checkmark"></span> No Relevant Info
+                            </label>
+                        </div>
+                        <div class="input-row" x-show="relData.finding === 'relevant'">
+                            <input type="text" class="custom-text-input" placeholder="Details (e.g. 2 photos were found...)" x-model="relData.rhText">
+                        </div>
+                    </fieldset>
+
+                </div>
+            </form>
+        </details>
+
+
+<template x-for="net in networks" :key="net.id">
+            <details class="styled-details dynamic-network" 
+                     :id="'details-' + net.id" 
+                     x-show="net.checked && net.config" 
+                     :open="activeSection === net.id" 
+                     x-transition
+                     :style="'--brand-color: ' + net.color + ';'">
+                
+                <summary @click.prevent="activeSection = activeSection === net.id ? '' : net.id" x-text="net.name + ' Data'"></summary>
+                
+                <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
+                    <template x-for="(instance, index) in net.instances" :key="index">
+                        <details class="styled-details network-clone" style="margin-bottom: 10px;" :open="index === 0">
+                            <summary>
+                                <span x-text="net.name"></span> <span x-text="index + 1"></span>
+                            </summary>
+
+                            <div x-data="{ data: instance }" x-init="
+                                if (!data.initialized) {
+                                    data.matchStatus = 'matched'; 
+                                    data.accountType = 'personal'; 
+                                    data.mentionMedia = 'public post/s'; 
+                                    data.mentionConnection = 'relative’s'; 
+                                
+                                    data.idBy = '';
+                                    data.metrics = { posts: {val:'', on:false}, friends: {val:'', on:false}, followers: {val:'', on:false}, following: {val:'', on:false}, photos: {val:'', on:false}, videos: {val:'', on:false}, likes: {val:'', on:false}, pins: {val:'', on:false}, subscribers: {val:'', on:false}, connections: {val:'', on:false} };
+                                    data.loc = { prev: {val:'', on:false}, curr: {val:'', on:false} };
+                                    data.workEd = { nature: {val:'', on:false}, emp: {val:'', on:false}, school: {val:'', on:false} };
+                                    data.joined = '';
+                                    data.activity = 'active';
+                                    data.actDate = ''; data.actDetails = '';
+                                    data.finding = 'relevant';
+                                    data.mediaType = '';
+                                    data.initialized = true;
+                                }
+                            ">
+                                <form action="" class="details-content">
+
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                        <legend>Match Status</legend>
+                                        <div class="checkbox-group" style="margin-top: 0;">
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-match-' + index" x-model="data.matchStatus" value="matched"><span class="checkmark"></span> Matched</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-match-' + index" x-model="data.matchStatus" value="possible"><span class="checkmark"></span> Possible</label>
+                                        </div>
+                                    </fieldset>
+                                
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                        <legend>Account Presence</legend>
+                                        <div class="checkbox-group" style="flex-wrap: wrap; gap: 15px; margin-top: 0;">
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-acc-' + index" value="personal" x-model="data.accountType"><span class="checkmark"></span> Personal</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-acc-' + index" value="business" x-model="data.accountType"><span class="checkmark"></span> Business</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-acc-' + index" value="no-page" x-model="data.accountType"><span class="checkmark"></span> No Acc (Page/Post)</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-acc-' + index" value="no-relative" x-model="data.accountType"><span class="checkmark"></span> No Acc (Relative)</label>
+                                        </div>
+                                    </fieldset>
+                                
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-page'" x-transition>
+                                        <legend>Identified On</legend>
+                                        <div class="checkbox-group" style="margin-top: 0;">
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-media-' + index" value="public post/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Post/s</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-media-' + index" value="public photo/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Photo/s</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-media-' + index" value="public video/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Video/s</label>
+                                        </div>
+                                    </fieldset>
+                                
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-relative'" x-transition>
+                                        <legend>Found On Account Of</legend>
+                                        <div class="checkbox-group" style="margin-top: 0;">
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="relative’s" x-model="data.mentionConnection"><span class="checkmark"></span> Relative</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="associate’s" x-model="data.mentionConnection"><span class="checkmark"></span> Associate</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="family member’s" x-model="data.mentionConnection"><span class="checkmark"></span> Family Member</label>
+                                        </div>
+                                    </fieldset>
+
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                        <legend>Identified By</legend>
+                                        <div class="custom-text-input" contenteditable="true" data-placeholder="e.g. Visual Match, Name, DOB, URL" style="min-height: 40px; display: block; overflow-y: auto;" x-init="$el.innerHTML = data.idBy" @input="data.idBy = $el.innerHTML" @paste.prevent="let p = $event.clipboardData || window.clipboardData; let h = p.getData('text/html'); if(!h) { document.execCommand('insertText', false, p.getData('text/plain')); } else { document.execCommand('insertHTML', false, h.replace(/<\/?(?!(a|A)\b)[^>]*>/gi, '')); }"></div>
+                                    </fieldset>
+                                
+                                    <div x-show="['personal', 'business'].includes(data.accountType)" x-transition>
+                                        <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                            <legend>Metrics</legend>
+                                            <div class="form-grid">
+                                                <template x-for="metric in net.config.metrics" :key="metric.k">
+                                                    <div class="form-group">
+                                                        <label class="custom-checkbox" :title="'Include ' + metric.l + '?'"><input type="checkbox" x-model="data.metrics[metric.k].on"><span class="checkmark"></span></label>
+                                                        <input :type="metric.k === 'friends' ? 'text' : 'number'" class="custom-text-input" :placeholder="'# ' + metric.l" x-model="data.metrics[metric.k].val" :disabled="!data.metrics[metric.k].on">
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </fieldset>
+                                        
+                                        <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="net.config.locPrev || net.config.locCurr || net.config.workEd || net.config.joined">
+                                            <legend>Demographics</legend>
+                                            <div class="input-stack" style="gap: 10px;">
+                                                <div class="input-row" x-show="net.config.joined"><input type="text" class="custom-text-input" placeholder="Joined (e.g. Month & Year)" x-model="data.joined"></div>
+                                                <div class="input-row" x-show="net.config.locPrev"><label class="custom-checkbox" title="Include Previous City?"><input type="checkbox" x-model="data.loc.prev.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="From (City, State)" x-model="data.loc.prev.val" :disabled="!data.loc.prev.on"></div>
+                                                <div class="input-row" x-show="net.config.locCurr"><label class="custom-checkbox" title="Include Current City?"><input type="checkbox" x-model="data.loc.curr.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="Lives in (City, State)" x-model="data.loc.curr.val" :disabled="!data.loc.curr.on"></div>
+                                                <div class="input-row" x-show="net.config.workEd"><label class="custom-checkbox" title="Include Employment?"><input type="checkbox" x-model="data.workEd.emp.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="Nature of Work" x-model="data.workEd.nature.val" :disabled="!data.workEd.emp.on" style="flex: 1;"><input type="text" class="custom-text-input" placeholder="Employer" x-model="data.workEd.emp.val" :disabled="!data.workEd.emp.on" style="flex: 1.5;"></div>
+                                                <div class="input-row" x-show="net.config.workEd"><label class="custom-checkbox" title="Include School?"><input type="checkbox" x-model="data.workEd.school.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="Studied at (School)" x-model="data.workEd.school.val" :disabled="!data.workEd.school.on"></div>
+                                            </div>
+                                        </fieldset>
+                                        
+                                        <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="net.config.activity">
+                                            <legend>Account Status</legend>
+                                            <div class="checkbox-group" style="margin-bottom: 10px;">
+                                                <label class="custom-checkbox"><input type="radio" :name="net.id + '-status-' + index" x-model="data.activity" value="active"><span class="checkmark"></span> Active</label>
+                                                <label class="custom-checkbox"><input type="radio" :name="net.id + '-status-' + index" x-model="data.activity" value="inactive"><span class="checkmark"></span> Inactive</label>
+                                                <label class="custom-checkbox" x-show="net.id !== 'yt' && net.id !== 'pin'"><input type="radio" :name="net.id + '-status-' + index" x-model="data.activity" value="private"><span class="checkmark"></span> Private</label>
+                                            </div>
+                                            <div class="input-row" x-show="data.activity === 'active'">
+                                                <input type="text" class="custom-text-input" :placeholder="net.id === 'pin' ? 'Year (e.g. 2023)' : 'Date (Month Day, Year)'" x-model="data.actDate">
+                                                <input type="text" class="custom-text-input" :placeholder="net.id === 'yt' ? 'Action (e.g., posted a video)' : 'Action (e.g., shared a photo)'" x-model="data.actDetails">
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                
+                                    <fieldset class="custom-fieldset">
+                                        <legend>Findings</legend>
+                                        <div class="checkbox-group" style="margin-bottom: 10px;">
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-findings-' + index" x-model="data.finding" value="relevant"><span class="checkmark"></span> Relevant Info</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-findings-' + index" x-model="data.finding" value="none"><span class="checkmark"></span> No Relevant Info</label>
+                                        </div>
+                                        <div class="input-row" x-show="data.finding === 'relevant'">
+                                            <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
+                                        </div>
+                                    </fieldset>
+                                
+                                </form>
+                            </div>
+                        </details>
+                    </template>
+                </div>
+            </details>
+        </template>
+
+        <details class="styled-details dynamic-network" 
+                 :id="'details-other'" 
+                 x-show="networks.find(n => n.id === 'other').checked" 
+                 :open="activeSection === 'other'" 
+                 x-transition
+                 style="--brand-color: #9b59b6;">
+            
+            <summary @click.prevent="activeSection = activeSection === 'other' ? '' : 'other'">Other Social Medias</summary>
+            
+            <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
+                <template x-for="(instance, index) in networks.find(n => n.id === 'other').instances" :key="index">
+                    <details class="styled-details network-clone" style="margin-bottom: 10px; background: #fff;" :open="index === 0">
+                        <summary style="background-color: #e9ecef; font-size: 0.95rem; border-radius: 6px 6px 0 0;">
+                            Other Account <span x-text="index + 1"></span>
+                        </summary>
+                        
+                        <div x-data="{ data: instance }" x-init="
+                            if (!data.initialized) {
+                                data.subType = 'general'; 
+                                data.networkName = '';    
+                                data.matchStatus = 'matched';
+                                data.idBy = '';
+                                
+                                /* Added connections for Zoominfo */
+                                data.metrics = { posts: {val:'', on:false}, followers: {val:'', on:false}, following: {val:'', on:false}, listings: {val:'', on:false}, connectedTo: {val:'', on:false}, connectedBy: {val:'', on:false}, connections: {val:'', on:false} };
+                                
+                                data.loc = ''; 
+                                data.school = ''; data.classYear = '';
+                                data.countyState = ''; data.arrestDate = ''; data.charge = '';
+                                
+                                /* Added workEd for Zoominfo */
+                                data.workEd = { nature: {val:'', on:false}, emp: {val:'', on:false}, school: {val:'', on:false} };
+                                
+                                data.activity = 'active'; data.actDate = ''; data.actAction = '';
+                                data.finding = 'relevant'; data.mediaType = '';
+                                data.initialized = true;
+                            }
+                        ">
+                            <form action="" class="details-content">
+                                
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Account Type</legend>
+                                    <div class="checkbox-group" style="flex-wrap: wrap; gap: 15px; margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-type-'+index" x-model="data.subType" value="general"><span class="checkmark"></span> General</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-type-'+index" x-model="data.subType" value="ecommerce"><span class="checkmark"></span> E-commerce</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-type-'+index" x-model="data.subType" value="classmates"><span class="checkmark"></span> Classmates</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-type-'+index" x-model="data.subType" value="myspace"><span class="checkmark"></span> Myspace</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-type-'+index" x-model="data.subType" value="mugshot"><span class="checkmark"></span> Mugshot</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-type-'+index" x-model="data.subType" value="zoominfo"><span class="checkmark"></span> Zoominfo</label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce'].includes(data.subType)" x-transition>
+                                    <legend>Network Name</legend>
+                                    <input type="text" class="custom-text-input" placeholder="e.g. Vimeo, Etsy, Yelp" x-model="data.networkName">
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Match & ID</legend>
+                                    <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-match-'+index" x-model="data.matchStatus" value="matched"><span class="checkmark"></span> Matched</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-match-'+index" x-model="data.matchStatus" value="possible"><span class="checkmark"></span> Possible</label>
+                                    </div>
+                                    <div class="custom-text-input" contenteditable="true" data-placeholder="Identified By (e.g. Visual Match, URL)" style="min-height: 40px; display: block;" x-init="$el.innerHTML = data.idBy" @input="data.idBy = $el.innerHTML" @paste.prevent="let p = $event.clipboardData || window.clipboardData; let h = p.getData('text/html'); if(!h) { document.execCommand('insertText', false, p.getData('text/plain')); } else { document.execCommand('insertHTML', false, h.replace(/<\/?(?!(a|A)\b)[^>]*>/gi, '')); }"></div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce', 'myspace', 'zoominfo'].includes(data.subType)">
+                                    <legend>Metrics</legend>
+                                    <div class="form-grid">
+                                        <template x-if="data.subType === 'general'">
+                                            <div style="display: contents;">
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Posts?"><input type="checkbox" x-model="data.metrics.posts.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Posts" x-model="data.metrics.posts.val" :disabled="!data.metrics.posts.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Followers" x-model="data.metrics.followers.val" :disabled="!data.metrics.followers.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Following?"><input type="checkbox" x-model="data.metrics.following.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Following" x-model="data.metrics.following.val" :disabled="!data.metrics.following.on"></div>
+                                            </div>
+                                        </template>
+                                        <template x-if="data.subType === 'ecommerce'">
+                                            <div style="display: contents;">
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Listings?"><input type="checkbox" x-model="data.metrics.listings.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Listings" x-model="data.metrics.listings.val" :disabled="!data.metrics.listings.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Followers" x-model="data.metrics.followers.val" :disabled="!data.metrics.followers.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Following?"><input type="checkbox" x-model="data.metrics.following.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Following" x-model="data.metrics.following.val" :disabled="!data.metrics.following.on"></div>
+                                            </div>
+                                        </template>
+                                        <template x-if="data.subType === 'myspace'">
+                                            <div style="display: contents;">
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Connected To?"><input type="checkbox" x-model="data.metrics.connectedTo.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Connected To" x-model="data.metrics.connectedTo.val" :disabled="!data.metrics.connectedTo.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Connected By?"><input type="checkbox" x-model="data.metrics.connectedBy.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Connected By" x-model="data.metrics.connectedBy.val" :disabled="!data.metrics.connectedBy.on"></div>
+                                            </div>
+                                        </template>
+                                        <template x-if="data.subType === 'zoominfo'">
+                                            <div style="display: contents;">
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Connections?"><input type="checkbox" x-model="data.metrics.connections.on"><span class="checkmark"></span></label><input type="number" class="custom-text-input" placeholder="# Connections" x-model="data.metrics.connections.val" :disabled="!data.metrics.connections.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Followers" x-model="data.metrics.followers.val" :disabled="!data.metrics.followers.on"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce', 'myspace', 'zoominfo'].includes(data.subType)">
+                                    <legend>Location</legend>
+                                    <input type="text" class="custom-text-input" placeholder="Listed Location (City, State)" x-model="data.loc">
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.subType === 'zoominfo'">
+                                    <legend>Employment & Education</legend>
+                                    <div class="input-stack" style="gap: 10px;">
+                                        <div class="input-row">
+                                            <label class="custom-checkbox" title="Include Employment?"><input type="checkbox" x-model="data.workEd.emp.on"><span class="checkmark"></span></label>
+                                            <input type="text" class="custom-text-input" placeholder="Nature of Work" x-model="data.workEd.nature.val" :disabled="!data.workEd.emp.on" style="flex: 1;">
+                                            <input type="text" class="custom-text-input" placeholder="Employer" x-model="data.workEd.emp.val" :disabled="!data.workEd.emp.on" style="flex: 1.5;">
+                                        </div>
+                                        <div class="input-row">
+                                            <label class="custom-checkbox" title="Include School?"><input type="checkbox" x-model="data.workEd.school.on"><span class="checkmark"></span></label>
+                                            <input type="text" class="custom-text-input" placeholder="Studied at (School)" x-model="data.workEd.school.val" :disabled="!data.workEd.school.on">
+                                        </div>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.subType === 'classmates'">
+                                    <legend>Education Details</legend>
+                                    <div class="input-stack" style="gap: 10px;">
+                                        <input type="text" class="custom-text-input" placeholder="School Name" x-model="data.school">
+                                        <input type="text" class="custom-text-input" placeholder="Class of (Year)" x-model="data.classYear">
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.subType === 'mugshot'">
+                                    <legend>Arrest Details</legend>
+                                    <div class="input-stack" style="gap: 10px;">
+                                        <input type="text" class="custom-text-input" placeholder="County & State (e.g. Hillsborough County, Florida)" x-model="data.countyState">
+                                        <input type="text" class="custom-text-input" placeholder="Date (e.g. 11/05/2002)" x-model="data.arrestDate">
+                                        <input type="text" class="custom-text-input" placeholder="Charge Description" x-model="data.charge">
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce'].includes(data.subType)">
+                                    <legend>Account Status</legend>
+                                    <div class="checkbox-group" style="margin-bottom: 10px;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-status-'+index" x-model="data.activity" value="active"><span class="checkmark"></span> Active</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-status-'+index" x-model="data.activity" value="inactive"><span class="checkmark"></span> Inactive</label>
+                                    </div>
+                                    <div class="input-row" x-show="data.activity === 'active'">
+                                        <input type="text" class="custom-text-input" placeholder="Date (Month Day, Year)" x-model="data.actDate">
+                                        <input type="text" class="custom-text-input" placeholder="Action (e.g. shared a post)" x-model="data.actAction" x-show="data.subType === 'general'">
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset">
+                                    <legend>Findings</legend>
+                                    <div class="checkbox-group" style="margin-bottom: 10px;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-find-'+index" x-model="data.finding" value="relevant"><span class="checkmark"></span> Relevant Info</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-find-'+index" x-model="data.finding" value="none"><span class="checkmark"></span> No Relevant Info</label>
+                                    </div>
+                                    <div class="input-row" x-show="data.finding === 'relevant'">
+                                        <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
+                                    </div>
+                                </fieldset>
+
+                            </form>
+                        </div>
+                    </details>
+                </template>
+            </div>
+        </details>
+
+        <details class="styled-details dynamic-network" 
+                 :id="'details-goog'" 
+                 x-show="networks.find(n => n.id === 'goog').checked" 
+                 :open="activeSection === 'goog'" 
+                 x-transition
+                 style="--brand-color: #4285F4;">
+            
+            <summary @click.prevent="activeSection = activeSection === 'goog' ? '' : 'goog'">Google / PSE Data</summary>
+            
+            <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
+                <template x-for="(instance, index) in networks.find(n => n.id === 'goog').instances" :key="index">
+                    <details class="styled-details network-clone" style="margin-bottom: 10px;" :open="index === 0">
+                        <summary style="background-color: #e9ecef; font-size: 0.95rem; border-radius: 6px 6px 0 0;">
+                            Search Result <span x-text="index + 1"></span>
+                        </summary>
+                        
+                        <div x-data="{ data: instance }" x-init="
+                            if (!data.initialized) {
+                                data.resultType = 'single'; /* single or multiple */
+                                data.pseNames = '';
+                                data.matchStatus = 'matched';
+                                data.idBy = '';
+                                
+                                /* Tracks the type of info found */
+                                data.infoTypes = { personal: false, employment: false, criminal: false, education: false };
+                                
+                                data.finding = 'relevant'; 
+                                data.mediaType = '';
+                                data.initialized = true;
+                            }
+                        ">
+                            <form action="" class="details-content">
+                                
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Search Details</legend>
+                                    <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                        <label class="custom-checkbox">
+                                            <input type="radio" :name="'goog-type-'+index" x-model="data.resultType" value="single">
+                                            <span class="checkmark"></span> 1 Result
+                                        </label>
+                                        <label class="custom-checkbox">
+                                            <input type="radio" :name="'goog-type-'+index" x-model="data.resultType" value="multiple">
+                                            <span class="checkmark"></span> 2+ Results
+                                        </label>
+                                    </div>
+                                    <div class="input-row">
+                                        <input type="text" class="custom-text-input" placeholder="Search Engine(s) (e.g. Mylife, Radaris)" x-model="data.pseNames">
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Match & ID</legend>
+                                    <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-match-'+index" x-model="data.matchStatus" value="matched"><span class="checkmark"></span> Matched</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-match-'+index" x-model="data.matchStatus" value="possible"><span class="checkmark"></span> Possible</label>
+                                    </div>
+                                    <div class="custom-text-input" contenteditable="true" data-placeholder="Identified By (e.g. Visual Match, URL)" style="min-height: 40px; display: block;" x-init="$el.innerHTML = data.idBy" @input="data.idBy = $el.innerHTML" @paste.prevent="let p = $event.clipboardData || window.clipboardData; let h = p.getData('text/html'); if(!h) { document.execCommand('insertText', false, p.getData('text/plain')); } else { document.execCommand('insertHTML', false, h.replace(/<\/?(?!(a|A)\b)[^>]*>/gi, '')); }"></div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Information Found</legend>
+                                    <div class="form-grid">
+                                        <label class="custom-checkbox"><input type="checkbox" x-model="data.infoTypes.personal"><span class="checkmark"></span> Personal</label>
+                                        <label class="custom-checkbox"><input type="checkbox" x-model="data.infoTypes.employment"><span class="checkmark"></span> Employment</label>
+                                        <label class="custom-checkbox"><input type="checkbox" x-model="data.infoTypes.criminal"><span class="checkmark"></span> Criminal</label>
+                                        <label class="custom-checkbox"><input type="checkbox" x-model="data.infoTypes.education"><span class="checkmark"></span> Education</label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset">
+                                    <legend>Findings</legend>
+                                    <div class="checkbox-group" style="margin-bottom: 10px;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-find-'+index" x-model="data.finding" value="relevant"><span class="checkmark"></span> Relevant Info</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-find-'+index" x-model="data.finding" value="none"><span class="checkmark"></span> No Relevant Info</label>
+                                    </div>
+                                    <div class="input-row" x-show="data.finding === 'relevant'">
+                                        <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
+                                    </div>
+                                </fieldset>
+
+                            </form>
+                        </div>
+                    </details>
+                </template>
+            </div>
+        </details>
+
+    </section>
+
+        <main class="builder">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e0e6ed; padding-bottom: 10px;">
+                <h2 style="color: #2c3e50; font-size: 1.4rem;">Generated Report</h2>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" 
+                            @click="resetForm()"
+                            class="add-btn" 
+                            style="border: 2px solid #e74c3c; color: #e74c3c; width: 130px; justify-content: center;">
+                        Discard
+                    </button>
+                
+                    <button type="button" 
+                            class="add-btn" 
+                            style="border: 2px solid #3498db; color: #3498db; width: 130px; justify-content: center;"
+                            onclick="
+                                const outputDiv = document.getElementById('final-output');
+                                const htmlBlob = new Blob([outputDiv.innerHTML], { type: 'text/html' });
+                                const textBlob = new Blob([outputDiv.innerText], { type: 'text/plain' });
+                
+                                const clipboardItem = new ClipboardItem({
+                                    'text/html': htmlBlob,
+                                    'text/plain': textBlob
+                                });
+                            
+                                navigator.clipboard.write([clipboardItem]).then(() => {
+                                    let btn = this;
+                                    let originalText = btn.innerHTML;
+                                    btn.innerHTML = '✓ Copied!';
+                                    btn.style.backgroundColor = '#3498db';
+                                    btn.style.color = '#fff';
+                                    setTimeout(() => { 
+                                        btn.innerHTML = originalText; 
+                                        btn.style.backgroundColor = 'transparent';
+                                        btn.style.color = '#3498db';
+                                    }, 2000);
+                                });
+                            ">
+                        Copy Report
+                    </button>
+                </div>
+            </div>
+
+            <div id="final-output" 
+                 x-html="reportText" 
+                 style="font-size: 15px; color: #333; background: #f8f9fa; padding: 25px; border-radius: 8px; border: 1px solid #e0e6ed; min-height: 300px;">
+            </div>
+        </main>
+
+        <aside class="notes" x-data="{ 
+                notes: [{ id: Date.now(), text: '' }],
+                get hasContent() {
+                    return this.notes.some(n => n.text.replace(/<[^>]*>?/gm, '').trim() !== '');
+                },
+                clearAll() {
+                    if (confirm('Are you sure you want to clear all notes?')) {
+                        this.notes = [{ id: Date.now(), text: '' }];
+                    }
+                }
+            }"
+            @beforeunload.window="if (hasContent) { $event.preventDefault(); $event.returnValue = 'You have unsaved notes!'; }"
+        >
+            <div class="notes-header">
+                <h3>Sticky Notes</h3>
+                <div class="notes-actions" style="display: flex; gap: 8px;">
+                    <button type="button" class="clear-all-btn" @click="clearAll()" title="Clear All Notes" x-show="hasContent || notes.length > 1" x-transition>🗑️</button>
+                    <button type="button" id="add-note-btn" class="add-more-btn" @click="notes.push({ id: Date.now(), text: '' })">+</button>
+                </div>
+            </div>
+            
+            <div id="notes-container">
+                <template x-for="(note, index) in notes" :key="note.id">
+                    <div class="sticker">
+                        <div class="sticker-body" contenteditable="true" x-init="$el.innerHTML = note.text" @input="note.text = $el.innerHTML" data-placeholder="Click to paste or type..."></div>
+                        <button class="remove-sticker" @click="notes.length > 1 ? notes.splice(index, 1) : notes = [{ id: Date.now(), text: '' }]" title="Delete Note">×</button>
+                    </div>
+                </template>
+            </div>
+        </aside>
+
+    </div>
+    <footer class="site-footer"></footer>
+</body>
+</html>
