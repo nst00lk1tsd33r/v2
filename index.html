@@ -276,5 +276,71 @@ document.addEventListener("keydown", function(e) {
 // Optional: Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
+  <script>
+// Session & auto-logout management
+const IDLE_LIMIT = 60 * 60 * 1000; // 1 hour
+const SESSION_LIMIT = 8 * 60 * 60 * 1000; // 8 hours
+
+// Update last activity timestamp on any user interaction
+function updateActivity() {
+    if (sessionStorage.getItem("ns_access") === "granted") {
+        sessionStorage.setItem("ns_lastActivity", Date.now());
+    }
+}
+["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(evt => {
+    document.addEventListener(evt, updateActivity);
+});
+
+// Check session expiration periodically
+setInterval(() => {
+    if (sessionStorage.getItem("ns_access") === "granted") {
+        const now = Date.now();
+        const loginTime = parseInt(sessionStorage.getItem("ns_loginTime")) || now;
+        const lastActivity = parseInt(sessionStorage.getItem("ns_lastActivity")) || now;
+
+        // Idle logout
+        if (now - lastActivity > IDLE_LIMIT) {
+            sessionStorage.removeItem("ns_access");
+            sessionStorage.removeItem("ns_loginTime");
+            sessionStorage.removeItem("ns_lastActivity");
+            alert("You have been logged out due to 1 hour of inactivity. Please enter the access code again.");
+            window.location.reload();
+        }
+
+        // Max session logout
+        if (now - loginTime > SESSION_LIMIT) {
+            sessionStorage.removeItem("ns_access");
+            sessionStorage.removeItem("ns_loginTime");
+            sessionStorage.removeItem("ns_lastActivity");
+            alert("Your session has expired after 8 hours. Please enter the access code again.");
+            window.location.reload();
+        }
+    }
+}, 30 * 1000); // Check every 30 seconds
+
+// On successful login, store session start and last activity
+async function login(){
+  const lock=getLock();
+  const status=document.getElementById("status");
+  if(lock && Date.now()<lock){ cooldown(); return; }
+  const input=document.getElementById("password").value;
+  const hash=await sha256(input);
+  if(safeCompare(hash,PASSWORD_HASH)){
+    document.getElementById("loginBtn").disabled=true;
+    sessionStorage.setItem("ns_access","granted");
+    sessionStorage.setItem("ns_loginTime", Date.now());
+    sessionStorage.setItem("ns_lastActivity", Date.now());
+    localStorage.removeItem("ns_attempts");
+    await showSuccessSequence();
+    window.location.href="main.html";
+  } else{
+    let attempts=getAttempts()+1;
+    setAttempts(attempts);
+    status.className="error";
+    if(attempts>=MAX_ATTEMPTS){ setLock(); cooldown(); } 
+    else{ status.innerText="Incorrect Code ("+attempts+"/3)"; }
+  }
+}
+</script>
 </body>
 </html>
