@@ -10,58 +10,93 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NS Toolkit Access</title>
-
+<link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial; }
-body { height: 100vh; display: flex; justify-content: center; align-items: center; background: #0d0d0d; }
 
-.login-box{
-  width: 360px; padding: 40px; background: #1b1b1b; border-radius: 15px;
-  text-align: center; box-shadow: 0 0 25px rgba(0,255,255,0.3);
+/* Dark background */
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0d0d0d;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Canvas for particles */
+#particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Login box */
+.login-box {
+  position: relative;
+  z-index: 1; /* above particles */
+  width: 360px; 
+  padding: 40px; 
+  background: #1b1b1b; 
+  border-radius: 15px;
+  text-align: center; 
+  box-shadow: 0 0 25px rgba(0,255,255,0.3);
 }
 
 .login-box h2{
-  color: #00ffff; margin-bottom: 25px; text-shadow: 0 0 10px #00ffff;
+  color: #00ffff; 
+  margin-bottom: 25px; 
+  text-shadow: 0 0 10px #00ffff;
 }
 
 .login-box input{
-  width: 100%; padding: 12px; border-radius: 6px; border: none; margin-bottom: 20px; font-size: 14px;
+  width: 100%; 
+  padding: 12px; 
+  border-radius: 6px; 
+  border: none; 
+  margin-bottom: 20px; 
+  font-size: 14px;
 }
 
 .login-box button{
-  width: 100%; padding: 12px; border: none; border-radius: 6px; background: #19d3d3;
-  color: #000; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s;
+  width: 100%; 
+  padding: 12px; 
+  border: none; 
+  border-radius: 6px; 
+  background: #19d3d3;
+  color: #000; 
+  font-weight: bold; 
+  cursor: pointer; 
+  font-size: 15px; 
+  transition: 0.2s;
 }
 
 .login-box button:hover{ background:#12bcbc; }
 .login-box button:disabled{ opacity:0.5; cursor:not-allowed; }
 
 #status{
-  margin-top:12px; font-weight:bold; display:block; min-height:24px;
-  font-family: 'Courier New', monospace; font-size:14px; text-align:center;
+  margin-top:12px; 
+  font-weight:bold; 
+  display:block; 
+  min-height:24px;
+  font-family: 'Courier New', monospace; 
+  font-size:14px; 
+  text-align:center;
 }
 
 .success{ color:#00ff9c; text-shadow: 0 0 6px #00ff9c; }
 .error{ color:#ff4d4d; text-shadow: 0 0 6px #ff4d4d; }
-
-.glow{
-  display:inline-block;
-  animation: glowText 1s ease-in-out infinite alternate;
-}
-
-@keyframes glowText{
-  0%{ text-shadow: 0 0 2px #00ff9c; color:#00ff9c; }
-  50%{ text-shadow: 0 0 12px #00ff9c, 0 0 20px #00ff9c; color:#00ff9c; }
-  100%{ text-shadow: 0 0 6px #00ff9c; color:#00ff9c; }
-}
 
 .slack-contact{
   margin-top:15px; 
   font-size:13px; 
   color:#00ffff; 
   text-shadow: 0 0 4px #00ffff;
-  text-align:center; /* Center align */
-  word-wrap: normal; /* Prevent weird wrapping */
+  text-align:center; 
 }
 
 .slack-contact a{
@@ -70,12 +105,14 @@ body { height: 100vh; display: flex; justify-content: center; align-items: cente
 }
 
 .slack-contact span{
-  white-space: nowrap; /* Keep names on a single line */
+  white-space: nowrap; 
 }
 </style>
 </head>
 
 <body oncontextmenu="return false">
+
+<canvas id="particles"></canvas>
 
 <div class="login-box">
   <h2>NS Toolkit Access</h2>
@@ -84,16 +121,72 @@ body { height: 100vh; display: flex; justify-content: center; align-items: cente
   <button id="loginBtn" onclick="login()">Enter</button>
   <p id="status"></p>
 
-  <!-- Slack contact -->
-<p class="slack-contact">
-  Contact us on Slack: 
-  <span style="white-space: nowrap;">
-    Darel Miranda | Morvan Hsu
-  </span>
-</p>
+  <p class="slack-contact">
+    Contact us on Slack: 
+    <span>
+      Darel Miranda | Morvan Hsu
+    </span>
+  </p>
 </div>
 
 <script>
+// Particle animation
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particlesArray = [];
+const PARTICLE_COUNT = 80;
+
+class Particle {
+  constructor(){
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 3 + 1;
+    this.speedY = Math.random() * 1 + 0.5;
+    this.color = 'rgba(0,255,255,0.5)';
+  }
+  update(){
+    this.y += this.speedY;
+    if(this.y > canvas.height){
+      this.y = 0;
+      this.x = Math.random() * canvas.width;
+    }
+  }
+  draw(){
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function initParticles(){
+  particlesArray = [];
+  for(let i=0;i<PARTICLE_COUNT;i++){
+    particlesArray.push(new Particle());
+  }
+}
+
+function animateParticles(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particlesArray.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateParticles);
+}
+
+window.addEventListener('resize',()=>{
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initParticles();
+});
+
+initParticles();
+animateParticles();
+</script>
+
+<script>
+// Existing login script
 const HASH_PARTS=["6f8f75d7fe39a8fd","c33cf70125dea56b","9fd10e8f2486afbd","ae9b43ffca612f60"];
 const PASSWORD_HASH=HASH_PARTS.join("");
 const MAX_ATTEMPTS=3;
@@ -145,7 +238,6 @@ async function login(){
   }
 }
 
-// Animated success sequence
 async function showSuccessSequence(){
   const status=document.getElementById("status");
   const messages=["Checking code...","✔ Verified","Opening NS Toolkit..."];
@@ -153,11 +245,10 @@ async function showSuccessSequence(){
   for(let msg of messages){
     await typeEffect(status,msg,50);
     await delay(700);
-    status.innerHTML=''; // clear before next
+    status.innerHTML=''; 
   }
 }
 
-// Typing effect
 function typeEffect(el,text,speed){
   return new Promise(resolve=>{
     let i=0;
@@ -169,10 +260,8 @@ function typeEffect(el,text,speed){
   });
 }
 
-// simple delay
 function delay(ms){ return new Promise(res=>setTimeout(res,ms)); }
 
-// Block inspect keys
 document.addEventListener("keydown",function(e){
   if(e.key==="F12"||(e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key))||(e.ctrlKey && e.key==="U")){ e.preventDefault(); }
 });
