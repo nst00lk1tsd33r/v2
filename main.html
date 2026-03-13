@@ -273,6 +273,42 @@ A tool may ease the work, but it cannot replace the craftsman. Diligent proofing
 <footer>
 © 2026 NS Toolkit. Made with ❤️ by Morvan Hsu & Darel Miranda. Feel free to message us on Slack for feedback or suggestions!
 </footer>
+<script>
+// Check if user is logged in
+const IDLE_LIMIT = 60 * 60 * 1000; // 1 hour
+const SESSION_LIMIT = 8 * 60 * 60 * 1000; // 8 hours
 
+function checkSession() {
+    const access = sessionStorage.getItem("ns_access");
+    const loginTime = parseInt(sessionStorage.getItem("ns_loginTime")) || 0;
+    const lastActivity = parseInt(sessionStorage.getItem("ns_lastActivity")) || 0;
+    const now = Date.now();
+
+    if (!access) {
+        alert("Please enter the access code first.");
+        window.location.href = "../index.html"; // redirect to login page
+    }
+
+    // Idle or max session check
+    else if (now - lastActivity > IDLE_LIMIT) {
+        sessionStorage.clear();
+        alert("You have been logged out due to 1 hour of inactivity.");
+        window.location.href = "../index.html";
+    } 
+    else if (now - loginTime > SESSION_LIMIT) {
+        sessionStorage.clear();
+        alert("Your session has expired after 8 hours.");
+        window.location.href = "../index.html";
+    } 
+    else {
+        // update last activity timestamp
+        sessionStorage.setItem("ns_lastActivity", now);
+    }
+}
+
+// Run immediately and repeat every 30s
+checkSession();
+setInterval(checkSession, 30*1000);
+</script>
 </body>
 </html>
