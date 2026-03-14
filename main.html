@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--  _____ _____    _    __  __   ____    _    ____  _____ _     
+|_   _| ____|  / \  |  \/  | |  _ \  / \  |  _ \| ____| |    
+  | | |  _|   / _ \ | |\/| | | | | |/ _ \ | |_) |  _| | |    
+  | | | |___ / ___ \| |  | | | |_| / ___ \|  _ <| |___| |___ 
+  |_| |_____/_/   \_\_|  |_| |____/_/   \_\_| \_\_____|_____| -->
 <html lang="en">
 
 <head>
@@ -24,8 +29,6 @@ background:#f5f5f5;
 padding:20px;
 padding-bottom:80px;
 color:#333;
-transition: background 0.3s, color 0.3s;
-position: relative;
 }
 
 /* Layout */
@@ -38,7 +41,6 @@ margin:auto;
 .logo-container{
 text-align:center;
 margin-bottom:15px;
-position: relative;
 }
 
 .logo-container img{
@@ -50,7 +52,6 @@ h1{
 text-align:center;
 margin-bottom:20px;
 color:#2c3e50;
-transition: color 0.3s, text-shadow 0.3s;
 }
 
 .credits-subtext{
@@ -58,7 +59,6 @@ text-align:center;
 color:#7f8c8d;
 font-size:14px;
 margin-bottom:25px;
-transition: color 0.3s;
 }
 
 /* Tool Cards */
@@ -105,7 +105,6 @@ font-weight:bold;
 color:#2c3e50;
 font-size:16px;
 text-align:center;
-transition: color 0.3s;
 }
 
 /* Hover */
@@ -134,7 +133,6 @@ max-width:800px;
 margin:70px auto;
 color:white;
 box-shadow:0 0 20px rgba(0,255,255,0.2);
-transition: background 0.3s, color 0.3s;
 }
 
 /* Neon */
@@ -190,75 +188,6 @@ animation:float 5s infinite alternate;
 100%{transform:translateY(0) scale(1);}
 }
 
-/* Dark Mode Styles */
-
-body.dark-mode{
-background:#1e1e1e;
-color:#f0f0f0;
-}
-
-body.dark-mode h1,
-body.dark-mode .credits-subtext,
-body.dark-mode .card-name{
-color:#f0f0f0;
-}
-
-/* Header glow in dark mode */
-body.dark-mode h1 {
-    color: #00bfff;
-    text-shadow:
-        0 0 5px #00bfff,
-        0 0 10px #00bfff,
-        0 0 20px #00bfff,
-        0 0 30px #00bfff,
-        0 0 40px #00bfff;
-    animation: headerGlow 1.8s ease-in-out infinite alternate;
-}
-
-@keyframes headerGlow {
-    0% {
-        text-shadow: 0 0 5px #00bfff,
-                     0 0 10px #00bfff,
-                     0 0 20px #00bfff,
-                     0 0 30px #00bfff,
-                     0 0 40px #00bfff;
-    }
-    50% {
-        text-shadow: 0 0 15px #00bfff,
-                     0 0 25px #00bfff,
-                     0 0 35px #00bfff,
-                     0 0 45px #00bfff,
-                     0 0 55px #00bfff;
-    }
-    100% {
-        text-shadow: 0 0 5px #00bfff,
-                     0 0 10px #00bfff,
-                     0 0 20px #00bfff,
-                     0 0 30px #00bfff,
-                     0 0 40px #00bfff;
-    }
-}
-
-/* Cards and footer adjustments for dark mode */
-
-body.dark-mode .card-icon{
-background:#2c2c2c;
-border-color:#555;
-box-shadow:0 4px 6px rgba(0,0,0,0.3);
-}
-
-body.dark-mode #credits{
-background:#222;
-color:#f0f0f0;
-box-shadow:0 0 20px rgba(0,255,255,0.2);
-}
-
-body.dark-mode footer{
-background:#111;
-color:#f0f0f0;
-transition: background 0.3s, color 0.3s;
-}
-
 /* Footer */
 
 footer{
@@ -271,32 +200,18 @@ padding:15px;
 background:#2c3e50;
 color:white;
 font-size:14px;
-transition: background 0.3s, color 0.3s;
-}
-
-/* Dark Mode Toggle Button */
-
-#theme-toggle{
-position:fixed;
-top:20px;
-right:20px;
-padding:10px 14px;
-background:#007BFF;
-color:white;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-size:14px;
-transition: background 0.3s, color 0.3s;
-}
-
-#theme-toggle:hover{
-background:#0056d2;
 }
 
 </style>
 </head>
-
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    if(sessionStorage.getItem("ns_access") !== "granted") {
+        alert("Access denied! Please enter the access code first.");
+        window.location.href = "index.html"; // login page
+    }
+});
+</script>
 <body>
 <div class="container">
 
@@ -333,7 +248,7 @@ A tool may ease the work, but it cannot replace the craftsman. Diligent proofing
 <span class="card-name">Excellence Extractor</span>
 </a>
 
-<a class="card" href="sublinks/nscaseflip.html">
+  <a class="card" href="sublinks/nscaseflip.html">
 <div class="card-icon">
 <img src="resources/caseflipicon.png" alt="CaseFlip">
 </div>
@@ -362,21 +277,67 @@ A tool may ease the work, but it cannot replace the craftsman. Diligent proofing
 
 </div>
 
-<button id="theme-toggle">🌙 Dark Mode</button>
-
 <footer>
-© 2026 NS Toolkit. Made with ❤️ by Morvan Hsu & Darel Miranda.
+© 2026 NS Toolkit. Made with ❤️ by Morvan Hsu & Darel Miranda. Feel free to message us on Slack for feedback or suggestions!
 </footer>
+</body>
+  <script>
+// =========================
+// Session Check for Sublinks
+// =========================
+const IDLE_LIMIT = 60 * 60 * 1000;  // 1 hour
+const SESSION_LIMIT = 8 * 60 * 60 * 1000; // 8 hours
 
-<script>
-// Dark mode toggle
-const themeBtn = document.getElementById("theme-toggle");
+// Function to check session
+function checkSession() {
+    const access = sessionStorage.getItem("ns_access");
+    const loginTimeRaw = sessionStorage.getItem("ns_loginTime");
+    const lastActivityRaw = sessionStorage.getItem("ns_lastActivity");
+    const now = Date.now();
 
-themeBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    themeBtn.textContent = document.body.classList.contains("dark-mode") ? "☀ Light Mode" : "🌙 Dark Mode";
+    // Not logged in
+    if (!access) {
+        alert("Please enter the access code first.");
+        window.location.href="../index.html";
+        return;
+    }
+
+    const loginTime = loginTimeRaw ? parseInt(loginTimeRaw) : now;
+    const lastActivity = lastActivityRaw ? parseInt(lastActivityRaw) : now;
+
+    // Max session check (8 hours)
+    if (now - loginTime > SESSION_LIMIT) {
+        sessionStorage.clear();
+        alert("Your session has expired after 8 hours.");
+        window.location.href="../index.html";
+        return;
+    }
+
+    // Idle check (1 hour)
+    if (now - lastActivity > IDLE_LIMIT) {
+        sessionStorage.clear();
+        alert("You have been logged out due to 1 hour of inactivity.");
+        window.location.href="../index.html";
+        return;
+    }
+
+    // Update last activity timestamp on this page
+    sessionStorage.setItem("ns_lastActivity", now);
+}
+
+// Run immediately
+checkSession();
+
+// Check periodically every 30 seconds
+setInterval(checkSession, 30 * 1000);
+
+// Also update lastActivity on any interaction
+["mousemove","keydown","click","scroll","touchstart"].forEach(evt => {
+    document.addEventListener(evt, () => {
+        if (sessionStorage.getItem("ns_access") === "granted") {
+            sessionStorage.setItem("ns_lastActivity", Date.now());
+        }
+    });
 });
 </script>
-
-</body>
 </html>
