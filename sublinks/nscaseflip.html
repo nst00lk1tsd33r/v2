@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
 <title>NS CaseFlip</title>
+<link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script>
 document.addEventListener("keydown", function(e) {
@@ -285,12 +286,11 @@ body.dark-mode .buttons:hover{
 </head>
 
 <body>
-<button class="back-btn" onclick="history.back()">← Go Back</button>
 <header class="top-header">
     <div class="logo-banner">
         <img src="https://i.imgur.com/fAPRRis.png" alt="NS Template Logo">
     </div>
-    <h1 class="app-title">NS CaseFlip</h1>
+    <h1 class="app-">NS CaseFlip</h1>
     <p class="app-desc">
         Convert your text to UPPER CASE, lower case, Sentence case, Capitalized Case, or aLtErNaTiNg. Copy, clear, and clean text easily.
     </p>
@@ -309,7 +309,7 @@ body.dark-mode .buttons:hover{
         <button class="buttons" id="clearBtn">CLEAR</button>
     </div>
 </header>
-
+<button class="back-btn" onclick="history.back()">← Go Back</button>
 <main class="main-wrapper">
     <section class="input-section">
         <div class="counter-wrapper">
@@ -328,7 +328,7 @@ const charBox = document.getElementById("char-count");
 const wordBox = document.getElementById("word-count");
 const lineBox = document.getElementById("line-count");
 const themeBtn = document.getElementById("theme-toggle");
-const title = document.querySelector(".app-title");
+const  = document.querySelector(".app-");
 
 let prevChars = 0, prevWords = 0, prevLines = 0;
 
