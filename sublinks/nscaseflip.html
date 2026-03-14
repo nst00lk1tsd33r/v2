@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
        <body oncontextmenu="return false;">
-<button class="back-btn" onclick="history.back()">← Go Back</button>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
@@ -138,6 +137,26 @@ body.dark-mode .app-title{
     transform:translateY(0px);
 }
 
+.back-btn {
+       position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 14px 0;
+    font-size: 1rem;
+    font-weight: bold;
+    border: 2px solid #007BFF;
+    border-radius: 8px;
+    background-color: white;
+    color: #007BFF;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 160px;             
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap; 
+    box-sizing: border-box;
+}
+
 .theme-toggle-container{
     position:absolute;
     top:20px;
@@ -250,22 +269,6 @@ body.dark-mode .buttons{
 body.dark-mode .buttons:hover{
     box-shadow:0 6px 15px rgba(0,123,255,0.3);
 }
-       .back-btn{
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    padding: 10px 16px;
-    background: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    z-index: 9999;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    transition: all .25s ease;
-}
 
 .buttons:hover, .back-btn:hover {
     background-color: #007BFF;
@@ -282,7 +285,7 @@ body.dark-mode .buttons:hover{
 </head>
 
 <body>
-
+<button class="back-btn" onclick="history.back()">← Go Back</button>
 <header class="top-header">
     <div class="logo-banner">
         <img src="https://i.imgur.com/fAPRRis.png" alt="NS Template Logo">
