@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../styles/templatewriterstyle.css">
+<link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
+<title>NS CaseFlip</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NS Template Writer</title>
+<link rel="stylesheet" href="../styles/templatewriterstyle.css">
+</head>
+<div style="text-align:center; margin-bottom:15px;">
+        <img src="https://i.imgur.com/fAPRRis.png" alt="NS Template Logo" style="max-width:450px; height:auto;">
+    </div>
+<body oncontextmenu="return false;">
+<button class="back-btn" onclick="history.back()">← Go Back</button>
+
+<style>
+/* ---------------- BODY & HEADER ---------------- */
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f5f5f5;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+    transition: background 0.3s, color 0.3s;
+    color: #152352;
+}
+
+.top-header{
+    background:white;
+    padding:25px;
+    text-align:center;
+    border-bottom:1px solid #e5e5e5;
+    transition: background 0.3s, color 0.3s;
+    position: relative;
+}
+
+.logo-banner img{
+    max-width:420px;
+    height:auto;
+    margin-bottom:10px;
+}
+
+/* ---------------- APP TITLE ---------------- */
+.app-title{
+    color:#152352;
+    font-size:32px;
+    margin-bottom:8px;
+    letter-spacing:1px;
+    transition: color 0.3s, text-shadow 0.3s;
+}
+
+/* Dark Mode Title Glow */
+body.dark-mode .app-title{
+    color:#00bfff;
+    text-shadow:
+        0 0 5px #00bfff,
+        0 0 10px #00bfff,
+        0 0 20px #00bfff,
+        0 0 30px #00bfff,
+        0 0 40px #00bfff;
+    animation: glowAnim 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes glowAnim{
+    0% { text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff, 0 0 20px #00bfff, 0 0 30px #00bfff; }
+    50% { text-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff, 0 0 30px #00bfff, 0 0 40px #00bfff; }
+    100% { text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff, 0 0 20px #00bfff, 0 0 30px #00bfff; }
+}
+
+/* Pulse animation for typing */
+@keyframes pulseTitle {
+    0% { text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff, 0 0 20px #00bfff, 0 0 30px #00bfff; }
+    50% { text-shadow: 0 0 15px #00bfff, 0 0 25px #00bfff, 0 0 35px #00bfff, 0 0 45px #00bfff; }
+    100% { text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff, 0 0 20px #00bfff, 0 0 30px #00bfff; }
+}
+
+.pulse {
+    animation: pulseTitle 0.8s ease-in-out;
+}
+
+.app-desc{
+    color:#7f8c8d;
+    font-size:14px;
+    max-width:900px;
+    margin:auto;
+    margin-bottom:20px;
+}
+
+.button-container{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:12px;
+}
+
+.buttons{
+    padding:12px 24px;
+    font-size:14px;
+    font-weight:bold;
+    border:none;
+    border-radius:8px;
+    background:linear-gradient(135deg,#007BFF,#0056d2);
+    color:white;
+    cursor:pointer;
+    transition:all .25s ease;
+    min-width:120px;
+}
+
+.buttons:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 15px rgba(0,0,0,0.15);
+}
+
+.buttons:active{
+    transform:translateY(0px);
+}
+
+.theme-toggle-container{
+    position:absolute;
+    top:20px;
+    right:20px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    font-size:14px;
+    color:#007BFF;
+}
+
+/* ---------------- MAIN AREA ---------------- */
+.main-wrapper{
+    display:flex;
+    flex:1;
+    gap:20px;
+    padding:20px;
+    box-sizing:border-box;
+    min-height:0;
+}
+
+.input-section{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    position:relative;
+}
+
+.inputarea{
+    width:100%;
+    height:350px;
+    box-sizing:border-box;
+    font-size:1.1rem;
+    border-radius:12px;
+    padding:15px;
+    overflow-y:auto;
+    background:white;
+    border:3px solid #dee2e6;
+    outline:none;
+    resize:none;
+    color:#152352;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s, color 0.3s;
+}
+
+.inputarea:focus{
+    border-color:#007BFF;
+    box-shadow:0 0 15px rgba(0,123,255,0.15);
+}
+
+/* ---------------- COUNTERS ---------------- */
+.counter-wrapper{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+}
+
+.counter-box{
+    background:#ffffffcc;
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:14px;
+    color:#152352;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    font-family:monospace;
+    transition: background 0.3s, color 0.3s, transform 0.15s;
+}
+
+.counter-box.animate{
+    animation: highlightAnim 0.6s ease forwards;
+}
+
+@keyframes highlightAnim{
+    0% { background:#007BFF; color:white; transform: scale(1.1); }
+    50% { background:#3399FF; color:white; transform: scale(1.05); }
+    100% { background:#ffffffcc; color:#152352; transform: scale(1); }
+}
+
+/* ---------------- DARK MODE ---------------- */
+body.dark-mode{
+    background:#1e1e1e;
+    color:#f0f0f0;
+}
+
+body.dark-mode .top-header{
+    background:#2c2c2c;
+    color:#f0f0f0;
+}
+
+body.dark-mode .inputarea{
+    background:#2c2c2c;
+    color:#f0f0f0;
+    border-color:#555;
+}
+
+body.dark-mode .counter-box{
+    background:#333;
+    color:#f0f0f0;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .buttons{
+    background: linear-gradient(135deg,#0056d2,#007BFF);
+    color:white;
+}
+
+body.dark-mode .buttons:hover{
+    box-shadow:0 6px 15px rgba(0,123,255,0.3);
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+@media(max-width:1024px){ .inputarea{ height:300px; } }
+@media(max-width:768px){ .main-wrapper{flex-direction:column;} .inputarea{ height:250px; } }
+@media(max-width:480px){ .inputarea{ height:200px; } }
+</style>
+</head>
+
+<body>
+
+<header class="top-header">
+    <div class="logo-banner">
+        <img src="https://i.imgur.com/fAPRRis.png" alt="NS Template Logo">
+    </div>
+    <h1 class="app-title">NS CaseFlip</h1>
+    <p class="app-desc">
+        Convert your text to UPPER CASE, lower case, Sentence case, Capitalized Case, or aLtErNaTiNg. Copy, clear, and clean text easily.
+    </p>
+
+    <div class="theme-toggle-container" id="theme-toggle">
+        🌙 Dark Mode
+    </div>
+
+    <div class="button-container">
+        <button class="buttons" id="upperBtn">UPPER CASE</button>
+        <button class="buttons" id="lowerBtn">lower case</button>
+        <button class="buttons" id="sentenceBtn">Sentence case</button>
+        <button class="buttons" id="capitalizedBtn">Capitalized Case</button>
+        <button class="buttons" id="altBtn">aLtErNaTiNg</button>
+        <button class="buttons" id="copyBtn">COPY</button>
+        <button class="buttons" id="clearBtn">CLEAR</button>
+    </div>
+</header>
+
+<main class="main-wrapper">
+    <section class="input-section">
+        <div class="counter-wrapper">
+            <div class="counter-box" id="char-count">Characters: 0</div>
+            <div class="counter-box" id="word-count">Words: 0</div>
+            <div class="counter-box" id="line-count">Lines: 0</div>
+        </div>
+
+        <textarea id="text-input" class="inputarea" placeholder="Type or paste your text here..."></textarea>
+    </section>
+</main>
+
+<script>
+const textarea = document.getElementById("text-input");
+const charBox = document.getElementById("char-count");
+const wordBox = document.getElementById("word-count");
+const lineBox = document.getElementById("line-count");
+const themeBtn = document.getElementById("theme-toggle");
+const title = document.querySelector(".app-title");
+
+let prevChars = 0, prevWords = 0, prevLines = 0;
+
+function animateBox(box){
+    box.classList.remove("animate"); 
+    void box.offsetWidth; 
+    box.classList.add("animate");
+}
+
+function pulseTitle(){
+    title.classList.remove("pulse");
+    void title.offsetWidth;
+    title.classList.add("pulse");
+}
+
+function updateCounter(){
+    const text = textarea.value;
+    const chars = text.length;
+    const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+    const lines = text.trim() === "" ? 0 : text.split(/\r\n|\r|\n/).length;
+
+    if(chars>prevChars) animateBox(charBox);
+    if(words>prevWords) animateBox(wordBox);
+    if(lines>prevLines) animateBox(lineBox);
+
+    prevChars = chars; prevWords = words; prevLines = lines;
+
+    charBox.innerText = `Characters: ${chars}`;
+    wordBox.innerText = `Words: ${words}`;
+    lineBox.innerText = `Lines: ${lines}`;
+
+    if(document.body.classList.contains("dark-mode") && chars>0){
+        pulseTitle();
+    }
+}
+
+textarea.addEventListener("input", updateCounter);
+
+// Case functions
+function toUpper(){ textarea.value = textarea.value.toUpperCase(); updateCounter(); }
+function toLower(){ textarea.value = textarea.value.toLowerCase(); updateCounter(); }
+function toSentence(){ 
+    let t = textarea.value.toLowerCase(); 
+    textarea.value = t.charAt(0).toUpperCase() + t.slice(1); 
+    updateCounter(); 
+}
+function toCapitalized(){ 
+    textarea.value = textarea.value.replace(/\b\w/g,c=>c.toUpperCase()); 
+    updateCounter(); 
+}
+function toAlternating(){ 
+    let t=textarea.value,r=""; 
+    for(let i=0;i<t.length;i++){ 
+        r += i%2===0 ? t[i].toLowerCase() : t[i].toUpperCase(); 
+    } 
+    textarea.value=r; 
+    updateCounter(); 
+}
+
+// Copy with button status
+function copyText() {
+    if (!textarea.value) return;
+    const copyBtn = document.getElementById("copyBtn");
+    navigator.clipboard.writeText(textarea.value).then(() => {
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = "Copied!";
+        copyBtn.disabled = true;
+        setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.disabled = false;
+        }, 1500);
+    }).catch(() => {
+        copyBtn.innerText = "Failed!";
+        setTimeout(() => copyBtn.innerText = "COPY", 1500);
+    });
+}
+
+// Clear with button status
+function clearText() {
+    textarea.value = "";
+    updateCounter();
+    const clearBtn = document.getElementById("clearBtn");
+    const originalText = clearBtn.innerText;
+    clearBtn.innerText = "Cleared!";
+    clearBtn.disabled = true;
+    setTimeout(() => {
+        clearBtn.innerText = originalText;
+        clearBtn.disabled = false;
+    }, 1500);
+}
+
+document.getElementById("upperBtn").onclick = toUpper;
+document.getElementById("lowerBtn").onclick = toLower;
+document.getElementById("sentenceBtn").onclick = toSentence;
+document.getElementById("capitalizedBtn").onclick = toCapitalized;
+document.getElementById("altBtn").onclick = toAlternating;
+document.getElementById("copyBtn").onclick = copyText;
+document.getElementById("clearBtn").onclick = clearText;
+
+// Dark mode toggle
+themeBtn.onclick = () => {
+    document.body.classList.toggle("dark-mode");
+    themeBtn.innerText = document.body.classList.contains("dark-mode") ? "☀ Light Mode" : "🌙 Dark Mode";
+};
+
+// Init
+updateCounter();
+</script>
+
+</body>
+<footer style="text-align:center; padding:15px; background-color:#2c3e50; color:white; margin-top:30px; border-radius:5px;">
+    &copy; 2026 NS Toolkits. Made with ❤️ by Morvan Hsu & Darel Miranda.
+</footer>
+</html>
