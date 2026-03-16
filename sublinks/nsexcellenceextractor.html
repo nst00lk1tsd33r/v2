@@ -8,7 +8,26 @@
     <link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
 <link rel="stylesheet" href="../styles/excellenceextractorstyle1.css">
 <style>
-nav a { color: white; text-decoration: none; margin-left: 1.5rem; font-weight: 500; position: relative; } nav a::after { content: ''; display: block; height: 2px; background: white; width: 0%; transition: 0.3s; position: absolute; bottom: -4px; left: 0; } nav a:hover::after { width: 100%; }
+/* 3. Force the Nav into the center column */
+nav {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    position: relative;
+    margin: 0; /* Remove left margin since it's centered */
+}
+
+/* 4. Position the Toggle in the last column */
+#modeToggle {
+    grid-column: 3;
+    justify-self: end; /* Push to the far right */
+}
 </style>
 </head>
 
