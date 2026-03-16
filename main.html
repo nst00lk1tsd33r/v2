@@ -1,139 +1,150 @@
 <!DOCTYPE html>
-<!--  _____ _____    _    __  __   ____    _    ____  _____ _     
-|_   _| ____|  / \  |  \/  | |  _ \  / \  |  _ \| ____| |    
-  | | |  _|   / _ \ | |\/| | | | | |/ _ \ | |_) |  _| | |    
-  | | | |___ / ___ \| |  | | | |_| / ___ \|  _ <| |___| |___ 
-  |_| |_____/_/   \_\_|  |_| |____/_/   \_\_| \_\_____|_____| -->
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>NS Toolkit - Home</title>
-
-<link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
-
+<title>NS Toolkits - Dark/Light Mode</title>
 <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Reset */
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial, sans-serif;
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: background 0.3s, color 0.3s;
+        background: #f5f6fa;
+        color: #333;
+    }
+
+    body.dark-mode {
+        background: #111;
+        color: #ccc;
+    }
+
+    /* Header */
+    header {
+        background: linear-gradient(90deg, #4e54c8, #8f94fb);
+        color: white;
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: background 0.3s;
+    }
+
+    body.dark-mode header {
+        background: linear-gradient(90deg, #222, #444);
+    }
+
+    header h1 { font-size: 1.8rem; }
+
+    nav a {
+        color: white;
+        text-decoration: none;
+        margin-left: 1.5rem;
+        font-weight: 500;
+        position: relative;
+    }
+
+    nav a::after {
+        content: '';
+        display: block;
+        height: 2px;
+        background: white;
+        width: 0%;
+        transition: 0.3s;
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+    }
+
+    nav a:hover::after { width: 100%; }
+
+    /* Dark/Light toggle button */
+    #modeToggle {
+        cursor: pointer;
+        background: #fff;
+        color: #333;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark-mode #modeToggle {
+        background: #333;
+        color: #0ff;
+    }
+
+    /* Cards */
+    .card-container { display:flex; justify-content:center; flex-wrap:wrap; gap:40px; padding:20px; }
+    .card {
+        display:flex; flex-direction:column; align-items:center; cursor:pointer;
+        transition:0.25s; text-decoration:none;
+    }
+    .card-icon {
+        width:150px; height:150px; background:white; border:2px solid #bdc3c7;
+        border-radius:15px; display:flex; align-items:center; justify-content:center;
+        margin-bottom:12px; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:0.25s;
+    }
+    body.dark-mode .card-icon { background:#222; border-color:#555; }
+    .card-icon img { width:60%; filter:grayscale(100%); transition:0.3s; }
+    .card-name { font-weight:bold; color:#2c3e50; font-size:16px; text-align:center; }
+    body.dark-mode .card-name { color:#0ff; }
+
+    .card:hover { transform:translateY(-5px); }
+    .card:hover .card-icon { border-color:#3498db; box-shadow:0 10px 20px rgba(52,152,219,0.25); }
+    .card:hover img { filter:grayscale(0%); }
+
+    main {
+    flex: 1;
+    display: flex;           /* make it a flex container */
+    flex-direction: column;  /* stack title and text vertically */
+    justify-content: center; /* center vertically */
+    align-items: center;     /* center horizontally */
+    text-align: center;      /* center text inside elements */
+    padding: 3rem 2rem;
+    transition: background 0.3s, color 0.3s;
 }
+	}
+    body.dark-mode main { background: #111; }
 
-body{
-background:#f5f5f5;
-padding:20px;
-padding-bottom:80px;
-color:#333;
-}
+    /* Footer */
+    footer {
+        background: #222;
+        color: #ccc;
+        text-align: center;
+        padding: 1rem 2rem;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        transition: background 0.3s, color 0.3s;
+    }
+    body.dark-mode footer { background:#111; color:#0ff; }
 
-/* Layout */
+    footer a { color: inherit; text-decoration: none; }
+    footer a:hover { color: #fff; }
 
-.container{
-max-width:900px;
-margin:auto;
-}
-
-.logo-container{
-text-align:center;
-margin-bottom:15px;
-}
-
-.logo-container img{
-max-width:450px;
-height:auto;
-}
-
-h1{
-text-align:center;
-margin-bottom:20px;
-color:#2c3e50;
-}
-
-.credits-subtext{
-text-align:center;
-color:#7f8c8d;
-font-size:14px;
-margin-bottom:25px;
-}
-
-/* Tool Cards */
-
-.card-container{
-display:flex;
-justify-content:center;
-flex-wrap:wrap;
-gap:40px;
-padding:20px;
-}
-
-.card{
-display:flex;
-flex-direction:column;
-align-items:center;
-cursor:pointer;
-transition:0.25s;
-text-decoration:none;
-}
-
-.card-icon{
-width:150px;
-height:150px;
-background:white;
-border:2px solid #bdc3c7;
-border-radius:15px;
-display:flex;
-align-items:center;
-justify-content:center;
-margin-bottom:12px;
-box-shadow:0 4px 6px rgba(0,0,0,0.1);
-transition:0.25s;
-}
-
-.card-icon img{
-width:60%;
-filter:grayscale(100%);
-transition:0.3s;
-}
-
-.card-name{
-font-weight:bold;
-color:#2c3e50;
-font-size:16px;
-text-align:center;
-}
-
-/* Hover */
-
-.card:hover{
-transform:translateY(-5px);
-}
-
-.card:hover .card-icon{
-border-color:#3498db;
-box-shadow:0 10px 20px rgba(52,152,219,0.25);
-}
-
-.card:hover img{
-filter:grayscale(0%);
-}
-
-/* Credits Section */
-
-#credits{
-text-align:left;
-padding:40px;
-background:#111;
-border-radius:12px;
-max-width:800px;
-margin:70px auto;
-color:white;
-box-shadow:0 0 20px rgba(0,255,255,0.2);
-}
+    /* Credits section */
+    #credits {
+        text-align:left; padding:40px; background:#111; border-radius:12px;
+        max-width:800px; margin:70px auto; color:white; box-shadow:0 0 20px rgba(0,255,255,0.2);
+        transition: background 0.3s, color 0.3s;
+    }
+    body.dark-mode #credits { background:#222; color:#0ff; }
 
 /* Neon */
 
@@ -188,22 +199,82 @@ animation:float 5s infinite alternate;
 100%{transform:translateY(0) scale(1);}
 }
 
-/* Footer */
-
-footer{
-position:fixed;
-bottom:0;
-left:0;
-width:100%;
-text-align:center;
-padding:15px;
-background:#2c3e50;
-color:white;
-font-size:14px;
-}
-
 </style>
 </head>
+<body>
+
+<header>
+    <h1>NS Toolkits</h1>
+    <nav>
+    </nav>
+    <button id="modeToggle">🌙 Dark Mode</button>
+</header>
+
+<main>
+    <h2>NS ToolKits</h2>
+    <p class="credits-subtext">
+    A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection.
+    </p>
+
+    <div class="card-container">
+        <a class="card" href="sublinks/nstemplatewriter.html">
+            <div class="card-icon"><img src="resources/templatewritericon.png" alt="Template Writer"></div>
+            <span class="card-name">Template Writer</span>
+        </a>
+        <a class="card" href="sublinks/nstemplatewriterlite.html">
+            <div class="card-icon"><img src="resources/templatewriterliteicon.png" alt="Template Writer Lite"></div>
+            <span class="card-name">Template Writer Lite</span>
+        </a>
+        <a class="card" href="sublinks/nsexcellenceextractor.html">
+            <div class="card-icon"><img src="resources/excellenceextractoricon.png" alt="Excellence Extractor"></div>
+            <span class="card-name">Excellence Extractor</span>
+        </a>
+        <a class="card" href="sublinks/nscaseflip.html">
+            <div class="card-icon"><img src="resources/caseflipicon.png" alt="CaseFlip"></div>
+            <span class="card-name">CaseFlip</span>
+        </a>
+    </div>
+
+    <section id="credits">
+        <h2 class="neon-heading">Credits</h2>
+        <ul style="list-style:none;line-height:2">
+            <li><strong class="neon-text">Morvan Hsu</strong> – Creator of the app</li>
+            <li><strong class="neon-text">Darel Miranda</strong> – Improved functions, buttons, CSS, and enhancements</li>
+            <li><strong class="neon-text">Our Team</strong> – Beta Testing & Error Detection</li>
+        </ul>
+    </section>
+</main>
+
+<footer id="footer">
+    &copy; 2026 NS Tool Kits | Made by Morvan Hsu and Darel Miranda
+</footer>
+
+<script>
+    // Footer appear on scroll down
+    let lastScroll = 0;
+    const footer = document.getElementById('footer');
+
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        if (currentScroll > lastScroll) {
+            footer.style.bottom = '0';
+        } else {
+            footer.style.bottom = '-100px';
+        }
+        lastScroll = currentScroll <= 0 ? 0 : currentScroll;
+    });
+
+    // Dark/Light Mode Toggle
+    const modeBtn = document.getElementById('modeToggle');
+    modeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        if(document.body.classList.contains('dark-mode')){
+            modeBtn.textContent = '☀️ Light Mode';
+        } else {
+            modeBtn.textContent = '🌙 Dark Mode';
+        }
+    });
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     if(sessionStorage.getItem("ns_access") !== "granted") {
@@ -212,76 +283,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 </script>
-<body>
-<div class="container">
-
-<div class="logo-container">
-<img src="https://i.imgur.com/fAPRRis.png" alt="NS Template Logo">
-</div>
-
-<h1>NS Toolkits</h1>
-
-<p class="credits-subtext">
-A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection.
-</p>
-
-<div class="card-container">
-
-<a class="card" href="sublinks/nstemplatewriter.html">
-<div class="card-icon">
-<img src="resources/templatewritericon.png" alt="Template Writer">
-</div>
-<span class="card-name">Template Writer</span>
-</a>
-
-<a class="card" href="sublinks/nstemplatewriterlite.html">
-<div class="card-icon">
-<img src="resources/templatewriterliteicon.png" alt="Template Writer Lite">
-</div>
-<span class="card-name">Template Writer Lite</span>
-</a>
-
-<a class="card" href="sublinks/nsexcellenceextractor.html">
-<div class="card-icon">
-<img src="resources/excellenceextractoricon.png" alt="Excellence Extractor">
-</div>
-<span class="card-name">Excellence Extractor</span>
-</a>
-
-  <a class="card" href="sublinks/nscaseflip.html">
-<div class="card-icon">
-<img src="resources/caseflipicon.png" alt="CaseFlip">
-</div>
-<span class="card-name">CaseFlip</span>
-</a>
-
-</div>
-
-<section id="credits">
-
-<h2 class="neon-heading">Credits</h2>
-
-<ul style="list-style:none;line-height:2">
-
-<li><strong class="neon-text">Morvan Hsu</strong> – Creator of the app</li>
-<li><strong class="neon-text">Darel Miranda</strong> – Improved functions, buttons, CSS, and enhancements</li>
-<li><strong class="neon-text">Our Team</strong> – Beta Testing & Error Detection</li>
-
-</ul>
-
-</section>
-
-<span class="light" style="width:10px;height:10px;background:#0ff;top:10%;left:20%;"></span>
-<span class="light" style="width:12px;height:12px;background:#f0f;top:50%;left:80%;"></span>
-<span class="light" style="width:8px;height:8px;background:#ff0;top:70%;left:40%;"></span>
-
-</div>
-
-<footer>
-© 2026 NS Toolkit. Made with ❤️ by Morvan Hsu & Darel Miranda. Feel free to message us on Slack for feedback or suggestions!
-</footer>
-</body>
-  <script>
+ <script>
 // =========================
 // Session Check for Sublinks
 // =========================
@@ -357,4 +359,5 @@ document.addEventListener("keydown", function(e) {
 // Optional: Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
+</body>
 </html>
