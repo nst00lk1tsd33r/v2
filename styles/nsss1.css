@@ -190,3 +190,23 @@ body.dark-mode h4,
 body.dark-mode strong {
     color: #007BFF; /* Keeps headers readable or highlighted */
 }
+/* 3. Force the Nav into the center column */
+nav {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    position: relative;
+    margin: 0; /* Remove left margin since it's centered */
+}
+
+/* 4. Position the Toggle in the last column */
+#modeToggle {
+    grid-column: 3;
+    justify-self: end; /* Push to the far right */
+}
