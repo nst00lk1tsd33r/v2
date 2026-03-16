@@ -276,14 +276,19 @@ textarea.addEventListener("input", updateCounter);
 // Case functions
 function toUpper(){ textarea.value = textarea.value.toUpperCase(); updateCounter(); }
 function toLower(){ textarea.value = textarea.value.toLowerCase(); updateCounter(); }
-function toSentence(){ 
-    let t = textarea.value.toLowerCase(); 
-    textarea.value = t.charAt(0).toUpperCase() + t.slice(1); 
-    updateCounter(); 
+function toSentence() {
+    let t = textarea.value.toLowerCase();
+    // Capitalizes the first letter of the string and any letter following a period, exclamation, or question mark
+    textarea.value = t.replace(/(^\s*\w|[.!?]\s*\w)/g, function(c) {
+        return c.toUpperCase();
+    });
+    updateCounter();
 }
-function toCapitalized(){ 
-    textarea.value = textarea.value.replace(/\b\w/g,c=>c.toUpperCase()); 
-    updateCounter(); 
+function toCapitalized() {
+    textarea.value = textarea.value
+        .toLowerCase() // First, make everything lowercase
+        .replace(/(^|\s)\S/g, l => l.toUpperCase()); // Capitalize every non-whitespace character that follows a space or starts the string
+    updateCounter();
 }
 function toAlternating(){ 
     let t=textarea.value,r=""; 
