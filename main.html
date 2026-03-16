@@ -173,6 +173,26 @@ text-shadow:
 0 0 20px #0ff;
 animation:neonGlowText 1.5s infinite alternate;
 }
+	.credits-subtext {
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin-bottom: 2rem;
+    color: #555;
+}
+
+body.dark-mode .credits-subtext {
+    color: #bbb;
+}
+
+/* Style the technical keywords */
+.credits-subtext strong {
+    color: #378DF0;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+body.dark-mode .credits-subtext strong {
+    color: #0ff;
+}
 
 @keyframes neonGlow{
 0%{text-shadow:0 0 5px #0ff,0 0 10px #0ff,0 0 20px #0ff,0 0 40px #0ff;}
@@ -236,14 +256,26 @@ animation:float 5s infinite alternate;
         </a>
     </div>
 
-    <section id="credits">
-        <h2 class="neon-heading">Credits</h2>
-        <ul style="list-style:none;line-height:2">
-            <li><strong class="neon-text">Morvan Hsu & Darel Miranda</strong></li>
-            <li><strong class="neon-text">Our Team</strong></li>
-        </ul>
-    </section>
-</main>
+<section id="credits">
+    <h2 class="neon-heading">The Craftsmen</h2>
+    <ul class="credits-list">
+        <li class="credits-item">
+            <strong class="neon-text">Morvan Hsu</strong>
+        </li>
+        <li class="credits-item">
+            <strong class="neon-text">Darel Miranda</strong>
+        </li>
+        <li class="credits-item">
+            <strong class="neon-text">Our Team</strong>
+        </li>
+    </ul>
+</section>
+
+<span class="light" style="width:10px;height:10px;background:#0ff;top:10%;left:20%;"></span>
+<span class="light" style="width:12px;height:12px;background:#f0f;top:50%;left:80%;"></span>
+<span class="light" style="width:8px;height:8px;background:#ff0;top:70%;left:40%;"></span>
+
+</div>
 
 <footer id="footer">
     &copy; 2026 NS Tool Kits | Made by Morvan Hsu and Darel Miranda
