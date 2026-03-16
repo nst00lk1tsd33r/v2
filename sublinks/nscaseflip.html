@@ -175,8 +175,26 @@
         100% { background:#fff; color:#555; }
     }
     .counter-box.animate { animation: highlightAnim 0.6s ease; }
-nav a { color: white; text-decoration: none; margin-left: 1.5rem; font-weight: 500; position: relative; } nav a::after { content: ''; display: block; height: 2px; background: white; width: 0%; transition: 0.3s; position: absolute; bottom: -4px; left: 0; } nav a:hover::after { width: 100%; }
+/* 3. Force the Nav into the center column */
+nav {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+}
 
+nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    position: relative;
+    margin: 0; /* Remove left margin since it's centered */
+}
+
+/* 4. Position the Toggle in the last column */
+#modeToggle {
+    grid-column: 3;
+    justify-self: end; /* Push to the far right */
+}
 </style>
 </head>
 <body>
