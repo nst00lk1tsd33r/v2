@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NS Template Writer Lite Version</title>
+	
+    <style>
+ /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: background 0.3s, color 0.3s;
+        background: #f5f6fa;
+        color: #333;
+    }
+
+    body.dark-mode {
+        background: #111;
+        color: #ccc;
+    }
+
+    /* Header */
+
+    /* Header */
+    header {
+    background: linear-gradient(90deg, #4e54c8, #8f94fb);
+    color: white;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: grid; /* Use grid for more precise positioning */
+    grid-template-columns: 1fr auto 1fr; /* Creates three columns: left, center, right */
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+
+    body.dark-mode header {
+        background: linear-gradient(90deg, #222, #444);
+    }
+
+    header h1 { font-size: 1.8rem; }
+
+    /* Dark/Light toggle button */
+    #modeToggle {
+        cursor: pointer;
+        background: #fff;
+        color: #333;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark-mode #modeToggle {
+        background: #333;
+        color: #0ff;
+    }
+ 
+
+    /* Footer */
+    footer {
+        background: #222;
+        color: #ccc;
+        text-align: center;
+        padding: 1rem;
+        width: 100%;
+    }
+
+    @keyframes highlightAnim{
+        0% { background:#007BFF; color:white; }
+        100% { background:#fff; color:#555; }
+    }
+    .counter-box.animate { animation: highlightAnim 0.6s ease; }
+/* 3. Force the Nav into the center column */
+nav {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    position: relative;
+    margin: 0; /* Remove left margin since it's centered */
+}
+
+/* 4. Position the Toggle in the last column */
+#modeToggle {
+    grid-column: 3;
+    justify-self: end; /* Push to the far right */
+}
+
+        main {
+            max-width: 1100px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        /* --- UI Elements from Image --- */
+        .step-title {
+            color: #e03e2d; /* Red from image */
+            font-size: 14px;
+            font-weight: bold;
+            margin: 25px 0 10px 0;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-item input { margin-right: 6px; }
+
+        .points-label {
+            font-weight: 800;
+            font-size: 13px;
+            margin: 20px 0 10px 0;
+            display: block;
+        }
+
+        #textbox {
+            width: 350px;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            background-color: #3498db; /* Blue from image */
+        }
+
+        .btn:hover { filter: brightness(1.1); }
+
+        #builder {
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            min-height: 100px;
+            background-color: var(--input-bg);
+            border-radius: 4px;
+        }
+
+        .app-title { text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #7f8c8d; font-size: 13px; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>NS Toolkits</h1>
+	<nav>
+<a href="https://nstoolkits.site/main.html">Home</a>
+    </nav>
+    <button id="modeToggle">🌙 Dark Mode</button>
+</header>
+
+<main>
+    <h2 class="app-title">NS Template Writer Lite Version</h2>
+    <p class="subtitle">Your search query cleaner. It does everything for you.</p>
+
+    <div class="step-title">Step 1 - Please Select (ex. Match or Possible + Standard/Public/Business)</div>
+    <div class="row">
+        <label class="checkbox-item"><input type="checkbox" id="match"> Match</label>
+        <label class="checkbox-item"><input type="checkbox" id="possible"> Possible</label>
+    </div>
+    <div class="row" style="margin-top: 10px;">
+        <label class="checkbox-item"><input type="checkbox" id="standard"> Standard</label>
+        <label class="checkbox-item"><input type="checkbox" id="pub"> Public</label>
+        <label class="checkbox-item"><input type="checkbox" id="bs"> Business</label>
+        <label class="checkbox-item"><input type="checkbox" id="gfm"> GFM</label>
+        <label class="checkbox-item"><input type="checkbox" id="mgs"> Mugshot</label>
+        <label class="checkbox-item"><input type="checkbox" id="psg"> Personal Page</label>
+    </div>
+
+    <div class="step-title">Step 2 - socmed URL</div>
+    <div class="row">
+        <label style="font-size: 14px;">Link: </label>
+        <input type="text" id="textbox" placeholder="Paste link here...">
+    </div>
+
+    <div class="step-title">Step 3 - Identifiers</div>
+    
+    <span class="points-label">1 POINT</span>
+<div class="row">
+        <label for="flname"><input type="checkbox" id="flname" name="featname" value="first and last name">First And Last Name</label>
+        <label for="alias"><input type="checkbox" id="alias" name="featname" value="alias">Alias</label>
+        <label for="fnameinitial"><input type="checkbox" id="fnameinitial" name="featname" value="first name">First Name</label>
+        <label for="fnameinitial2"><input type="checkbox" id="fnameinitial2" name="featname" value="last name initial,">Last Name Initial</label>
+        <label for="business"><input type="checkbox" id="business" name="featname" value="business name">Business Name</label>
+        <label for="dob1"><input type="checkbox" id="dob1" name="featDob" value="<span style='color: rgb(224, 62, 45);'>date of birth</span>">DOB</label>
+        <label for="dob2"><input type="checkbox" id="dob2" name="featDob" value="date of birth as seen on this <span style='color: rgb(224, 62, 45);'>post</span>">DOB as seen</label>
+        <label for="age1"><input type="checkbox" id="age1" name="featAge" value="age">Age</label>
+        <label for="location"><input type="checkbox" id="location" name="featLoc" value="location">Location</label>
+        <label for="school"><input type="checkbox" id="school" name="featSch" value="school attended (<span style='color: rgb(224, 62, 45);'>School</span>)">School Attended</label>
+        <label for="phone"><input type="checkbox" id="phone" name="featSch" value="phone number (<span style='color: rgb(224, 62, 45);'>+1-000-000-000</span>)">Phone Number</label>
+        <label for="email"><input type="checkbox" id="email" name="featSch" value="email address (<span style='color: rgb(224, 62, 45);'>Email</span>)">Email</label>
+        <label for="naturework"><input type="checkbox" id="naturework" name="featSch" value="nature of work (<span style='color: rgb(224, 62, 45);'>Name</span>)">Nature of Work</label>
+        <label for="employment"><input type="checkbox" id="employment" name="featSch" value="employment (<span style='color: rgb(224, 62, 45);'>Name</span>) as seen on the identified <span style='color: rgb(224, 62, 45);'>socmed</span> account">Employment</label>
+        <label for="relative"><input type="checkbox" id="relative" name="featSch" value="relative (<span style='color: rgb(224, 62, 45);'>Name</span>) as seen on <span style='color: rgb(224, 62, 45);'>PSE</span>">Relative</label>
+    </div>
+
+    <span class="points-label">2 POINTS</span>
+    <div class="row">
+        <label for="username"><input type="checkbox" id="username" name="featname" value="same username (<span style='color: rgb(224, 62, 45);'>username</span>) as seen on the identified <span style='color: rgb(224, 62, 45);'>socmed</span> account">Username</label>
+        <label for="linked"><input type="checkbox" id="linked" name="featname" value="linked to the identified <span style='color: rgb(224, 62, 45);'>socmed</span> account">Linked</label>
+        <label for="facebook"><input type="checkbox" id="facebook" name="featname" value="common friend (<span style='color: rgb(224, 62, 45);'>Name</span>) as seen on the <span style='color: rgb(224, 62, 45);'>#</span> identified <span style='color: rgb(224, 62, 45);'>Facebook</span> account">Facebook</label>
+        <label for="instagram"><input type="checkbox" id="instagram" name="featname" value="common follower/following (<span style='color: rgb(224, 62, 45);'>Name</span>) as seen on the identified <span style='color: rgb(224, 62, 45);'>Instagram</span> account">Instagram</label>
+        <label for="samephoto"><input type="checkbox" id="samephoto" name="featDob" value="same <span style='color: rgb(224, 62, 45);'>photo</span> as seen on the identified <span style='color: rgb(224, 62, 45);'>socmed</span> account">Same Photo</label>
+        <label for="visualmatch"><input type="checkbox" id="visualmatch" name="featAge" value="visual match">Visual Match</label>
+        <label for="visualmatch1"><input type="checkbox" id="visualmatch1" name="featAge" value="visual match as seen on the identified <span style='color: rgb(224, 62, 45);'>socmed</span> account">Visual Match Network</label>
+        <label for="visualmatch2"><input type="checkbox" id="visualmatch2" name="featAge" value="same location as seen on this <span style='color: rgb(224, 62, 45);'>photo</span> from <span style='color: rgb(224, 62, 45);'>Google Maps</span>">Same Location</label>
+        <label for="visualmatch3"><input type="checkbox" id="visualmatch3" name="featAge" value="connected to a <span style='color: rgb(224, 62, 45);'>Facebook</span> <span style='color: rgb(224, 62, 45);'>friend</span> (<span style='color: rgb(224, 62, 45);'>Name</span>)">Connected to a FB Friend</label>
+    </div>
+
+    <div class="step-title">Step 4 - Copy the Template</div>
+    <div class="button-group">
+        <button class="btn" onclick="generateText()">Generate</button>
+        <button class="btn" onclick="copyTemplate()">Copy Template</button>
+        <button class="btn" onclick="clearAll()">Clear</button>
+        <span id="feedback" style="margin-left:10px; font-size:12px; font-weight:bold;"></span>
+    </div>
+
+    <div id="builder">
+        <p style="color: #888;">Please input data.</p>
+        <p style="color: #888;">Please input data.</p>
+    </div>
+</main>
+
+<footer id="footer">
+    &copy; 2026 NS Tool Kits | Made by Morvan Hsu and Darel Miranda
+</footer>
+
+<script>
+    document.getElementById('generateBtn').addEventListener('click', generateText);
+
+function generateText() {
+    // ── Read account status (Checkboxes) ──────────────────────────────────────────
+    const match    = document.getElementById('match').checked;
+    const possible = document.getElementById('possible').checked;
+    const standard = document.getElementById('standard').checked;
+    const isPublic = document.getElementById('pub').checked;
+    const business = document.getElementById('bs').checked;
+    const gofund   = document.getElementById('gfm').checked;
+    const mugs     = document.getElementById('mgs').checked;
+    const person   = document.getElementById('psg').checked;
+    const link     = document.getElementById('textbox').value.trim();
+
+    // ── Read all checked feature checkboxes ───────────────────────────────────────
+    const features = [];
+    const groupNames = [
+        'featname', 'featAge', 'featLoc', 'featDob', 'featRel',
+        'featSch', 'featJob', 'featMail', 'featLoc1', 'featRel1',
+        'featVis', 'featPhoto', 'featLinko'
+    ];
+
+    groupNames.forEach(name => {
+        const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+        checkboxes.forEach(cb => {
+            if (cb.value && cb.value.trim() !== "") {
+                features.push(cb.value.trim());
+            }
+        });
+    });
+
+    let accountType = '';
+let prefix = 'Identified Account';
+
+if (business) {
+    accountType = 'Business Page';
+    prefix = 'Identified Business Page';
+} else if (isPublic) {
+    accountType = 'on (a) public socmed post/s/photo/s/video/s. No personal match found.';
+    prefix = 'Identified on (a) public post/s/photo/s/video/s. No personal match found.';
+} else if (gofund) {
+    accountType = 'GoFundMe Page';
+    prefix = 'Identified GoFundMe Page';
+} else if (mugs) {
+    accountType = 'Mugshot';
+    prefix = 'Identified Mugshot';
+} else if (person) {
+    accountType = 'Personal Page';
+    prefix = 'Identified Personal Page';
+} else if (standard) {
+    accountType = 'Account';
+    prefix = 'Identified Account';
+}
+
+// ── Handle "Possible" logic ──────────────────────────────────────────────────
+// Possible is only allowed for: standard, person, gofund, mugs
+// (excluded: business, isPublic)
+const possibleCategories = ['Account', 'Personal Page', 'GoFundMe Page', 'Mugshot'];
+const canBePossible = possibleCategories.includes(accountType);
+
+const isPossible = possible && canBePossible && !business && !isPublic;
+
+// Override prefix when it's a "possible" match
+if (isPossible) {
+    if (match) {
+        prefix = `(Please select Match or Possible only)`;
+    } else {
+        prefix = `Possible ${accountType}`;
+    }
+} else if (match && accountType) {
+    prefix = `Identified ${accountType}`;
+}
+
+// Fallback when nothing matched
+if (!accountType) {
+    prefix = '(no account type selected)';
+}
+
+// ── Build features string (Grammar Logic) ─────────────────────────────────────
+let featuresStr = 'none';
+if (features.length === 1) {
+    featuresStr = features[0];
+} else if (features.length === 2) {
+    featuresStr = features.join(' and ');
+} else if (features.length > 2) {
+    const last = features.pop();
+    featuresStr = features.join(', ') + ', and ' + last;
+}
+
+// ── Build final result ────────────────────────────────────────────────────────
+let result = '';
+
+if (isPublic) {
+    // Special clean format for public pages — no <strong>, no colon
+    result += `<p>${prefix} ${link || '[link missing]'}</p>\n`;
+} else {
+    // Normal format with bold prefix + colon
+    result += `<p><strong>${prefix}:</strong> ${link || '[link missing]'}</p>\n`;
+}
+
+result += '<p> </p>\n';
+
+if (features.length > 0 || match || possible) {
+    let matchPhrase = '';
+    if (match) {
+        matchPhrase = 'Match';
+    } else if (isPossible) {
+        matchPhrase = 'Possible match';
+    }
+
+    if (matchPhrase) {
+        result += `<p>${matchPhrase} found by ${featuresStr}.</p>\n`;
+    }
+}
+
+    document.getElementById('builder').innerHTML = result;
+}
+
+    // ── Clear button ──────────────────────────────────────────────────────────────────
+    document.getElementById("clearBtn").onclick = () => {
+        // Reset feature checkboxes
+        document.querySelectorAll('input[type="checkbox"][name^="feat"]').forEach(el => {
+            el.checked = false;
+        });
+
+        // Reset account type checkboxes (match, possible, standard, pub, bs)
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+            if (!el.name.startsWith('feat')) {
+                el.checked = false;
+            }
+        });
+
+        // Reset link input
+        document.getElementById("textbox").value = "";
+
+        // Reset output
+        document.getElementById("builder").innerHTML = '<p>Please input data.</p><p> </p><p>Please input data.</p>';
+    };
+
+    const copyBtn = document.getElementById('copyBuilderBtn');
+const feedback = document.getElementById('copyFeedback');
+
+copyBtn.addEventListener('click', async () => {
+    const builder = document.getElementById('builder');
+
+    if (builder.innerHTML.trim() === '' || builder.textContent.trim() === 'Please input data.') {
+        feedback.textContent = 'Nothing to copy';
+        setTimeout(() => feedback.textContent = '', 1600);
+        return;
+    }
+
+    // ─── Prepare rich content ──────────────────────────────────────
+    const html = builder.innerHTML
+        // Optional: fix common inline spacing issues
+        .replace(/<p>\s*<\/p>/g, '<p><br></p>');
+
+    const plain = builder.innerText
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    try {
+        // Modern rich clipboard API
+        const blobHtml = new Blob([html], { type: 'text/html' });
+        const blobPlain = new Blob([plain], { type: 'text/plain' });
+
+        const data = [
+            new ClipboardItem({
+                'text/html': blobHtml,
+                'text/plain': blobPlain
+            })
+        ];
+
+        await navigator.clipboard.write(data);
+
+        feedback.textContent = 'Copied (with formatting)';
+        feedback.style.color = '#2e7d32';
+        setTimeout(() => {
+            feedback.textContent = '';
+            feedback.style.color = '#555';
+        }, 2200);
+
+    } catch (err) {
+        // Fallback 1: try plain text only
+        try {
+            await navigator.clipboard.writeText(plain);
+            feedback.textContent = 'Copied (plain text only)';
+            setTimeout(() => feedback.textContent = '', 2200);
+        } catch (fallbackErr) {
+            feedback.textContent = 'Copy failed';
+            feedback.style.color = '#c62828';
+            console.error('Clipboard write failed:', err, fallbackErr);
+            setTimeout(() => {
+                feedback.textContent = '';
+                feedback.style.color = '#555';
+            }, 2500);
+        }
+    }
+});
+
+addEventListener('scroll', () => document.querySelector('.scroll-to-top').classList.toggle('show', scrollY > 200));
+</script>
+<script>
+    // Footer appear on scroll down
+    let lastScroll = 0;
+    const footer = document.getElementById('footer');
+
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        if (currentScroll > lastScroll) {
+            footer.style.bottom = '0';
+        } else {
+            footer.style.bottom = '-100px';
+        }
+        lastScroll = currentScroll <= 0 ? 0 : currentScroll;
+    });
+
+    // Dark/Light Mode Toggle
+    const modeBtn = document.getElementById('modeToggle');
+    modeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        if(document.body.classList.contains('dark-mode')){
+            modeBtn.textContent = '☀️ Light Mode';
+        } else {
+            modeBtn.textContent = '🌙 Dark Mode';
+        }
+    });
+</script>
+<script>
+// =========================
+// Session Check for Sublinks
+// =========================
+const IDLE_LIMIT = 60 * 60 * 1000;  // 1 hour
+const SESSION_LIMIT = 8 * 60 * 60 * 1000; // 8 hours
+
+// Function to check session
+function checkSession() {
+    const access = sessionStorage.getItem("ns_access");
+    const loginTimeRaw = sessionStorage.getItem("ns_loginTime");
+    const lastActivityRaw = sessionStorage.getItem("ns_lastActivity");
+    const now = Date.now();
+
+    // Not logged in
+    if (!access) {
+        alert("Please enter the access code first.");
+        window.location.href = "https://nstoolkits.site/index.html";
+        return;
+    }
+
+    const loginTime = loginTimeRaw ? parseInt(loginTimeRaw) : now;
+    const lastActivity = lastActivityRaw ? parseInt(lastActivityRaw) : now;
+
+    // Max session check (8 hours)
+    if (now - loginTime > SESSION_LIMIT) {
+        sessionStorage.clear();
+        alert("Your session has expired after 8 hours.");
+        window.location.href = "https://nstoolkits.site/index.html";
+        return;
+    }
+
+    // Idle check (1 hour)
+    if (now - lastActivity > IDLE_LIMIT) {
+        sessionStorage.clear();
+        alert("You have been logged out due to 1 hour of inactivity.");
+        window.location.href = "https://nstoolkits.site/index.html";
+        return;
+    }
+
+    // Update last activity timestamp on this page
+    sessionStorage.setItem("ns_lastActivity", now);
+}
+
+// Run immediately
+checkSession();
+
+// Check periodically every 30 seconds
+setInterval(checkSession, 30 * 1000);
+
+// Also update lastActivity on any interaction
+["mousemove","keydown","click","scroll","touchstart"].forEach(evt => {
+    document.addEventListener(evt, () => {
+        if (sessionStorage.getItem("ns_access") === "granted") {
+            sessionStorage.setItem("ns_lastActivity", Date.now());
+        }
+    });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    if(sessionStorage.getItem("ns_access") !== "granted") {
+        alert("Access denied! Please enter the access code first.");
+        window.location.href = "https://nstoolkits.site/index.html";
+    }
+});
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+</body>
+</html>
