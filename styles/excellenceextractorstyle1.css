@@ -15,17 +15,17 @@
     body.dark-mode { background: #111; color: #ccc; }
 
     header {
-        background: linear-gradient(90deg, #4e54c8, #8f94fb);
-        color: white;
-        padding: 1rem 2rem;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
+    background: linear-gradient(90deg, #4e54c8, #8f94fb);
+    color: white;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: grid; /* Use grid for more precise positioning */
+    grid-template-columns: 1fr auto 1fr; /* Creates three columns: left, center, right */
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 
     body.dark-mode header { background: linear-gradient(90deg, #222, #444); }
 
