@@ -212,8 +212,8 @@ details > .features-container {
     margin-top: 10px !important; 
     
     /* Ensures everything stays aligned to the left as previously requested */
-    gap: 20px !important;
-    display: none;
+	gap: 10px !important;
+    display: none; 
     justify-content: flex-start !important;
     align-items: flex-start !important;
     width: 100%;
