@@ -1,236 +1,142 @@
-<!DOCTYPE html>
+[<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NS Toolkits v3</title>
- <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+<title>NS Toolkits - Home</title>
+<link rel="icon" type="image/jpg" href="https://i.imgur.com/7xDufQI.jpeg">
 <style>
-:root{
-    --bg:#0b0b0b;
-    --card:rgba(255,255,255,0.05);
-    --accent:#f6c90e;
-    --text:#fff;
-}
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* BACKGROUND */
-body{
-    margin:0;
-    font-family:'Segoe UI',sans-serif;
-    background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
-    color:var(--text);
-}
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: background 0.3s, color 0.3s;
+        background: #f5f6fa;
+        color: #333;
+    }
 
-/* PARTICLES */
-canvas{
-    position:fixed;
-    top:0;
-    left:0;
-    z-index:-1;
-}
+    body.dark-mode {
+        background: #111;
+        color: #ccc;
+    }
 
-/* NAVBAR */
-.navbar{
-    width:100%;
-    background:rgba(20,20,20,0.6);
-    backdrop-filter: blur(12px);
-    border-bottom:1px solid rgba(246,201,14,0.15);
-}
+    /* Header */
+    header {
+        background: linear-gradient(90deg, #4e54c8, #8f94fb);
+        color: white;
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: background 0.3s;
+    }
 
-.nav-inner{
-    max-width:1100px;
-    margin:0 auto;
-    padding:14px 20px;
+    body.dark-mode header {
+        background: linear-gradient(90deg, #222, #444);
+    }
 
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-}
+    header h1 { font-size: 1.8rem; }
 
-/* LEFT */
-.nav-left{
-    display:flex;
-    align-items:center;
-}
+    nav a {
+        color: white;
+        text-decoration: none;
+        margin-left: 1.5rem;
+        font-weight: 500;
+        position: relative;
+    }
 
-/* CENTER MENU (true center) */
-.nav-menu{
-    display:flex;
-    gap:28px;
-    position:absolute;
-    left:50%;
-    transform:translateX(-50%);
-}
+    nav a::after {
+        content: '';
+        display: block;
+        height: 2px;
+        background: white;
+        width: 0%;
+        transition: 0.3s;
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+    }
 
-/* RIGHT */
-.nav-right{
-    display:flex;
-    align-items:center;
-}
+    nav a:hover::after { width: 100%; }
 
-.nav-left h1{
-    margin:0;
-    font-size:20px;
-    color:var(--accent);
-    letter-spacing:1px;
-}
+    /* Dark/Light toggle button */
+    #modeToggle {
+        cursor: pointer;
+        background: #fff;
+        color: #333;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background 0.3s, color 0.3s;
+    }
 
-/* MENU */
-.nav-menu{
-    justify-self:center;
-    display:flex;
-    gap:28px;
-}
+    body.dark-mode #modeToggle {
+        background: #333;
+        color: #0ff;
+    }
 
-.nav-menu a{
-    color:#e6e6e6;
-    text-decoration:none;
-    font-size:14px;
-    opacity:0.8;
-    transition:0.3s;
-    position:relative;
-}
 
-.nav-menu a:hover{
-    color:var(--accent);
-    opacity:1;
-}
+    /* --- MAIN CONTENT --- */
+    main {
+        flex: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+        width: 100%;
+        padding-bottom: 100px; /* Space for the fixed footer */
+    }
 
-.nav-menu a::after{
-    content:'';
-    position:absolute;
-    left:0;
-    bottom:-5px;
-    width:0%;
-    height:2px;
-    background:var(--accent);
-    transition:0.3s;
-}
+    .hero-section {
+        text-align: left;
+        margin-bottom: 50px;
+    }
 
-.nav-menu a:hover::after{
-    width:100%;
-}
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        color: #5c67f2;
+        margin-bottom: 10px;
+    }
 
-/* NAV BUTTON */
-.nav-right button{
-    background:linear-gradient(135deg,#f6c90e,#d4a800);
-    color:#111;
-    border:none;
-    padding:8px 12px;
-    border-radius:10px;
-    cursor:pointer;
-    box-shadow:0 0 10px rgba(246,201,14,0.4);
-    transition:0.3s;
-}
+    .hero-quote {
+        font-style: italic;
+        color: #7f8c8d;
+        max-width: 600px;
+        font-size: 1.1rem;
+        line-height: 1.5;
+        margin-bottom: 40px;
+    }
 
-.nav-right button:hover{
-    transform:scale(1.05);
-    box-shadow:0 0 16px rgba(246,201,14,0.7);
-}
+    /* Tool Cards */
+    .card-container { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+        gap: 25px; 
+        margin-bottom: 80px;
+    }
 
-/* RESPONSIVE */
-@media(max-width:768px){
-    .nav-menu{ display:none; }
-}
-
-/* CONTAINER */
-.container{
-    max-width:1100px;
-    margin:0 auto;
-    padding:40px 20px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-}
-
-/* HERO */
-.hero-title{
-    font-size:52px;
-    font-weight:700;
-    text-align:center;
-    margin-bottom:10px;
-
-    background:linear-gradient(90deg,#ffffff,#f6c90e);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-	filter: drop-shadow(0 0 10px rgba(246,201,14,0.6));
-
-    /* GLOW EFFECT */
-    text-shadow:
-        0 0 5px rgba(246,201,14,0.6),
-        0 0 10px rgba(246,201,14,0.5),
-        0 0 20px rgba(246,201,14,0.4),
-        0 0 40px rgba(246,201,14,0.3);
-
-    animation: glowPulse 2.5s ease-in-out infinite;
-}
-
-.hero-sub{
-    text-align:center;
-    opacity:0.7;
-    font-style:italic;
-    max-width:600px;
-    line-height:1.6;
-}
-
-/* CAROUSEL */
-.carousel-container{
-    perspective:1800px;
-    margin-top:50px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    width:100%;
-}
-
-.carousel{
-    width:360px;
-    height:220px;
-    position:relative;
-    transform-style:preserve-3d;
-    transition:transform 1s cubic-bezier(.2,.8,.2,1);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-/* CARD */
-.card{
-    position:absolute;
-    width:260px;
-    height:180px;
-    border-radius:20px;
-    background:rgba(255,255,255,0.05);
-    backdrop-filter:blur(14px);
-    border:1px solid rgba(255,255,255,0.08);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    transition:0.4s;
-    box-shadow:0 10px 40px rgba(0,0,0,.6);
-    text-align:center;
-}
-
-/* LINK WRAPPER */
-.card a{
-    text-decoration:none;
-    color:inherit;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    width:100%;
-    height:100%;
-}
-
-/* ICON */
-.icon{
-    width:44px;
-    height:44px;
-    margin-bottom:10px;
-    transition:0.3s;
-    filter: drop-shadow(0 0 8px rgba(246,201,14,0.6));
-}
+    .card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px 20px;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.03);
+    }
 
     .card-icon {
         width: 100px;
@@ -241,528 +147,227 @@ canvas{
         align-items: center;
         justify-content: center;
         margin-bottom: 20px;
-}
-
-/* TEXT */
-.card h3{
-    color:var(--accent);
-    margin:5px 0;
-    font-size:16px;
-}
-
-.card span{
-    font-size:13px;
-    opacity:.7;
-}
-
-/* ACTIVE CARD */
-.card.active{
-    transform:scale(1.25) translateZ(40px) !important;
-    box-shadow:0 0 35px rgba(246,201,14,0.8);
-    border:1px solid rgba(246,201,14,0.4);
-}
-
-/* HOVER */
-.card:hover{
-    transform:translateY(-8px) scale(1.05);
-}
-
-.card:hover .icon{
-    transform:scale(1.2);
-    filter: drop-shadow(0 0 14px rgba(246,201,14,1));
-}
-
-/* CONTROLS */
-.controls{
-    margin-top:30px;
-    display:flex;
-    gap:15px;
-}
-
-button{
-    background:linear-gradient(135deg,#f6c90e,#d4a800);
-    border:none;
-    padding:10px 16px;
-    border-radius:20px;
-    cursor:pointer;
-    color:#111;
-    font-weight:500;
-    box-shadow:0 4px 15px rgba(0,0,0,0.4);
-    transition:0.3s;
-}
-
-button:hover{
-    transform:translateY(-2px);
-    box-shadow:0 6px 20px rgba(246,201,14,0.4);
-}
-
-/* GRID */
-.tool-grid{
-    margin-top:20px;
-    display:flex;
-    gap:20px;
-    flex-wrap:wrap;
-    justify-content:center;
-}
-
-.tool-card{
-    width:200px;
-    background:rgba(255,255,255,0.05);
-    padding:20px;
-    border-radius:12px;
-    text-align:center;
-    transition:0.3s;
-    border:1px solid rgba(255,255,255,0.08);
-}
-
-.tool-card:hover{
-    transform:translateY(-6px);
-    box-shadow:0 12px 30px rgba(0,0,0,0.5);
-    border-color:rgba(246,201,14,0.3);
-}
-
-/* FOOTER */
-footer{
-    margin-top:40px;
-    opacity:.5;
-    text-align:center;
-}
-
-/* MODAL */
-.modal{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,.8);
-    display:none;
-    justify-content:center;
-    align-items:center;
-}
-
-.modal-content{
-    background:#111;
-    padding:30px;
-    border-radius:20px;
-    width:300px;
-    text-align:center;
-}
-@keyframes glowPulse{
-    0%{
-        text-shadow:
-            0 0 5px rgba(246,201,14,0.4),
-            0 0 10px rgba(246,201,14,0.3),
-            0 0 20px rgba(246,201,14,0.2);
     }
-    50%{
-        text-shadow:
-            0 0 10px rgba(246,201,14,0.9),
-            0 0 25px rgba(246,201,14,0.7),
-            0 0 45px rgba(246,201,14,0.5);
+
+    .card-icon img { width: 50px; height: 50px; opacity: 0.7; }
+    .card-name { font-weight: 700; color: #2c3e50; font-size: 1.1rem; }
+
+    .card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
+    body.dark-mode .card { background: #1e1e1e; border-color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    body.dark-mode .card-name { color: #fff; }
+
+    /* Craftsmen Section */
+    .craftsmen-header {
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 0.8rem;
+        color: #95a5a6;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
     }
-    100%{
-        text-shadow:
-            0 0 5px rgba(246,201,14,0.4),
-            0 0 10px rgba(246,201,14,0.3),
-            0 0 20px rgba(246,201,14,0.2);
+
+    .credits-grid {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
     }
-}
+
+    .credit-box {
+        background: white;
+        border: 1px solid #eee;
+        border-radius: 12px;
+        padding: 20px 30px;
+        min-width: 200px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .credit-name { display: block; font-weight: 700; color: #2c3e50; font-size: 1rem; }
+    .credit-role { display: block; font-size: 0.75rem; color: #95a5a6; text-transform: uppercase; margin-top: 5px; }
+
+    body.dark-mode .credit-box { background: #1e1e1e; border-color: #333; }
+    body.dark-mode .credit-name { color: #eee; }
+
+    /* --- FOOTER (FIXED) --- */
+    footer {
+        background: #222;
+        color: #ccc;
+        text-align: center;
+        padding: 1.2rem;
+        position: fixed;
+        bottom: 0; /* Changed to 0 so it's visible by default */
+        left: 0;
+        width: 100%;
+        z-index: 999;
+        transition: transform 0.3s ease;
+    }
+    body.dark-mode footer { background:#000; color:#0ff; }
 </style>
 </head>
-
 <body>
 
-<canvas id="bg"></canvas>
+<header>
+    <h1>NS Toolkits</h1>
+    <button id="modeToggle">🌙 Dark Mode</button>
+</header>
 
-<!-- NAVBAR -->
-<div class="navbar">
-    <div class="nav-inner">
+<main>
+    <section class="hero-section">
+        <h2 class="hero-title">NS ToolKits v2</h2>
+        <p class="hero-quote">
+            "A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection."
+        </p>
+    </section>
 
-        <div class="nav-left">
-            <h1>NS Toolkits</h1>
-        </div>
-
-        <div class="nav-menu">
-            <a href="index.html">Home</a>
-            <a href="tools.html">Tools</a>
-            <a href="about.html">About</a>
-            <a href="team.html">Team</a>
-        </div>
-
-    </div>
-</div>
-
-<div class="container">
-
-    <div class="hero-title">NS ToolKits v3</div>
-
-    <div class="hero-sub">
-        "A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection."
-    </div>
-
-    <!-- CAROUSEL -->
-    <div class="carousel-container">
-        <div class="carousel" id="carousel">
-
-            <div class="card">
-                <a href="template-writer.html">
-                    <img class="icon" src="resources/templatewritericon.png">
-                    <h3>Template Writer</h3>
-                    <span>Generator</span>
-                </a>
-            </div>
-
-            <div class="card">
-                <a href="template-lite.html">
-                    <img class="icon" src="resources/templatewriterliteicon.png">
-                    <h3>Template Lite</h3>
-                    <span>Lite Tool</span>
-                </a>
-            </div>
-
-            <div class="card">
-                <a href="extractor.html">
-                    <img class="icon" src="resources/excellenceextractoricon.png">
-                    <h3>Extractor</h3>
-                    <span>Cleaner</span>
-                </a>
-            </div>
-
-            <div class="card">
-                <a href="caseflip.html">
-                    <img class="icon" src="resources/caseflipicon.png">
-                    <h3>CaseFlip</h3>
-                    <span>Converter</span>
-                </a>
-            </div>
-
-        </div>
+    <div class="card-container">
+        <a class="card" href="sublinks/nstemplatewriter.html">
+            <div class="card-icon"><img src="resources/templatewritericon.png" alt="Icon"></div>
+            <span class="card-name">Template Writer</span>
+        </a>
+        <a class="card" href="sublinks/nstemplatewriterlite.html">
+            <div class="card-icon"><img src="resources/templatewriterliteicon.png" alt="Icon"></div>
+            <span class="card-name">Template Writer Lite</span>
+        </a>
+        <a class="card" href="sublinks/nsexcellenceextractor.html">
+            <div class="card-icon"><img src="resources/excellenceextractoricon.png" alt="Icon"></div>
+            <span class="card-name">Excellence Extractor</span>
+        </a>
+        <a class="card" href="sublinks/nscaseflip.html">
+            <div class="card-icon"><img src="resources/caseflipicon.png" alt="Icon"></div>
+            <span class="card-name">CaseFlip</span>
+        </a>
     </div>
 
-    <div class="controls">
-        <button onclick="rotate(-1)">⬅</button>
-        <button onclick="rotate(1)">➡</button>
-    </div>
-&nbsp;
-    <div class="section-title">THE CRAFTSMEN</div>
-
-    <div class="tool-grid">
-        <div class="tool-card">
-            <h4>Morvan Hsu</h4>
-            <small>Developer</small>
+    <h3 class="craftsmen-header">The Craftsmen</h3>
+    <div class="credits-grid">
+        <div class="credit-box">
+            <span class="credit-name">Morvan Hsu</span>
+            <span class="credit-role">Developer</span>
         </div>
-
-        <div class="tool-card">
-            <h4>Darel Miranda</h4>
-            <small>Developer</small>
+        <div class="credit-box">
+            <span class="credit-name">Darel Miranda</span>
+            <span class="credit-role">Developer</span>
         </div>
-
-        <div class="tool-card">
-            <h4>Our Team</h4>
-            <small>For Beta Testing</small>
+        <div class="credit-box">
+            <span class="credit-name">Our Team</span>
+            <span class="credit-role">For Beta Testing</span>
         </div>
     </div>
+</main>
 
-    <footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
-
-</div>
-
-<div class="modal" id="modal">
-    <div class="modal-content">
-        <h2 id="modalTitle"></h2>
-        <p id="modalDesc"></p>
-        <button onclick="closeModal()">Close</button>
-    </div>
-</div>
+<footer id="footer">
+    &copy; 2026 NS Tool Kits | Made by Morvan Hsu and Darel Miranda
+</footer>
 
 <script>
-const carousel = document.getElementById('carousel');
-const cards = document.querySelectorAll('.card');
+    // Footer appear on scroll down
+    let lastScroll = 0;
+    const footer = document.getElementById('footer');
 
-let current = 0;
-const total = cards.length;
-const theta = 360 / total;
-const radius = 320;
-
-/* =========================
-   UPDATE RENDER
-========================= */
-function update(){
-    cards.forEach((card,i)=>{
-        let angle = theta * (i + current);
-        let normalized = (i + current) % total;
-        if(normalized < 0) normalized += total;
-
-        let isActive = normalized === 0;
-
-        // stronger depth + zoom effect
-        let scale = isActive ? 1.35 : 1;
-
-        card.style.transform = `
-            rotateY(${angle}deg)
-            translateZ(${radius}px)
-            scale(${scale})
-        `;
-
-        card.classList.remove("active");
-
-        if(isActive){
-            card.classList.add("active");
-
-            // glow intensity boost
-            card.style.boxShadow = "0 0 50px rgba(246,201,14,0.9)";
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        if (currentScroll > lastScroll) {
+            footer.style.bottom = '0';
         } else {
-            card.style.boxShadow = "0 10px 40px rgba(0,0,0,.6)";
+            footer.style.bottom = '-100px';
         }
-    });
-}
-
-function rotate(dir){
-    current += dir;
-    update();
-}
-
-update();
-
-/* =========================
-   AUTO ROTATE
-========================= */
-let autoRotate = setInterval(()=>rotate(1),4000);
-
-/* =========================
-   PHYSICS SETTINGS
-========================= */
-let isDragging = false;
-let lastX = 0;
-let velocity = 0;
-let animationFrame;
-
-const friction = 0.88;
-const sensitivity = 0.005;
-const snapStrength = 0.1;
-
-/* =========================
-   SNAP TO CENTER
-========================= */
-function snapToNearest(){
-    let snapped = Math.round(current);
-    let diff = snapped - current;
-
-    function animateSnap(){
-        if(Math.abs(diff) < 0.001){
-            current = snapped;
-            update();
-            autoRotate = setInterval(()=>rotate(1),4000);
-            return;
-        }
-
-        current += diff * snapStrength;
-        diff = snapped - current;
-
-        update();
-        requestAnimationFrame(animateSnap);
-    }
-
-    animateSnap();
-}
-
-/* =========================
-   DRAG START
-========================= */
-carousel.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    lastX = e.clientX;
-    velocity = 0;
-    clearInterval(autoRotate);
-});
-
-/* =========================
-   DRAG MOVE
-========================= */
-window.addEventListener("mousemove", (e) => {
-    if(!isDragging) return;
-
-    let delta = e.clientX - lastX;
-
-    // velocity-based rotation speed
-    velocity = delta;
-
-    // cinematic sensitivity scaling
-    let speedFactor = Math.min(Math.abs(delta) * 0.002, 2);
-
-    current += delta * sensitivity * speedFactor;
-
-    update();
-    lastX = e.clientX;
-});
-
-/* =========================
-   DRAG END + MOMENTUM
-========================= */
-window.addEventListener("mouseup", () => {
-    if(!isDragging) return;
-    isDragging = false;
-
-    function momentum(){
-        if(Math.abs(velocity) < 0.01){
-            snapToNearest();
-            cancelAnimationFrame(animationFrame);
-            return;
-        }
-
-        current += velocity * 0.012;
-        velocity *= friction;
-
-        update();
-        animationFrame = requestAnimationFrame(momentum);
-    }
-
-    momentum();
-});
-
-/* =========================
-   TOUCH SUPPORT
-========================= */
-carousel.addEventListener("touchstart", (e) => {
-    lastX = e.touches[0].clientX;
-    velocity = 0;
-    clearInterval(autoRotate);
-});
-
-carousel.addEventListener("touchmove", (e) => {
-    let x = e.touches[0].clientX;
-    let delta = x - lastX;
-
-    velocity = delta;
-
-    let speedFactor = Math.min(Math.abs(delta) * 0.002, 2);
-
-    current += delta * sensitivity * speedFactor;
-
-    update();
-    lastX = x;
-});
-
-carousel.addEventListener("touchend", () => {
-    function momentum(){
-        if(Math.abs(velocity) < 0.01){
-            snapToNearest();
-            cancelAnimationFrame(animationFrame);
-            return;
-        }
-
-        current += velocity * 0.012;
-        velocity *= friction;
-
-        update();
-        animationFrame = requestAnimationFrame(momentum);
-    }
-
-    momentum();
-});
-
-/* =========================
-   KEYBOARD CONTROL
-========================= */
-document.addEventListener("keydown", function(e){
-    if(e.key === "ArrowLeft"){
-        rotate(-1);
-    }
-    if(e.key === "ArrowRight"){
-        rotate(1);
-    }
-});
-
-/* =========================
-   PARTICLES
-========================= */
-const canvas = document.getElementById("bg");
-const ctx = canvas.getContext("2d");
-
-function resize(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener("resize", resize);
-
-let particles = [];
-
-for(let i=0;i<80;i++){
-    particles.push({
-        x:Math.random()*canvas.width,
-        y:Math.random()*canvas.height,
-        r:Math.random()*2,
-        dx:Math.random()-.5,
-        dy:Math.random()-.5
-    });
-}
-
-function animate(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    particles.forEach(p=>{
-        p.x += p.dx;
-        p.y += p.dy;
-
-        if(p.x<0||p.x>canvas.width) p.dx*=-1;
-        if(p.y<0||p.y>canvas.height) p.dy*=-1;
-
-        ctx.beginPath();
-        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fillStyle="rgba(255,255,255,0.5)";
-        ctx.fill();
+        lastScroll = currentScroll <= 0 ? 0 : currentScroll;
     });
 
-    requestAnimationFrame(animate);
-}
-
-animate();
+    // Dark/Light Mode Toggle
+    const modeBtn = document.getElementById('modeToggle');
+    modeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        if(document.body.classList.contains('dark-mode')){
+            modeBtn.textContent = '☀️ Light Mode';
+        } else {
+            modeBtn.textContent = '🌙 Dark Mode';
+        }
+    });
 </script>
 <script>
-document.addEventListener("keydown", function(e) {
-  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
-  if (
-    e.keyCode === 123 ||
-    (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
-    (e.ctrlKey && e.keyCode === 85)
-  ) {
-    e.preventDefault();
-    return false;
-  }
-
-  // Block Ctrl + A
-  if (e.ctrlKey && (e.key === "a" || e.key === "A")) {
-    e.preventDefault();
-    return false;
-  }
+document.addEventListener("DOMContentLoaded", function() {
+    if(sessionStorage.getItem("ns_access") !== "granted") {
+        alert("Access denied! Please enter the access code first.");
+        window.location.href = "index.html"; // login page
+    }
 });
-
-document.addEventListener("keydown", function(e) {
-  if (e.ctrlKey && e.shiftKey && e.key === "C") {
-    e.preventDefault();
-  }
-});
-
-// Disable right-click
-document.addEventListener("contextmenu", e => e.preventDefault());
-
-// Disable text selection via mouse drag
-document.addEventListener("selectstart", e => e.preventDefault());
-
-// Prevent dragging elements (images/text)
-document.addEventListener("dragstart", e => e.preventDefault());
 </script>
+ <script>
+// =========================
+// Session Check for Sublinks
+// =========================
+const IDLE_LIMIT = 60 * 60 * 1000;  // 1 hour
+const SESSION_LIMIT = 8 * 60 * 60 * 1000; // 8 hours
 
-<style>
-/* Prevent text highlighting via mouse drag */
-body {
-  user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  -moz-user-select: none;
+// Function to check session
+function checkSession() {
+    const access = sessionStorage.getItem("ns_access");
+    const loginTimeRaw = sessionStorage.getItem("ns_loginTime");
+    const lastActivityRaw = sessionStorage.getItem("ns_lastActivity");
+    const now = Date.now();
+
+    // Not logged in
+    if (!access) {
+        alert("Please enter the access code first.");
+        window.location.href="index.html";
+        return;
+    }
+
+    const loginTime = loginTimeRaw ? parseInt(loginTimeRaw) : now;
+    const lastActivity = lastActivityRaw ? parseInt(lastActivityRaw) : now;
+
+    // Max session check (8 hours)
+    if (now - loginTime > SESSION_LIMIT) {
+        sessionStorage.clear();
+        alert("Your session has expired after 8 hours.");
+        window.location.href="index.html";
+        return;
+    }
+
+    // Idle check (1 hour)
+    if (now - lastActivity > IDLE_LIMIT) {
+        sessionStorage.clear();
+        alert("You have been logged out due to 1 hour of inactivity.");
+        window.location.href="index.html";
+        return;
+    }
+
+    // Update last activity timestamp on this page
+    sessionStorage.setItem("ns_lastActivity", now);
 }
-</style>
+
+// Run immediately
+checkSession();
+
+// Check periodically every 30 seconds
+setInterval(checkSession, 30 * 1000);
+
+// Also update lastActivity on any interaction
+["mousemove","keydown","click","scroll","touchstart"].forEach(evt => {
+    document.addEventListener(evt, () => {
+        if (sessionStorage.getItem("ns_access") === "granted") {
+            sessionStorage.setItem("ns_lastActivity", Date.now());
+        }
+    });
+});
+</script>
+  <script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
 </body>
 </html>
