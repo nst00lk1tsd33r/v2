@@ -303,6 +303,87 @@ footer {
     align-items:center;
 }
 
+#loader-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #080808;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s;
+}
+
+/* Modern Gold Spinner */
+.gold-ring {
+    width: 50px;
+    height: 50px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-top: 2px solid #d4af37; /* Gold color */
+    border-radius: 50%;
+    animation: spin 1s infinite cubic-bezier(0.6, 0.2, 0.4, 0.8);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+}
+
+/* Luxury Typography */
+.loader-text {
+    margin-top: 30px;
+    color: #d4af37;
+    font-size: 9px;
+    letter-spacing: 8px;
+    font-weight: 300;
+    opacity: 0.7;
+}
+
+/* Progress Bar (Optional Visual Aid) */
+.progress-container {
+    margin-top: 20px;
+    width: 150px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: #d4af37;
+    animation: grow 3.5s forwards linear; /* Matches your 3.5s load time */
+}
+
+/* Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes grow {
+    to { width: 100%; }
+}
+
+/* Content Reveal State */
+#main-content {
+    opacity: 0;
+    transform: scale(0.98);
+    transition: all 1.5s ease;
+    color: #fff;
+    text-align: center;
+    padding-top: 20vh;
+}
+
+/* Applied via JS after timeout */
+.loaded #loader-wrapper {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loaded #main-content {
+    opacity: 1;
+    transform: scale(1);
+}
+
 .modal-content{
     background:#111;
     padding:30px;
@@ -332,7 +413,15 @@ footer {
 }
 </style>
 </head>
+<body class="loading">
 
+    <div id="loader-wrapper">
+        <div class="gold-ring"></div>
+        <div class="loader-text">ESTABLISHING CONNECTION</div>
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+    </div>
 <body>
 
 <canvas id="bg"></canvas>
@@ -698,6 +787,25 @@ document.addEventListener("selectstart", e => e.preventDefault());
 
 // Prevent dragging elements (images/text)
 document.addEventListener("dragstart", e => e.preventDefault());
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Set your load time here (3500ms = 3.5 seconds)
+    const LOADING_DURATION = 3500;
+
+    setTimeout(() => {
+        // We add the 'loaded' class to the body
+        // This triggers the CSS transitions we wrote above
+        document.body.classList.add("loaded");
+
+        // Optional: Remove the loader from the DOM entirely 
+        // after it fades out for better performance
+        setTimeout(() => {
+            const loader = document.getElementById("loader-wrapper");
+            loader.style.display = "none";
+        }, 1000); // Wait for the 1s CSS transition to finish
+        
+    }, LOADING_DURATION);
+});
 </script>
 
 <style>
