@@ -1,0 +1,552 @@
+
+/* =========================
+   GLOBAL SETTINGS
+========================= */
+:root {
+    --bg: #0b0b0b;
+    --card: rgba(255,255,255,0.05);
+    --accent: #f6c90e;
+    --text: #fff;
+}
+/* Fix padding math pushing elements off-center */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+    color: var(--text);
+    
+    /* Prevent text highlighting */
+    user-select: none;
+    -webkit-user-select: none;
+    
+    /* THE SCROLL FIX: Lock height and prevent full-page scrolling */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;      /* Changed from min-height */
+    overflow: hidden;   /* Changed from overflow-x */
+}
+/* =========================
+   NAVBAR
+========================= */
+.navbar {
+    width: 100%;
+    background: rgba(20,20,20,0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(246,201,14,0.15);
+    z-index: 100; /* Keeps navbar above the slider */
+}
+.nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.nav-left { display: flex; align-items: center; }
+.nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+.nav-menu {
+    display: flex;
+    gap: 28px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.nav-menu a {
+    color: #e6e6e6; text-decoration: none; font-size: 14px;
+    opacity: 0.8; transition: 0.3s; position: relative;
+}
+.nav-menu a:hover { color: var(--accent); opacity: 1; }
+.nav-menu a::after {
+    content: ''; position: absolute; left: 0; bottom: -5px;
+    width: 0%; height: 2px; background: var(--accent); transition: 0.3s;
+}
+.nav-menu a:hover::after { width: 100%; }
+.nav-right { display: flex; align-items: center; }
+.nav-right button {
+    background: linear-gradient(135deg, #f6c90e, #d4a800);
+    color: #111; border: none; padding: 8px 12px; border-radius: 10px;
+    cursor: pointer; box-shadow: 0 0 10px rgba(246,201,14,0.4); transition: 0.3s;
+}
+.nav-right button:hover {
+    transform: scale(1.05); box-shadow: 0 0 16px rgba(246,201,14,0.7);
+}
+@media(max-width: 768px) {
+    .nav-menu { display: none; }
+}
+/* =========================
+   SLIDER LAYOUT
+========================= */
+/* The viewport window for the slider */
+.slider-wrapper {
+    flex: 1; /* Takes up remaining vertical space */
+    display: flex;
+    width: 100vw;
+    overflow: hidden; /* Hides the off-screen steps */
+    position: relative;
+}
+/* The moving track */
+.mainslider {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* transform: translateX(-100%);  <-- We will control this with JS later! */
+}
+/* The individual screens */
+.subsliders {
+    flex: 0 0 100%; 
+    width: 100%;
+    height: 100%; /* Force it to respect the locked body height */
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Keeps content at top, preventing vertical jumps */
+    overflow-y: auto; /* Internal scrolling! */
+    overflow-x: hidden;
+}
+
+/* Basic Content Styling for the steps */
+.step-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto; /* GUARANTEES dead-center alignment */
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 15px;
+    padding: 40px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.step-title {
+    color: var(--accent);
+    font-size: 24px;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+/* Navigation Buttons */
+.slider-controls {
+    display: flex;
+    gap: 15px;
+    margin-top: auto; /* Pushes buttons to the bottom of the card */
+    padding-top: 20px;
+    width: 100%;
+    justify-content: center;
+}
+.slider-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+}
+.slider-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.slider-btn.primary {
+    background: linear-gradient(135deg, #f6c90e, #d4a800);
+    color: #111;
+    border: none;
+    font-weight: bold;
+}
+.slider-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(246,201,14,0.4);
+    color: #111;
+}
+/* =========================
+   FOOTER
+========================= */
+footer {
+    padding: 20px;
+    opacity: .5;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* =========================
+   CUSTOM TOGGLE BUTTONS (Step 1)
+========================= */
+.selection-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.selection-group h3 {
+    width: 100%;
+    text-align: center;
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+.custom-toggle {
+    display: inline-block;
+    position: relative;
+}
+
+.custom-toggle input[type="checkbox"] {
+    display: none; /* Hides the ugly default checkbox box */
+}
+
+.custom-toggle label {
+    display: inline-block;
+    padding: 10px 22px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    user-select: none;
+}
+
+.custom-toggle input[type="checkbox"]:checked + label {
+    background: rgba(246, 201, 14, 0.15); /* Yellow tint */
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 15px rgba(246, 201, 14, 0.2);
+}
+
+.custom-toggle label:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Divider line between groups */
+.step-divider {
+    width: 80%;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 20px auto;
+}
+
+.custom-toggle input[type="checkbox"],
+.custom-toggle input[type="radio"] {
+    display: none; 
+}
+
+.custom-toggle input[type="checkbox"]:checked + label,
+.custom-toggle input[type="radio"]:checked + label {
+    background: rgba(246, 201, 14, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 15px rgba(246, 201, 14, 0.2);
+}
+
+/* =========================
+   STEP 3: IDENTIFIER GRID & DRAWERS
+========================= */
+.identifier-grid {
+    display: grid;
+    /* Responsive columns: At least 140px wide, max as many as will fit */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    width: 100%;
+    margin-bottom: 30px;
+    /* Ensure the grid respects the container width */
+    box-sizing: border-box;
+}
+
+/* The popup panel that appears below a clicked toggle */
+.details-drawer {
+    /* Force the drawer to span the entire width of the grid */
+    grid-column: 1 / -1; 
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(246, 201, 14, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    /* Negative margin to pull it slightly closer to the buttons above */
+    margin-top: -5px; 
+    margin-bottom: 10px;
+    
+    /* Internal layout for the drawer */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.details-drawer strong {
+    width: 100%;
+    color: var(--accent);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+/* Ensure inputs inside the drawer look good */
+.details-drawer .custom-text-input {
+    flex: 1; /* Inputs take up remaining space */
+    min-width: 200px;
+    padding: 10px 15px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    border-radius: 8px;
+    outline: none;
+}
+
+.details-drawer .custom-text-input:focus {
+    border-color: var(--accent);
+}
+
+/* Specific styling for the Custom inputs to stack nicely */
+.details-drawer.custom-drawer .custom-text-input {
+    width: calc(50% - 10px); /* 2 per row */
+    flex: none;
+}
+
+/* Section Dividers */
+.section-heading {
+    width: 100%;
+    text-align: left;
+    color: #fff;
+    opacity: 0.7;
+    margin: 20px 0 10px 0;
+    font-size: 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 5px;
+}
+
+/* =========================
+   STEP 3: REFINED DESIGN
+========================= */
+
+/* Grid Fix: Prevents buttons from being squashed */
+.identifier-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+    align-items: flex-start;
+}
+
+/* The "Hidden" Drawer Panel - Now a sleek pop-up card */
+.details-drawer {
+    width: 100%;
+    background: rgba(246, 201, 14, 0.03); /* Subtle yellow hint */
+    border: 1px solid rgba(246, 201, 14, 0.15);
+    border-left: 4px solid var(--accent); /* Visual link to selected buttons */
+    border-radius: 8px;
+    padding: 18px;
+    margin: 5px 0 15px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+}
+
+/* Subsection Headings within drawers */
+.details-drawer strong {
+    width: 100%;
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 5px;
+}
+
+/* THE TEXT BOXES - High End Design */
+.drawer-input {
+    flex: 1 1 200px;
+    min-width: 180px;
+    max-width: 320px; /* <--- THIS PREVENTS OVER-STRETCHING */
+    height: 40px;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 6px;
+    padding: 0 12px;
+    color: #fff !important;
+    font-size: 14px;
+    transition: all 0.25s ease;
+}
+
+.drawer-input:focus {
+    outline: none;
+    border-color: var(--accent) !important;
+    background: rgba(246, 201, 14, 0.05) !important;
+    box-shadow: 0 0 12px rgba(246, 201, 14, 0.15);
+}
+
+.drawer-input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Spacing Fix for Name Modifiers */
+.name-mod-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+}
+
+/* Custom Section Inputs */
+.custom-drawer .drawer-input {
+    width: calc(50% - 10px);
+    flex: none;
+}
+
+/* Fix for the Point Headings */
+.section-heading {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 35px 0 15px 0;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-heading::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+}
+
+/* =========================
+   SCROLL FIX & PROGRESS BAR
+========================= */
+/* 1. Confine scrolling strictly to the active panel */
+.slider-wrapper {
+    flex: 1;
+    min-height: 0; /* CRITICAL: Allows flex child to shrink and contain internal scroll */
+    overflow: hidden;
+}
+.subsliders {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 20px; /* Buffer for scrolling */
+}
+
+/* Custom Scrollbar for the panels */
+.subsliders::-webkit-scrollbar { width: 6px; }
+.subsliders::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.subsliders::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+/* 2. Progress Bar Styles */
+.progress-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 10px auto 20px auto;
+    display: flex;
+    gap: 15px;
+    padding: 0 20px;
+    z-index: 10;
+}
+.progress-block {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+.progress-block:hover {
+    transform: scaleY(2);
+}
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    transition: width 0.4s ease, background 0.3s;
+}
+/* Faded yellow for completed steps */
+.progress-fill.filled {
+    width: 100%;
+    background: rgba(246, 201, 14, 0.4); 
+}
+/* Bright glowing yellow for the current step */
+.progress-fill.current {
+    width: 100%;
+    background: var(--accent); 
+    box-shadow: 0 0 10px rgba(246, 201, 14, 0.8);
+}
+
+/* =========================
+   DISCARD BUTTON
+========================= */
+.progress-container {
+    align-items: center; /* Ensures the new button aligns with the bars */
+}
+
+.discard-btn {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    color: #e74c3c;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Prevents the button from squishing */
+    font-size: 12px;
+    outline: none;
+}
+
+.discard-btn:hover {
+    background: rgba(231, 76, 60, 0.25);
+    transform: scale(1.1) rotate(90deg); /* Cool spin effect */
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+}
+
+/* =========================
+   DISABLED / DIMMED UI LOGIC
+========================= */
+.custom-toggle input[type="checkbox"]:disabled + label {
+    opacity: 0.4;
+    filter: grayscale(1);
+    cursor: not-allowed;
+    background: rgba(255,255,255,0.02) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    color: #666 !important;
+}
+
+.drawer-input:disabled {
+    opacity: 0.4;
+    filter: grayscale(1);
+    cursor: not-allowed;
+    background: rgba(0,0,0,0.2) !important;
+}

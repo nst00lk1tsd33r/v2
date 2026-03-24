@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Writer</title>
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <link rel="stylesheet" href="templatewriterstyle.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="{ 
+    step: 1, 
+    showToast: false,
+    showQuickPreview: false,
+    ctrlTimer: null,
+    matchType: '', 
+    accountType: '',
+    urls: [{ link: '' }],
+    
+    feats: {},
+    sub: {
+        names: { afname: false, ifname: false, amname: false, imname: false, alname: false, ilname: false },
+        dob: { seen: false, link: '', title: '', acc: '' },
+        age: { edu: false, seen: false, title: '' },
+        loc: { prev: false, rel: false, cli: false, seen: false, link: '', title: '', relLnk: '', relNm: '' },
+        sch: { name: '', seen: false, link: '', title: '' },
+        phn: { num: '', seen: false, link: '', title: '' },
+        mail: { addr: '', usr: false, seen: false, link: '', title: '' },
+        wrk: { nat: '', seen: false, link: '', title: '' },
+        emp: { name: '', seen: false, link: '', title: '' },
+        rel: { name: '', seen: false, link: '', title: '' },
+        vm: { seen: false, link: '', title: '' },
+        user: { txt: '', link: '', title: '' },
+        linked: { link: '', title: '' },
+        conn: { friend: false, following: false, follower: false, connected: false, own: false, seen: false, net: '', netL: '', id: '', link1: '', name: '', link2: '', title: '', accLink: '' },
+        same: { link1: '', obj: '', link2: '', net: '' },
+        loc2: { link: '', title: '' },
+        custom: ['', '', '', '', '']
+    },
+
+    get reportEngine() {
+        let pf = [];
+        
+        const getAso = () => {
+            const count = pf.filter(f => f.includes('as seen on') || f.includes('based on')).length;
+            return (count % 2 === 0) ? 'as seen on' : 'based on';
+        };
+
+        const buildAso = (base, subObj) => {
+            if (!subObj.seen) return base;
+            if (subObj.link && subObj.title) return `${base} ${getAso()} the # identified <a href='${subObj.link}' target='_blank'>${subObj.title}</a> account`;
+            return `${base} ${getAso()}`;
+        };
+
+        if (this.feats.alias) pf.push('alias');
+        if (this.feats.business) pf.push('business name');
+
+        const n = this.sub.names;
+        const hF = this.feats.fname, hM = this.feats.mname, hL = this.feats.lname;
+        const nF = !n.ifname && !n.afname, nM = !n.imname && !n.amname, nL = !n.ilname && !n.alname;
+
+        if (hF) {
+            if (n.ifname) pf.push('first name initial');
+            else if (n.afname) pf.push('alias first name');
+            else if (hM && nM && hL && nL) pf.push('full name');
+            else if (hM && nM) pf.push('first and middle name');
+            else if (hL && nL && !hM) pf.push('first and last name');
+            else pf.push('first name'); 
+        }
+        if (hM && !n.imname && !n.amname && hF && nF) {}
+        else if (hM) {
+            if (n.imname) pf.push('middle name initial');
+            else if (n.amname) pf.push('alias middle name');
+            else if (hL && nL) pf.push('middle and last name');
+            else pf.push('middle name'); 
+        }
+        if (hL && !n.ilname && !n.alname && ((hF && nF) || (hM && nM))) {}
+        else if (hL) {
+            if (n.ilname) pf.push('last name initial');
+            else if (n.alname) pf.push('alias last name');
+            else pf.push('last name'); 
+        }
+
+        if (this.feats.dob) {
+            const d = this.sub.dob;
+            if (d.seen && d.title && d.acc) pf.push('combination error');
+            else if (d.seen) {
+                if (d.acc) pf.push(d.link ? `date of birth ${getAso()} <a href='${d.link}' target='_blank'>${d.acc}</a>` : `date of birth ${getAso()} ${d.acc}`);
+                else if (d.title && d.link) pf.push(`date of birth ${getAso()} this <a href='${d.link}' target='_blank'>${d.title}</a>`);
+                else if (d.link) pf.push(`<a href='${d.link}' target='_blank'>date of birth</a>`);
+                else pf.push('date of birth');
+            } else pf.push('date of birth');
+        }
+
+        if (this.feats.age) {
+            const a = this.sub.age;
+            if (a.edu) pf.push('age based on education');
+            else if (a.seen) pf.push(a.title ? `age ${getAso()} ${a.title}` : `age ${getAso()}`);
+            else pf.push('age');
+        }
+
+        if (this.feats.loc) {
+            const l = this.sub.loc;
+            let val = l.prev ? 'previous location' : 'location';
+            if (l.rel) val += ` based on a relative (${l.relLnk ? `<a href='${l.relLnk}' target='_blank'>${l.relNm||'relative'}</a>` : (l.relNm||'relative')})`;
+            if (l.cli) val += ' provided by the client';
+            if (l.seen && l.link && l.title) pf.push(`${val} ${getAso()} this <a href='${l.link}' target='_blank'>${l.title}</a>`);
+            else if (l.link) pf.push(`<a href='${l.link}' target='_blank'>${val}</a>`);
+            else pf.push(val);
+        }
+
+        if (this.feats.sch) pf.push(buildAso(`school attended (${this.sub.sch.name || 'school'})`, this.sub.sch));
+        
+        if (this.feats.phn) {
+            const num = this.sub.phn.num.replace(/[() ]/g, '');
+            pf.push(buildAso(`phone number (${num ? `+1-${num}` : '+1-000-000-000'})`, this.sub.phn));
+        }
+
+        if (this.feats.mail) {
+            const m = this.sub.mail;
+            const disp = m.addr || 'email address';
+            let base = m.usr ? `username (${disp.split('@')[0] || 'username'}) ${getAso()} the email address (${disp})` : `email address (${disp})`;
+            if (m.seen || m.usr) {
+                pf.push((m.link && m.title) ? `${base} ${getAso()} the # identified <a href='${m.link}' target='_blank'>${m.title}</a> account` : base);
+            } else pf.push(base);
+        }
+
+        if (this.feats.wrk) pf.push(buildAso(`nature of work (${this.sub.wrk.nat || 'nature of work'})`, this.sub.wrk));
+        if (this.feats.emp) pf.push(buildAso(`employment (${this.sub.emp.name || 'company name'})`, this.sub.emp));
+        
+        if (this.feats.rel) {
+            const r = this.sub.rel;
+            let base = `relative (${r.name || 'relative name'})`;
+            if (r.seen) {
+                if (r.link && r.title) pf.push(`${base} ${getAso()} <a href='${r.link}' target='_blank'>${r.title}</a>`);
+                else if (r.title) pf.push(`${base} ${getAso()} ${r.title}`);
+                else pf.push(`${base} ${getAso()}`);
+            } else pf.push(base);
+        }
+
+        if (this.feats.vm) {
+            const v = this.sub.vm;
+            pf.push(v.seen && v.link && v.title ? `visual match ${getAso()} the # identified <a href='${v.link}' target='_blank'>${v.title}</a> account` : `visual match`);
+        }
+
+        if (this.feats.user) {
+            const u = this.sub.user;
+            pf.push((u.txt && u.link && u.title) ? `same username (${u.txt}) ${getAso()} the # identified <a href='${u.link}' target='_blank'>${u.title}</a> account` : `same username (username)`);
+        }
+
+        if (this.feats.linked) {
+            const lk = this.sub.linked;
+            pf.push(lk.link && lk.title ? `linked to the # identified <a href='${lk.link}' target='_blank'>${lk.title}</a> account` : (lk.title ? `linked to the # identified ${lk.title} account` : `linked to an identified account`));
+        }
+
+        if (this.feats.conn) {
+            const c = this.sub.conn;
+            const net = (c.net && c.netL) ? `<a href='${c.netL}' target='_blank'>${c.net}</a>` : c.net;
+            const id = (c.id && c.link1) ? `<a href='${c.link1}' target='_blank'>${c.id}</a>` : c.id;
+            const nm = (c.name && c.link2) ? `<a href='${c.link2}' target='_blank'>${c.name}</a>` : c.name;
+            const acc = (c.title && c.accLink) ? `<a href='${c.accLink}' target='_blank'>${c.title}</a>` : c.title;
+            
+            if (c.own) {
+                let rel = c.friend ? 'friends with' : c.following ? 'following' : c.follower ? 'followed by' : c.connected ? 'connected to' : '';
+                if (rel && c.title) pf.push(`${rel} the # identified ${acc} account`);
+            } else if (c.friend && c.seen) {
+                if (c.name && c.title) pf.push(`mutual friend${nm ? ` (${nm})` : ''} ${getAso()} the # identified ${acc} account`);
+            } else if (c.following || c.follower || c.connected) {
+                let rel = c.following ? 'following' : c.follower ? 'followed by' : 'connected to';
+                let art = /^[aeiou]/i.test(c.net || c.id || '') ? 'an' : 'a';
+                let mid = `${net} ${id}`.trim();
+                if (mid) pf.push(`${rel} ${art} ${mid}${nm ? ` (${nm})` : ''}`);
+            }
+        }
+
+        if (this.feats.same) {
+            const s = this.sub.same;
+            const w = s.link1 ? `<a href='${s.link1}' target='_blank'>${s.obj||'[MISSING]'}</a>` : (s.obj||'[MISSING]');
+            const n = s.link2 ? `<a href='${s.link2}' target='_blank'>${s.net||'[MISSING]'}</a>` : (s.net||'[MISSING]');
+            pf.push(`same ${w} ${getAso()} the # identified ${n} account`);
+        }
+
+        if (this.feats.loc2) {
+            const l2 = this.sub.loc2;
+            pf.push(l2.link && l2.title ? `exact location ${getAso()} the # identified <a href='${l2.link}' target='_blank'>${l2.title}</a> account` : `exact location`);
+        }
+
+        if (this.feats.custom) {
+            this.sub.custom.forEach(v => { if (v.trim()) pf.push(v.trim()); });
+        }
+
+        let fStr = 'none';
+        if (pf.length === 1) fStr = pf[0];
+        else if (pf.length === 2) fStr = pf.join(' and ');
+        else if (pf.length > 2) { const last = pf.pop(); fStr = pf.join(', ') + ', and ' + last; }
+
+        if (!this.matchType || !this.accountType) {
+            return `<p style='color: #aaa;'>Please select Match Type and Account Type in Step 1.</p>`;
+        }
+
+        let accStr = '';
+        if (this.accountType === 'bs') accStr = 'Business Page';
+        else if (this.accountType === 'gsr') accStr = 'Google';
+        else if (this.accountType === 'pub') accStr = 'on (a) public socmed post/s/photo/s/video/s. No personal match found.';
+        else if (this.accountType === 'gfm') accStr = 'GoFundMe Page';
+        else if (this.accountType === 'mgs') accStr = 'Mugshot';
+        else if (this.accountType === 'psg') accStr = 'Personal Page';
+        else if (this.accountType === 'fanpage') accStr = 'Fan Page';
+        else if (this.accountType === 'standard') accStr = 'Account';
+
+        let prefStr = '';
+        if (this.accountType === 'pub') {
+            prefStr = `Identified ${accStr}`;
+        } else if (this.accountType === 'gsr') {
+            prefStr = '';
+        } else {
+            prefStr = (this.matchType === 'possible' ? 'Possible ' : 'Identified ') + accStr;
+        }
+
+        let html = '';
+        
+
+        const activeUrls = this.urls.filter(u => u.link.trim() !== '');
+        const joinedUrlsText = activeUrls.map(u => u.link.trim()).join(', ');
+
+
+        if (this.accountType !== 'gsr') {
+            if (this.accountType === 'pub') {
+                html += `<p>${prefStr}${joinedUrlsText ? ` ${joinedUrlsText}` : ''}</p>\n<p>&nbsp;</p>\n`;
+            } else {
+                html += `<p><strong>${prefStr}:</strong>${joinedUrlsText ? ` ${joinedUrlsText}` : ''}</p>\n<p>&nbsp;</p>\n`;
+            }
+        }
+
+
+        if (pf.length > 0 || this.matchType) {
+            let mPhrase = this.matchType === 'possible' ? 'Possible match' : 'Match';
+            html += `<p>${mPhrase} found by ${fStr}.</p>\n`;
+        }
+
+
+        if (this.accountType === 'gsr' && activeUrls.length > 0) {
+            html += `<p>&nbsp;</p>\n`;
+            
+            activeUrls.forEach(u => {
+                let urlStr = u.link.trim();
+                let href = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
+                
+
+                let domain = urlStr.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '');
+                domain = domain.split('/')[0].split('.')[0];
+
+                let siteName = domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : 'Link';
+                
+                html += `<p><a href='${href}' target='_blank'>${siteName}</a></p>\n`;
+            });
+        }
+
+        return html;
+    }
+}"
+@keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 200); }"
+@keyup.window="if($event.key === 'Control') { clearTimeout(ctrlTimer); ctrlTimer = null; showQuickPreview = false; }">
+
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-left">
+                <h1>NS Toolkits</h1>
+            </div>
+            <div class="nav-menu">
+                <a href="https://nstoolkits.site/v3/">Home</a>
+                <a href="about.html">About Us</a>
+                <a href="https://nstoolkits.site/">Version 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showToast" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform -translate-y-10"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform -translate-y-10"
+         style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 12px 25px; border-radius: 30px; z-index: 9999; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: none;">
+        Template Generated & Copied!
+    </div>
+
+    <div x-show="showQuickPreview" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999;">
+        
+         <div x-show="showQuickPreview"
+              x-transition:enter="transition ease-out duration-300"
+              x-transition:enter-start="opacity-0"
+              x-transition:enter-end="opacity-100"
+              x-transition:leave="transition ease-in duration-200"
+              x-transition:leave-start="opacity-100"
+              x-transition:leave-end="opacity-0"
+              style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);">
+         </div>
+         
+         <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+             
+             <div x-show="showQuickPreview"
+                  x-transition:enter="transition ease-out duration-300 delay-100"
+                  x-transition:enter-start="opacity-0 transform scale-95"
+                  x-transition:enter-end="opacity-100 transform scale-100"
+                  x-transition:leave="transition ease-in duration-200"
+                  x-transition:leave-start="opacity-100 transform scale-100"
+                  x-transition:leave-end="opacity-0 transform scale-95"
+                  style="pointer-events: auto; background: rgba(15, 15, 15, 0.95); border: 1px solid rgba(246, 201, 14, 0.4); width: 90%; max-width: 850px; max-height: 90vh; overflow-y: auto; padding: 40px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(246, 201, 14, 0.05); color: #fff;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 25px;">
+                    <h2 style="margin: 0; color: var(--accent); font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">Live Preview</h2>
+                    <span style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px; font-size: 12px; color: #ccc;">Release <b>CTRL</b> to close</span>
+                </div>
+                
+                <div style="font-size: 16px; line-height: 1.6; font-family: 'Segoe UI', sans-serif;" x-html="reportEngine"></div>
+             </div>
+         </div>
+    </div>
+
+    <div class="slider-wrapper">
+        <div class="mainslider" :style="'transform: translateX(-' + ((step - 1) * 100) + '%);'">
+            
+            <div class="subsliders">
+                <div class="step-container">
+                    <h2 class="step-title">Step 1: Select Type</h2>
+                    <p style="text-align: center; color: #aaa; margin-top: -10px;">Your template maker. You match it, you build it. A tool may ease the work, but it cannot replace the craftsman.</p>
+                    
+                    <div class="selection-group">
+                        <h3>Match Type</h3>
+                        <div class="custom-toggle">
+                            <input type="radio" id="match" name="matchGroup" value="match" x-model="matchType">
+                            <label for="match">Match</label>
+                        </div>
+                        <div class="custom-toggle">
+                            <input type="radio" id="possible" name="matchGroup" value="possible" x-model="matchType">
+                            <label for="possible">Possible</label>
+                        </div>
+                    </div>
+
+                    <hr class="step-divider">
+
+                    <div class="selection-group">
+                        <h3>Account Type</h3>
+                        <div class="custom-toggle"><input type="radio" id="standard" name="accGroup" value="standard" x-model="accountType"><label for="standard">Standard</label></div>
+                        <div class="custom-toggle"><input type="radio" id="gsr" name="accGroup" value="gsr" x-model="accountType"><label for="gsr">Google Search Result</label></div>
+                        <div class="custom-toggle"><input type="radio" id="pub" name="accGroup" value="pub" x-model="accountType"><label for="pub">Public Appearance</label></div>
+                        <div class="custom-toggle"><input type="radio" id="bs" name="accGroup" value="bs" x-model="accountType"><label for="bs">Business Page</label></div>
+                        <div class="custom-toggle"><input type="radio" id="gfm" name="accGroup" value="gfm" x-model="accountType"><label for="gfm">GoFundMe</label></div>
+                        <div class="custom-toggle"><input type="radio" id="mgs" name="accGroup" value="mgs" x-model="accountType"><label for="mgs">Mugshot</label></div>
+                        <div class="custom-toggle"><input type="radio" id="psg" name="accGroup" value="psg" x-model="accountType"><label for="psg">Personal Page</label></div>
+                        <div class="custom-toggle"><input type="radio" id="fanpage" name="accGroup" value="fanpage" x-model="accountType"><label for="fanpage">Fan Page</label></div>
+                    </div>
+
+                    <div class="slider-controls">
+                        <button class="slider-btn primary" 
+                                @click="step++" 
+                                :disabled="!matchType || !accountType"
+                                :style="(!matchType || !accountType) ? 'opacity: 0.5; cursor: not-allowed;' : ''">
+                            Next Step ➡
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsliders">
+                <div class="step-container">
+                    <h2 class="step-title">Step 2: Social Media URL</h2>
+                    <p style="text-align: center; color: #aaa; margin-top: -10px;">Provide the exact link to the profile(s).</p>
+                    
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 10px 0;">
+                        
+                        <template x-for="(u, index) in urls" :key="index">
+                            <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.1);">
+                                
+                                <div style="display: flex; width: 90%; gap: 10px;">
+                                    <input type="text" x-model="u.link" placeholder="https://..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: #fff; font-size: 16px; outline: none;">
+                                    
+                                    <button class="slider-btn" 
+                                            @click="window.open(u.link.startsWith('http') ? u.link : 'https://' + u.link, '_blank')" 
+                                            :disabled="!u.link" 
+                                            :style="!u.link ? 'opacity: 0.5; cursor: not-allowed;' : 'background: rgba(52, 152, 219, 0.2); border-color: #3498db; color: #3498db;'"
+                                            title="Test URL in new tab">
+                                        Test
+                                    </button>
+
+                                    <button class="slider-btn" 
+                                            x-show="urls.length > 1" 
+                                            @click="urls.splice(index, 1)" 
+                                            style="color: #e74c3c; border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.1);"
+                                            title="Remove URL">
+                                        ❌
+                                    </button>
+                                </div>
+
+                                <div class="selection-group" style="margin-bottom: 0;">
+                                    <div class="custom-toggle">
+                                        <input type="checkbox" :id="'addWww' + index" 
+                                               :checked="u.link.includes('www.')"
+                                               @change="
+                                                   if ($el.checked) {
+                                                       if (!u.link.includes('www.')) {
+                                                           u.link = u.link.includes('://') ? u.link.replace('://', '://www.') : 'www.' + u.link;
+                                                       }
+                                                   } else {
+                                                       u.link = u.link.replace('www.', '');
+                                                   }
+                                               ">
+                                        <label :for="'addWww' + index">Include 'www.'</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <button class="slider-btn primary" 
+                                x-show="accountType === 'gsr'" 
+                                @click="urls.push({link: ''})" 
+                                style="font-size: 13px; padding: 8px 20px; margin-top: 5px;">
+                            Add Another URL
+                        </button>
+
+                    </div>
+                    
+                    <div class="slider-controls">
+                        <button class="slider-btn" @click="step--">⬅ Previous</button>
+                        <button class="slider-btn primary" @click="step++">Next Step ➡</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsliders">
+                <div class="step-container" style="max-width: 900px;"> 
+                    <h2 class="step-title">Step 3: Identifiers</h2>
+                    <p style="text-align: center; color: #aaa; margin-top: -10px;">Select the specific data points identified.</p>
+                    
+                    <div style="width: 100%; text-align: left;">
+                        
+                        <h3 class="section-heading">1 Point</h3>
+                        <div class="identifier-grid">
+                            <div class="custom-toggle"><input type="checkbox" id="alias" x-model="feats.alias"><label for="alias">Alias</label></div>
+                            <div class="custom-toggle"><input type="checkbox" id="business" x-model="feats.business"><label for="business">Business Name</label></div>
+
+                            <div class="custom-toggle"><input type="checkbox" id="fname" x-model="feats.fname"><label for="fname">First Name</label></div>
+                            <div class="custom-toggle"><input type="checkbox" id="mname" x-model="feats.mname"><label for="mname">Middle Name</label></div>
+                            <div class="custom-toggle"><input type="checkbox" id="lname" x-model="feats.lname"><label for="lname">Last Name</label></div>
+                            
+                            <template x-if="feats.fname || feats.mname || feats.lname">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Name Modifiers</strong>
+                                    <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap;">
+                                        <div x-show="feats.fname" class="name-mod-group">
+                                            <span style="font-size: 12px; color: #aaa; text-transform: uppercase;">First Name</span>
+                                            <div class="custom-toggle"><input type="checkbox" id="afname" x-model="sub.names.afname"><label for="afname">Alias</label></div>
+                                            <div class="custom-toggle"><input type="checkbox" id="ifname" x-model="sub.names.ifname"><label for="ifname">Initial</label></div>
+                                        </div>
+                                        <div x-show="feats.mname" class="name-mod-group">
+                                            <span style="font-size: 12px; color: #aaa; text-transform: uppercase;">Middle Name</span>
+                                            <div class="custom-toggle"><input type="checkbox" id="amname" x-model="sub.names.amname"><label for="amname">Alias</label></div>
+                                            <div class="custom-toggle"><input type="checkbox" id="imname" x-model="sub.names.imname"><label for="imname">Initial</label></div>
+                                        </div>
+                                        <div x-show="feats.lname" class="name-mod-group">
+                                            <span style="font-size: 12px; color: #aaa; text-transform: uppercase;">Last Name</span>
+                                            <div class="custom-toggle"><input type="checkbox" id="alname" x-model="sub.names.alname"><label for="alname">Alias</label></div>
+                                            <div class="custom-toggle"><input type="checkbox" id="ilname" x-model="sub.names.ilname"><label for="ilname">Initial</label></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="dob1" x-model="feats.dob"><label for="dob1">Date of Birth</label></div>
+                            <template x-if="feats.dob">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Date of Birth Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seendob" x-model="sub.dob.seen"><label for="seendob">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.dob.link">
+                                    <input type="text" class="drawer-input" placeholder="Custom Title" x-model="sub.dob.title">
+                                    <input type="text" class="drawer-input" placeholder="Database Name" x-model="sub.dob.acc">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="age1" x-model="feats.age"><label for="age1">Age</label></div>
+                            <template x-if="feats.age">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Age Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="basedage" x-model="sub.age.edu"><label for="basedage">Education Base</label></div>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenage" x-model="sub.age.seen"><label for="seenage">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Custom Title" x-model="sub.age.title" x-show="sub.age.seen">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="location" x-model="feats.loc"><label for="location">Location</label></div>
+                            <template x-if="feats.loc">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Location Details</strong>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%;">
+                                        <div class="custom-toggle"><input type="checkbox" id="prevloc" x-model="sub.loc.prev"><label for="prevloc">Previous</label></div>
+                                        <div class="custom-toggle"><input type="checkbox" id="basedrel" x-model="sub.loc.rel"><label for="basedrel">Via Relative</label></div>
+                                        <div class="custom-toggle"><input type="checkbox" id="basedcli" x-model="sub.loc.cli"><label for="basedcli">Via Client</label></div>
+                                        <div class="custom-toggle"><input type="checkbox" id="seenloc" x-model="sub.loc.seen"><label for="seenloc">As Seen On</label></div>
+                                    </div>
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.loc.link">
+                                    <input type="text" class="drawer-input" placeholder="Custom Title" x-model="sub.loc.title">
+                                    <input type="text" class="drawer-input" placeholder="Relative Link" x-model="sub.loc.relLnk" x-show="sub.loc.rel">
+                                    <input type="text" class="drawer-input" placeholder="Relative Name" x-model="sub.loc.relNm" x-show="sub.loc.rel">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="school" x-model="feats.sch"><label for="school">School</label></div>
+                            <template x-if="feats.sch">
+                                <div class="details-drawer" x-transition>
+                                    <strong>School Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seensch" x-model="sub.sch.seen"><label for="seensch">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="School Name" x-model="sub.sch.name">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.sch.link" x-show="sub.sch.seen">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.sch.title" x-show="sub.sch.seen">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="phone" x-model="feats.phn"><label for="phone">Phone</label></div>
+                            <template x-if="feats.phn">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Phone Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenphn" x-model="sub.phn.seen"><label for="seenphn">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Phone Number" x-model="sub.phn.num">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.phn.link" x-show="sub.phn.seen">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.phn.title" x-show="sub.phn.seen">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="email" x-model="feats.mail"><label for="email">Email</label></div>
+                            <template x-if="feats.mail">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Email Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="usrmai" x-model="sub.mail.usr"><label for="usrmai">Username</label></div>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenmai" x-model="sub.mail.seen"><label for="seenmai">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Email Address" x-model="sub.mail.addr">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.mail.link" x-show="sub.mail.seen || sub.mail.usr">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.mail.title" x-show="sub.mail.seen || sub.mail.usr">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="naturework" x-model="feats.wrk"><label for="naturework">Nature of Work</label></div>
+                            <template x-if="feats.wrk">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Nature of Work Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenwrk" x-model="sub.wrk.seen"><label for="seenwrk">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Nature of Work" x-model="sub.wrk.nat">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.wrk.link" x-show="sub.wrk.seen">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.wrk.title" x-show="sub.wrk.seen">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="employment" x-model="feats.emp"><label for="employment">Employment</label></div>
+                            <template x-if="feats.emp">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Employment Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenemp" x-model="sub.emp.seen"><label for="seenemp">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Company Name" x-model="sub.emp.name">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.emp.link" x-show="sub.emp.seen">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.emp.title" x-show="sub.emp.seen">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="relative" x-model="feats.rel"><label for="relative">Relative</label></div>
+                            <template x-if="feats.rel">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Relative Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenrel" x-model="sub.rel.seen"><label for="seenrel">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Relative Name" x-model="sub.rel.name">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.rel.link" x-show="sub.rel.seen">
+                                    <input type="text" class="drawer-input" placeholder="Database Name" x-model="sub.rel.title" x-show="sub.rel.seen">
+                                </div>
+                            </template>
+                        </div>
+
+                        <h3 class="section-heading">2 Points</h3>
+                        <div class="identifier-grid">
+                            <div class="custom-toggle"><input type="checkbox" id="visualmatch" x-model="feats.vm"><label for="visualmatch">Visual Match</label></div>
+                            <template x-if="feats.vm">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Visual Match Details</strong>
+                                    <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenvm" x-model="sub.vm.seen"><label for="seenvm">As Seen On</label></div>
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.vm.link" x-show="sub.vm.seen">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.vm.title" x-show="sub.vm.seen">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="username" x-model="feats.user"><label for="username">Username</label></div>
+                            <template x-if="feats.user">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Username Details</strong>
+                                    <input type="text" class="drawer-input" placeholder="Username" x-model="sub.user.txt">
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.user.link">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.user.title">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="linked" x-model="feats.linked"><label for="linked">Linked</label></div>
+                            <template x-if="feats.linked">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Linked Details</strong>
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.linked.link">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.linked.title">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="connections" x-model="feats.conn"><label for="connections">Connections</label></div>
+                            <template x-if="feats.conn">
+                                <div class="details-drawer" x-transition style="flex-direction: column; align-items: flex-start;">
+                                    <strong>Connection Settings</strong>
+                                    
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <div class="custom-toggle">
+                                            <input type="checkbox" id="ismtf" x-model="sub.conn.friend" :disabled="sub.conn.following || sub.conn.follower || sub.conn.connected">
+                                            <label for="ismtf">Friend</label>
+                                        </div>
+                                        <div class="custom-toggle">
+                                            <input type="checkbox" id="isfo1" x-model="sub.conn.following" :disabled="sub.conn.friend || sub.conn.follower || sub.conn.connected">
+                                            <label for="isfo1">Following</label>
+                                        </div>
+                                        <div class="custom-toggle">
+                                            <input type="checkbox" id="isfo2" x-model="sub.conn.follower" :disabled="sub.conn.friend || sub.conn.following || sub.conn.connected">
+                                            <label for="isfo2">Follower</label>
+                                        </div>
+                                        <div class="custom-toggle">
+                                            <input type="checkbox" id="iscon" x-model="sub.conn.connected" :disabled="sub.conn.friend || sub.conn.following || sub.conn.follower">
+                                            <label for="iscon">Connected</label>
+                                        </div>
+                                        <div class="custom-toggle">
+                                            <input type="checkbox" id="seencon" x-model="sub.conn.seen" :disabled="(sub.conn.friend && sub.conn.own) || sub.conn.following || sub.conn.follower || sub.conn.connected">
+                                            <label for="seencon">As Seen On</label>
+                                        </div>
+                                        <div class="custom-toggle">
+                                            <input type="checkbox" id="owncon" x-model="sub.conn.own" :disabled="sub.conn.friend && sub.conn.seen">
+                                            <label for="owncon">Own</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
+                                        <input type="text" class="drawer-input" placeholder="Platform (e.g. FB, IG)" x-model="sub.conn.net" :disabled="sub.conn.own || sub.conn.friend">
+                                        <input type="text" class="drawer-input" placeholder="Platform Hyperlink" x-model="sub.conn.netL" :disabled="sub.conn.own || sub.conn.friend">
+                                        
+                                        <input type="text" class="drawer-input" placeholder="Their Connection" x-model="sub.conn.id" :disabled="sub.conn.own || sub.conn.friend">
+                                        <input type="text" class="drawer-input" placeholder="Connection Link 1" x-model="sub.conn.link1" :disabled="sub.conn.own || sub.conn.friend">
+                                        
+                                        <input type="text" class="drawer-input" placeholder="Connection Name" x-model="sub.conn.name" :disabled="sub.conn.own">
+                                        <input type="text" class="drawer-input" placeholder="Connection Link 2" x-model="sub.conn.link2" :disabled="sub.conn.own">
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;" x-show="sub.conn.seen || sub.conn.own">
+                                        <input type="text" class="drawer-input" placeholder="Identified Network Link" x-model="sub.conn.accLink" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                                        <input type="text" class="drawer-input" placeholder="Identified Network Name" x-model="sub.conn.title" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="same" x-model="feats.same"><label for="same">Same</label></div>
+                            <template x-if="feats.same">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Same Object Details</strong>
+                                    <input type="text" class="drawer-input" placeholder="What Object?" x-model="sub.same.obj">
+                                    <input type="text" class="drawer-input" placeholder="Object Link" x-model="sub.same.link1">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.same.net">
+                                    <input type="text" class="drawer-input" placeholder="Network Link" x-model="sub.same.link2">
+                                </div>
+                            </template>
+
+                            <div class="custom-toggle"><input type="checkbox" id="visualmatch2" x-model="feats.loc2"><label for="visualmatch2">Exact Location</label></div>
+                            <template x-if="feats.loc2">
+                                <div class="details-drawer" x-transition>
+                                    <strong>Exact Location Details</strong>
+                                    <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.loc2.link">
+                                    <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.loc2.title">
+                                </div>
+                            </template>
+                        </div>
+
+                        <h3 class="section-heading">Custom</h3>
+                        <div class="identifier-grid">
+                            <div class="custom-toggle"><input type="checkbox" id="custom" x-model="feats.custom"><label for="custom">Enable Custom</label></div>
+                            
+                            <template x-if="feats.custom">
+                                <div class="details-drawer custom-drawer" x-transition>
+                                    <strong>Custom Identifiers</strong>
+                                    <input type="text" class="drawer-input" placeholder="Custom Identifier 1" x-model="sub.custom[0]">
+                                    <input type="text" class="drawer-input" placeholder="Custom Identifier 2" x-model="sub.custom[1]">
+                                    <input type="text" class="drawer-input" placeholder="Custom Identifier 3" x-model="sub.custom[2]">
+                                    <input type="text" class="drawer-input" placeholder="Custom Identifier 4" x-model="sub.custom[3]">
+                                    <input type="text" class="drawer-input" placeholder="Custom Identifier 5" x-model="sub.custom[4]">
+                                </div>
+                            </template>
+                        </div>
+
+                    </div>
+
+    <div class="slider-controls">
+                        <button class="slider-btn" @click="step--">⬅ Previous</button>
+                        <button class="slider-btn primary" @click="
+                            document.getElementById('final-output').innerHTML = reportEngine;
+                            step++;
+                        ">Generate Template</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsliders" x-data="{ isEditing: false }">
+                <div class="step-container" style="max-width: 900px;">
+                    <h2 class="step-title">Generated Template</h2>
+                    
+                    <div x-show="isEditing" x-transition style="display: flex; gap: 10px; width: 100%; margin-bottom: -10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(246, 201, 14, 0.3);">
+                        <button @click="document.execCommand('bold', false, null)" style="padding: 5px 15px; border-radius: 5px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--accent); font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(246,201,14,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">B</button>
+                        <button @click="let linkURL = prompt('Enter URL:', 'https://'); if(linkURL) document.execCommand('createLink', false, linkURL);" style="padding: 5px 15px; border-radius: 5px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #3498db; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(52,152,219,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">Link</button>
+                        <span style="margin-left: auto; color: #aaa; font-size: 13px; align-self: center;">Highlight text, then click an action.</span>
+                    </div>
+
+                    <div style="width: 100%; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 30px; border-radius: 8px; min-height: 150px; font-size: 16px; line-height: 1.5; font-family: 'Segoe UI', sans-serif; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); outline: none; transition: all 0.3s ease;" 
+                         id="final-output" 
+                         :contenteditable="isEditing"
+                         :style="isEditing ? 'border-color: var(--accent); background: rgba(246, 201, 14, 0.05); box-shadow: 0 0 15px rgba(246, 201, 14, 0.15);' : ''">
+                    </div>
+
+                    <div class="slider-controls">
+                        <button class="slider-btn" @click="step--; isEditing = false;">⬅ Edit Identifiers</button>
+                        
+                        <button class="slider-btn" 
+                                @click="isEditing = !isEditing"
+                                :style="isEditing ? 'background: rgba(246, 201, 14, 0.2); border-color: var(--accent); color: var(--accent);' : ''"
+                                x-text="isEditing ? '✓ Done Editing' : 'Edit Template'">
+                        </button>
+
+                        <button class="slider-btn primary" @click="
+                            const outputDiv = document.getElementById('final-output');
+                            
+                            const htmlBlob = new Blob([outputDiv.innerHTML], { type: 'text/html' });
+                            const textBlob = new Blob([outputDiv.innerText], { type: 'text/plain' });
+                            const clipboardItem = new ClipboardItem({
+                                'text/html': htmlBlob,
+                                'text/plain': textBlob
+                            });
+                            
+                            navigator.clipboard.write([clipboardItem]).then(() => {
+                                showToast = true;
+                                setTimeout(() => showToast = false, 3000);
+
+                                let btn = $event.currentTarget;
+                                let originalText = btn.innerHTML;
+                                btn.innerHTML = '✓ Copied!';
+                                btn.style.backgroundColor = '#27ae60';
+                                setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = ''; }, 2000);
+                            });
+                        ">Copy Template</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <button class="discard-btn" 
+                @click="
+                    if(confirm('Are you sure you want to discard all progress and start over?')) {
+                        step = 1;
+                        matchType = '';
+                        accountType = '';
+                        urls = [{ link: '' }];
+                        
+                        feats = { 
+                            alias: false, business: false, fname: false, mname: false, lname: false, 
+                            dob: false, age: false, loc: false, sch: false, phn: false, mail: false, 
+                            wrk: false, emp: false, rel: false, vm: false, user: false, linked: false, 
+                            conn: false, same: false, loc2: false, custom: false 
+                        };
+                        
+                        sub = { 
+                            names: { afname: false, ifname: false, amname: false, imname: false, alname: false, ilname: false }, 
+                            dob: { seen: false, link: '', title: '', acc: '' }, 
+                            age: { edu: false, seen: false, title: '' }, 
+                            loc: { prev: false, rel: false, cli: false, seen: false, link: '', title: '', relLnk: '', relNm: '' }, 
+                            sch: { name: '', seen: false, link: '', title: '' }, 
+                            phn: { num: '', seen: false, link: '', title: '' }, 
+                            mail: { addr: '', usr: false, seen: false, link: '', title: '' }, 
+                            wrk: { nat: '', seen: false, link: '', title: '' }, 
+                            emp: { name: '', seen: false, link: '', title: '' }, 
+                            rel: { name: '', seen: false, link: '', title: '' }, 
+                            vm: { seen: false, link: '', title: '' }, 
+                            user: { txt: '', link: '', title: '' }, 
+                            linked: { link: '', title: '' }, 
+                            conn: { friend: false, following: false, follower: false, connected: false, own: false, seen: false, net: '', netL: '', id: '', link1: '', name: '', link2: '', title: '', accLink: '' }, 
+                            same: { link1: '', obj: '', link2: '', net: '' }, 
+                            loc2: { link: '', title: '' }, 
+                            custom: ['', '', '', '', ''] 
+                        };
+                        
+                        document.getElementById('final-output').innerHTML = '';
+                    }
+                " 
+                title="Discard all & Start Over">
+            ✖
+        </button>
+
+        <div class="progress-block" @click="step = 1" title="Step 1: Select Type">
+            <div class="progress-fill" :class="{'filled': step >= 1, 'current': step === 1}"></div>
+        </div>
+        
+        <div class="progress-block" @click="if(matchType && accountType) step = 2" title="Step 2: URL">
+            <div class="progress-fill" :class="{'filled': step >= 2, 'current': step === 2}"></div>
+        </div>
+        
+        <div class="progress-block" @click="if(matchType && accountType) step = 3" title="Step 3: Identifiers">
+            <div class="progress-fill" :class="{'filled': step >= 3, 'current': step === 3}"></div>
+        </div>
+        
+        <div class="progress-block" @click="if(matchType && accountType) step = 4" title="Step 4: Output">
+            <div class="progress-fill" :class="{'filled': step >= 4, 'current': step === 4}"></div>
+        </div>
+    </div>
+
+    <footer>
+        © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
+    </footer>
+
+<script>
+    // Security and Context Menu Prevention
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", function(e) {
+        if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+            e.preventDefault();
+        }
+    });
+</script>
+
+</body>
+</html>
