@@ -259,7 +259,7 @@
         return html;
     }
 }"
-@keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 200); }"
+@keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 500); }"
 @keyup.window="if($event.key === 'Control') { clearTimeout(ctrlTimer); ctrlTimer = null; showQuickPreview = false; }">
 
     <div class="navbar">
