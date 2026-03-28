@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NS Toolkits v3 | Wheel of Names</title>
+<link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+:root {
+    --bg: #0b0b0b;
+    --card: rgba(255,255,255,0.05);
+    --accent: #f6c90e; /* Toolkit Accent */
+    --text: #fff;
+    --border: rgba(246, 201, 14, 0.15);
+    --danger: #ff4757;
+    --wheel-text: #ffffff; /* Original Wheel Text Color */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+canvas#particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+/* NAVBAR */
+.navbar {
+    width: 100%;
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+
+.nav-menu {
+    display: flex;
+    gap: 28px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.nav-menu a {
+    color: #e6e6e6;
+    text-decoration: none;
+    font-size: 14px;
+    opacity: 0.8;
+    transition: 0.3s;
+}
+
+.nav-menu a:hover { color: var(--accent); opacity: 1; }
+
+/* CONTAINER */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 0 auto;
+    box-sizing: border-box;
+}
+
+.wheel-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 30px;
+    width: 100%;
+}
+
+/* WHEEL SECTION */
+.wheel-section {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    padding: 20px;
+}
+
+#wheelCanvas {
+    max-width: 100%;
+    height: auto;
+    user-select: none;
+}
+
+.pointer {
+    position: absolute;
+    left: calc(50% + 345px); 
+    top: 50%;
+    transform: translateY(-50%);
+    width: 95px;
+    height: 65px;
+    background: #ffffff; /* Original Pointer Color */
+    clip-path: polygon(0% 50%, 100% 0%, 85% 50%, 100% 100%);
+    z-index: 20;
+    filter: drop-shadow(-8px 8px 15px rgba(0,0,0,0.4));
+    transition: transform 0.04s linear;
+    transform-origin: right center;
+    pointer-events: none;
+}
+
+.pointer.flick { transform: translateY(-50%) rotate(-20deg); }
+
+/* SIDEBAR */
+.sidebar {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(14px);
+    border-radius: 20px;
+    padding: 25px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+}
+
+textarea {
+    flex: 1;
+    min-height: 250px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 15px;
+    border-radius: 12px;
+    font-family: 'Consolas', monospace;
+    font-size: 16px;
+    resize: none;
+    outline: none;
+    margin-top: 10px;
+}
+
+.spin-btn {
+    background: linear-gradient(135deg,#f6c90e,#d4a800);
+    color: #111;
+    font-size: 1.3rem;
+    font-weight: bold;
+    padding: 18px;
+    margin-top: 20px;
+    border-radius: 15px;
+    cursor: pointer;
+    border: none;
+    transition: 0.3s;
+}
+
+.spin-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(246, 201, 14, 0.4); }
+
+/* MODAL */
+#modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 1000;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(12px);
+}
+
+#winner-name {
+    font-size: clamp(3rem, 10vw, 6rem);
+    color: var(--accent);
+    margin: 20px 0;
+    text-shadow: 0 0 30px var(--accent);
+    font-weight: 700;
+}
+
+.modal-btn { padding: 15px 30px; border-radius: 12px; margin: 10px; cursor: pointer; border:none; font-weight: bold; }
+.btn-remove { background: var(--danger); color: white; }
+.btn-close { background: #333; color: white; }
+
+/* LOADER */
+#loader-wrapper {
+    position: fixed;
+    inset: 0;
+    background: #080808;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 1s, visibility 1s;
+}
+
+.gold-ring {
+    width: 50px; height: 50px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-top: 2px solid #d4af37;
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+}
+
+.loader-text { margin-top: 30px; color: #d4af37; font-size: 9px; letter-spacing: 8px; opacity: 0.7; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer {
+    width: 100%;
+    padding: 20px 0;
+    opacity: .5;
+    text-align: center;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .wheel-layout { grid-template-columns: 1fr; }
+    .pointer { left: auto; right: 20px; width: 60px; height: 40px; }
+}
+</style>
+</head>
+<body class="loading">
+
+    <div id="loader-wrapper">
+        <div class="gold-ring"></div>
+        <div class="loader-text">ESTABLISHING CONNECTION</div>
+    </div>
+
+    <canvas id="particles"></canvas>
+
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-left"><h1>NS Toolkits v3</h1></div>
+            <div class="nav-menu">
+                <a href="#">Home</a>
+                <a href="#">About Us</a>
+                <a href="#">Version 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="wheel-layout">
+            <div class="wheel-section">
+                <div class="pointer" id="pointer"></div>
+                <canvas id="wheelCanvas" width="800" height="800"></canvas>
+            </div>
+
+            <div class="sidebar">
+                <h2 style="margin:0; color:var(--accent); font-size: 1.5rem;">Entries</h2>
+                <textarea id="entries" placeholder="Names here...">Apple
+Banana
+Cherry
+Date
+Elderberry
+Fig</textarea>
+                <button class="spin-btn" onclick="startSpin()">SPIN!</button>
+                
+                <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+                    <small style="color: #888;">Recent Winners</small>
+                    <ul id="historyList" style="list-style: none; padding: 10px 0; color: #aaa; font-size: 0.9rem; margin: 0;"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal">
+        <p style="color: #aaa; letter-spacing: 5px;">WINNER</p>
+        <div id="winner-name">NAME</div>
+        <div class="modal-btns">
+            <button class="modal-btn btn-remove" onclick="removeWinner()">Remove Winner</button>
+            <button class="modal-btn btn-close" onclick="closeModal()">Done</button>
+        </div>
+    </div>
+
+    <footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
+
+<script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const entriesArea = document.getElementById('entries');
+    const modal = document.getElementById('modal');
+    const winnerNameDiv = document.getElementById('winner-name');
+    const historyListUI = document.getElementById('historyList');
+    const pointer = document.getElementById('pointer');
+
+    let names = [];
+    let currentAngle = 0;
+    let isSpinning = false;
+    let lastTickAngle = -1;
+    let lastWinner = "";
+
+    // Original Wheel Colors preserved
+    const colors = ['#00cf7f', '#007bff', '#ff4757', '#ffa502', '#70a1ff', '#be2edd', '#535c68', '#eb4d4b'];
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTick() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function draw() {
+        names = entriesArea.value.split('\n').filter(n => n.trim() !== "");
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = centerX - 40;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (names.length === 0) return;
+
+        const arcSize = (Math.PI * 2) / names.length;
+
+        names.forEach((name, i) => {
+            const angle = currentAngle + (i * arcSize);
+            ctx.beginPath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+            ctx.fill();
+
+            // Original White Text preserved
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle + arcSize / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "white";
+            ctx.font = `bold ${Math.max(14, 25 - names.length)}px sans-serif`;
+            ctx.fillText(name, radius - 45, 10);
+            ctx.restore();
+
+            // Pegs
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.arc(radius + 15, 0, 7, 0, Math.PI * 2);
+            ctx.fillStyle = "#E5E4E2";
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // Center Hub
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 60, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+
+        const currentTick = Math.floor(currentAngle / arcSize);
+        if(currentTick !== lastTickAngle && isSpinning) {
+            playTick();
+            pointer.classList.add('flick');
+            setTimeout(() => pointer.classList.remove('flick'), 50);
+            lastTickAngle = currentTick;
+        }
+    }
+
+    function startSpin() {
+        if (isSpinning || names.length === 0) return;
+        isSpinning = true;
+        const duration = 6500;
+        const start = currentAngle;
+        const rotations = (Math.random() * 10 + 12) * Math.PI * 2;
+        let startTime = null;
+
+        function anim(t) {
+            if (!startTime) startTime = t;
+            const progress = Math.min((t - startTime) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 4);
+            currentAngle = start + (ease * rotations);
+            draw();
+            if (progress < 1) requestAnimationFrame(anim);
+            else { isSpinning = false; finishSpin(); }
+        }
+        requestAnimationFrame(anim);
+    }
+
+    function finishSpin() {
+        const arcSize = (Math.PI * 2) / names.length;
+        const norm = ((currentAngle % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+        const winIdx = Math.floor((names.length - (norm / arcSize)) % names.length);
+        lastWinner = names[winIdx];
+        winnerNameDiv.innerText = lastWinner;
+        modal.style.display = 'flex';
+
+        const history = JSON.parse(localStorage.getItem('nsWheelHistory') || "[]");
+        history.push(lastWinner);
+        localStorage.setItem('nsWheelHistory', JSON.stringify(history));
+        updateHistoryUI(history);
+
+        confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+    }
+
+    function closeModal() { modal.style.display = 'none'; }
+
+    function removeWinner() {
+        const lines = entriesArea.value.split('\n');
+        const idx = lines.findIndex(l => l.trim() === lastWinner);
+        if (idx > -1) lines.splice(idx, 1);
+        entriesArea.value = lines.join('\n');
+        closeModal();
+        draw();
+    }
+
+    function updateHistoryUI(arr) {
+        historyListUI.innerHTML = arr.slice(-5).reverse().map(n => `<li>• ${n}</li>`).join('');
+    }
+
+    window.onload = () => {
+        setTimeout(() => {
+            document.getElementById('loader-wrapper').style.opacity = '0';
+            document.getElementById('loader-wrapper').style.visibility = 'hidden';
+            document.body.classList.remove('loading');
+        }, 2000);
+        
+        const saved = localStorage.getItem('wheelNames');
+        if (saved) entriesArea.value = saved;
+        updateHistoryUI(JSON.parse(localStorage.getItem('nsWheelHistory') || "[]"));
+        draw();
+    };
+
+    entriesArea.addEventListener('input', () => {
+        localStorage.setItem('wheelNames', entriesArea.value);
+        draw();
+    });
+</script>
+</body>
+</html>
