@@ -244,7 +244,6 @@ const textarea = document.getElementById("text-input");
 const charBox = document.getElementById("char-count");
 const wordBox = document.getElementById("word-count");
 const lineBox = document.getElementById("line-count");
-const modeBtn = document.getElementById('modeToggle');
 
 let prevChars = 0, prevWords = 0, prevLines = 0;
 
@@ -278,7 +277,6 @@ function toUpper(){ textarea.value = textarea.value.toUpperCase(); updateCounter
 function toLower(){ textarea.value = textarea.value.toLowerCase(); updateCounter(); }
 function toSentence() {
     let t = textarea.value.toLowerCase();
-    // Capitalizes the first letter of the string and any letter following a period, exclamation, or question mark
     textarea.value = t.replace(/(^\s*\w|[.!?]\s*\w)/g, function(c) {
         return c.toUpperCase();
     });
@@ -286,8 +284,8 @@ function toSentence() {
 }
 function toCapitalized() {
     textarea.value = textarea.value
-        .toLowerCase() // First, make everything lowercase
-        .replace(/(^|\s)\S/g, l => l.toUpperCase()); // Capitalize every non-whitespace character that follows a space or starts the string
+        .toLowerCase()
+        .replace(/(^|\s)\S/g, l => l.toUpperCase());
     updateCounter();
 }
 function toAlternating(){ 
@@ -322,26 +320,62 @@ document.getElementById("altBtn").onclick = toAlternating;
 document.getElementById("copyBtn").onclick = copyText;
 document.getElementById("clearBtn").onclick = clearText;
 
-modeBtn.addEventListener('click', () => {
-// APPLY SAVED THEME ON PAGE LOAD
+updateCounter();
+</script>
+<script>
+    // Footer appear on scroll down
+    let lastScroll = 0;
+    const footer = document.getElementById('footer');
+
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        if (currentScroll > lastScroll) {
+            footer.style.bottom = '0';
+        } else {
+            footer.style.bottom = '-100px';
+        }
+        lastScroll = currentScroll <= 0 ? 0 : currentScroll;
+    });
+
+// Dark/Light Mode Toggle (WITH PERSISTENCE)
+const modeBtn = document.getElementById('modeToggle');
+
+// Load saved mode on refresh
 if (localStorage.getItem('ns_theme') === 'dark') {
     document.body.classList.add('dark-mode');
     modeBtn.textContent = '☀️ Light Mode';
 } else {
     modeBtn.textContent = '🌙 Dark Mode';
 }
-document.body.classList.toggle('dark-mode');
 
-if (document.body.classList.contains('dark-mode')) {
-    localStorage.setItem('ns_theme', 'dark');
-    modeBtn.textContent = '☀️ Light Mode';
-} else {
-    localStorage.setItem('ns_theme', 'light');
-    modeBtn.textContent = '🌙 Dark Mode';
-}
+modeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+
+    if (document.body.classList.contains('dark-mode')) {
+        modeBtn.textContent = '☀️ Light Mode';
+        localStorage.setItem('ns_theme', 'dark');
+    } else {
+        modeBtn.textContent = '🌙 Dark Mode';
+        localStorage.setItem('ns_theme', 'light');
+    }
+});
+</script>
+<script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
 });
 
-updateCounter();
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 <script>
 // =========================
@@ -401,23 +435,6 @@ setInterval(checkSession, 30 * 1000);
         }
     });
 });
-</script>
-<script>
-document.addEventListener("keydown", function(e) {
-  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
-  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-    e.preventDefault();
-    return false;
-  }
-});
-
-document.addEventListener("keydown", function(e) {
-  if (e.ctrlKey && e.shiftKey && e.key === "C") {
-    e.preventDefault();
-  }
-});
-// Optional: Disable right-click
-document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 </body>
 </html>
