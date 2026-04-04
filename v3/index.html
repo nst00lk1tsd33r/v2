@@ -598,7 +598,8 @@ function animateSnap(){
     if(Math.abs(diff) < 0.001){
         current = snapped;
         update();
-        return; // Now it just stops here
+        autoRotate = setInterval(()=>rotate(1),4000); // DELETE THIS LINE
+        return;
     }
     // ... rest of code
 }
