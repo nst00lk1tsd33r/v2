@@ -229,6 +229,13 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+		/* PARTICLES */
+canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:-1;
+}
     </style>
 </head>
 <body class="loading">
@@ -447,5 +454,145 @@
 
         window.onload = loadFromLocalStorage;
     </script>
+	<script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (
+    e.keyCode === 123 ||
+    (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+    (e.ctrlKey && e.keyCode === 85)
+  ) {
+    e.preventDefault();
+    return false;
+  }
+
+  // Block Ctrl + A
+  if (e.ctrlKey && (e.key === "a" || e.key === "A")) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+
+// Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+// Disable text selection via mouse drag
+document.addEventListener("selectstart", e => e.preventDefault());
+
+// Prevent dragging elements (images/text)
+document.addEventListener("dragstart", e => e.preventDefault());
+</script>
+<script>
+    /* ALL YOUR CAROUSEL AND PARTICLE CODE REMAINS THE SAME */
+
+    // UPDATED LOADING LOGIC
+    document.addEventListener("DOMContentLoaded", () => {
+        const loader = document.getElementById("loader-wrapper");
+        const LOADING_DURATION = 3500; 
+        const ONE_HOUR = 3600000; 
+
+        const lastLoad = localStorage.getItem("ns_v3_load_time");
+        const now = Date.now();
+
+        if (!lastLoad || (now - lastLoad) > ONE_HOUR) {
+            // First time or expired - Show Loading
+            setTimeout(() => {
+                document.body.classList.add("loaded");
+                localStorage.setItem("ns_v3_load_time", now);
+                setTimeout(() => { loader.style.display = "none"; }, 1000);
+            }, LOADING_DURATION);
+        } else {
+            // Within 1 hour - Skip Loading
+            loader.style.display = "none";
+            document.body.classList.add("loaded");
+        }
+    });
+
+    // YOUR PROTECTION CODE (F12, Right Click, etc.)
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", function(e) {
+        if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+            e.preventDefault();
+        }
+    });
+</script>
+<style>
+/* Prevent text highlighting via mouse drag */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
+}
+</style>
+<script>
+/* =========================
+   PARTICLES (Background)
+========================= */
+const canvas = document.getElementById("bg");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+resize();
+window.addEventListener("resize", resize);
+
+let particles = [];
+
+// Initialize 80 floating particles
+for (let i = 0; i < 80; i++) {
+    particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2,
+        dx: Math.random() - 0.5,
+        dy: Math.random() - 0.5
+    });
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach(p => {
+        p.x += p.dx;
+        p.y += p.dy;
+
+        // Bounce off walls
+        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(246, 201, 14, 0.3)"; // Adjusted to match your gold theme
+        ctx.fill();
+    });
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+/* =========================
+   LOADER & INITIALIZATION
+========================= */
+window.onload = () => {
+    setTimeout(() => {
+        const loader = document.getElementById('loader-wrapper');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+        document.body.classList.remove('loading');
+    }, 3500);
+};
+</script>
 </body>
 </html>
