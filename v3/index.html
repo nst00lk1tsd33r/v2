@@ -620,7 +620,6 @@ carousel.addEventListener("mousedown", (e) => {
     isDragging = true;
     lastX = e.clientX;
     velocity = 0;
-    clearInterval(autoRotate);
 });
 
 /* =========================
@@ -673,7 +672,6 @@ window.addEventListener("mouseup", () => {
 carousel.addEventListener("touchstart", (e) => {
     lastX = e.touches[0].clientX;
     velocity = 0;
-    clearInterval(autoRotate);
 });
 
 carousel.addEventListener("touchmove", (e) => {
