@@ -576,11 +576,6 @@ function rotate(dir){
 update();
 
 /* =========================
-   AUTO ROTATE
-========================= */
-let autoRotate = setInterval(()=>rotate(1),8000);
-
-/* =========================
    PHYSICS SETTINGS
 ========================= */
 let isDragging = false;
@@ -599,13 +594,14 @@ function snapToNearest(){
     let snapped = Math.round(current);
     let diff = snapped - current;
 
-    function animateSnap(){
-        if(Math.abs(diff) < 0.001){
-            current = snapped;
-            update();
-            autoRotate = setInterval(()=>rotate(1),4000);
-            return;
-        }
+function animateSnap(){
+    if(Math.abs(diff) < 0.001){
+        current = snapped;
+        update();
+        return; // Now it just stops here
+    }
+    // ... rest of code
+}
 
         current += diff * snapStrength;
         diff = snapped - current;
