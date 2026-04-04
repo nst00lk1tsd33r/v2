@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NS CaseFlip</title>
-<link rel="icon" type="image/jpg" href="https://i.imgur.com/7xDufQI.jpeg">
+<link rel="icon" type="image/png" href="https://png.pngtree.com/png-clipart/20250104/original/pngtree-bright-blue-glitter-star-png-image_19604661.png">
 <style>
     /* Reset */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -323,29 +323,8 @@ document.getElementById("copyBtn").onclick = copyText;
 document.getElementById("clearBtn").onclick = clearText;
 
 modeBtn.addEventListener('click', () => {
-// Dark/Light Mode Toggle (WITH PERSISTENCE)
-// Dark/Light Mode Toggle (WITH PERSISTENCE)
-const modeBtn = document.getElementById('modeToggle');
-
-// Apply saved theme on page load
-if (localStorage.getItem('ns_theme') === 'dark') {
-    document.body.classList.add('dark-mode');
-    modeBtn.textContent = '☀️ Light Mode';
-} else {
-    modeBtn.textContent = '🌙 Dark Mode';
-}
-
-// Toggle handler
-modeBtn.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
-
-    if (document.body.classList.contains('dark-mode')) {
-        modeBtn.textContent = '☀️ Light Mode';
-        localStorage.setItem('ns_theme', 'dark');
-    } else {
-        modeBtn.textContent = '🌙 Dark Mode';
-        localStorage.setItem('ns_theme', 'light');
-    }
+    modeBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
 });
 
 updateCounter();
