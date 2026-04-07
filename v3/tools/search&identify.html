@@ -340,7 +340,7 @@
                 // Special direct links usually work better with Name only to avoid 404s
                 links[20].href = `https://www.venmo.com/u/${name.replace(/\s+/g, '-')}`;
                 links[20].classList.remove('hidden-link');
-                links[21].href = `https://open.spotify.com/search/${encodeURIComponent(name)}`;
+                links[21].href = `https://open.spotify.com/search/${encodeURIComponent(name)}/users`;
                 links[21].classList.remove('hidden-link');
             } else {
                 bulkBtn.style.display = "none";
