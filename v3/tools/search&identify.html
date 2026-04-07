@@ -223,7 +223,7 @@
                             <th>Additional</th>
                             <th>Bulk</th>
                             <th title="Facebook">FB</th>
-                            <th title="Picuki">PIC</th>
+                            <th title="Picuki">IG</th>
                             <th title="Twitter">TW</th>
                             <th title="YouTube">YT</th>
                             <th title="LinkedIn">LI</th>
@@ -254,7 +254,7 @@
 
     <script>
         const searchTemplates = [
-            "https://www.facebook.com/search/people/?q=", "https://www.picuki.com/search/",
+            "https://www.facebook.com/search/people/?q=", "https://imginn.com/search/",
             "https://www.x.com/search?q=", "https://www.youtube.com/results?search_query=",
             "https://www.linkedin.com/search/results/people/?keywords=", "https://www.tiktok.com/search/user?q=",
             "https://www.pinterest.com/search/users/?q=", "https://www.strava.com/athletes/search?text=",
@@ -338,7 +338,7 @@
                 }
 
                 // Special direct links usually work better with Name only to avoid 404s
-                links[20].href = `https://www.venmo.com/u/${name.replace(/\s+/g, '-')}`;
+                links[20].href = `https://account.venmo.com/u/${name.replace(/\s+/g, '-')}`;
                 links[20].classList.remove('hidden-link');
                 links[21].href = `https://open.spotify.com/search/${encodeURIComponent(name)}/users`;
                 links[21].classList.remove('hidden-link');
