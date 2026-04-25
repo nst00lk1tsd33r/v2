@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Template Writer</title>
-    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
     <link rel="stylesheet" href="templatewriterstyle.css">
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -17,7 +17,9 @@
     ctrlTimer: null,
     matchType: '', 
     accountType: '',
+    pubType: '',
     urls: [{ link: '' }],
+    pubSets: [{ type: '', urls: [{ link: '' }] }],
     ordNum: '',
     
     feats: {},
@@ -46,7 +48,6 @@
             const el = document.getElementById(id);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Optional: Flash the border slightly to draw the eye
                 el.style.borderColor = 'var(--accent)';
                 setTimeout(() => el.style.borderColor = 'rgba(246, 201, 14, 0.15)', 800);
             }
@@ -228,7 +229,45 @@
         let accStr = '';
         if (this.accountType === 'bs') accStr = 'Business Page';
         else if (this.accountType === 'gsr') accStr = 'Google';
-        else if (this.accountType === 'pub') accStr = 'on (a) public socmed post/s/photo/s/video/s. No personal match found.';
+        else if (this.accountType === 'pub') {
+            let isSingular = !!this.pubType;
+            let isMultiple = this.pubSets.length > 0 && this.pubSets[0].type;
+            
+            if (isSingular) {
+                let word = this.pubType; 
+                let platformName = 'socmed'; 
+                
+                const activeUrls = this.urls.filter(u => u.link.trim() !== '');
+                if (activeUrls.length > 0) {
+                    let u = activeUrls[0].link.trim();
+                    let href = u.startsWith('http') ? u : 'https://' + u;
+                    word = `<a href='${href}' target='_blank'>${word}</a>`;
+                    
+                    let domain = u.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0].split('.')[0];
+                    if (domain) platformName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                }
+                accStr = `on a public ${platformName} ${word}. No personal match found.`;
+                
+            } else if (isMultiple) {
+                let platformName = 'socmed';
+                
+                let firstActiveSet = this.pubSets.find(s => s.urls.some(u => u.link.trim() !== ''));
+                if (firstActiveSet) {
+                    let u = firstActiveSet.urls.find(u => u.link.trim() !== '').link.trim();
+                    let domain = u.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0].split('.')[0];
+                    if (domain) platformName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                }
+                
+                let baseWord = 'posts'; 
+                if (this.pubSets.length === 1 || this.pubSets.every(s => s.type === this.pubSets[0].type)) {
+                    baseWord = this.pubSets[0].type; 
+                }
+                accStr = `on public ${platformName} ${baseWord}. No personal match found.`;
+                
+            } else {
+                accStr = 'on (a) public socmed post/s/photo/s/video/s. No personal match found.';
+            }
+        }
         else if (this.accountType === 'gfm') accStr = 'GoFundMe Page';
         else if (this.accountType === 'mgs') accStr = 'Mugshot';
         else if (this.accountType === 'psg') accStr = 'Personal Page';
@@ -253,7 +292,18 @@
 
         if (this.accountType !== 'gsr') {
             if (this.accountType === 'pub') {
-                html += `<p>${prefStr}${joinedUrlsText ? ` ${joinedUrlsText}` : ''}</p>\n<p>&nbsp;</p>\n`;
+                let urlPrint = joinedUrlsText;
+                let isSingular = !!this.pubType;
+                let isMultiple = this.pubSets.length > 0 && this.pubSets[0].type;
+                const activeUrls = this.urls.filter(u => u.link.trim() !== '');
+                
+                if (isSingular && activeUrls.length > 0) {
+                    urlPrint = activeUrls.slice(1).map(u => u.link.trim()).join(', ');
+                } else if (isMultiple) {
+                    urlPrint = '';
+                }
+                
+                html += `<p>${prefStr}${urlPrint ? ` ${urlPrint}` : ''}</p>\n<p>&nbsp;</p>\n`;
             } else {
                 html += `<p><strong>${prefStr}:</strong>${joinedUrlsText ? ` ${joinedUrlsText}` : ''}</p>\n<p>&nbsp;</p>\n`;
             }
@@ -269,25 +319,67 @@
         if (this.accountType === 'gsr' && activeUrls.length > 0) {
             html += `<p>&nbsp;</p>\n`;
             
+            let domainCounts = {};
+            
             activeUrls.forEach(u => {
                 let urlStr = u.link.trim();
                 let href = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
                 
-
                 let domain = urlStr.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '');
                 domain = domain.split('/')[0].split('.')[0];
 
                 let siteName = domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : 'Link';
                 
-                html += `<p><a href='${href}' target='_blank'>${siteName}</a></p>\n`;
+                domainCounts[siteName] = (domainCounts[siteName] || 0) + 1;
+                
+                let displayName = siteName;
+                if (domainCounts[siteName] > 1) {
+                    displayName += ` (${domainCounts[siteName]})`;
+                }
+                
+                html += `<p><a href='${href}' target='_blank'>${displayName}</a></p>\n`;
             });
+        }
+
+        if (this.accountType === 'pub' && this.pubSets.length > 0 && this.pubSets[0].type) {
+            this.pubSets.forEach(pSet => {
+                if (!pSet.type) return;
+                
+                const activePubUrls = pSet.urls.filter(u => u.link.trim() !== '');
+                if (activePubUrls.length > 0) {
+                    html += `<p>&nbsp;</p>\n`;
+                    
+                    let capWord = pSet.type.slice(0, -1);
+                    capWord = capWord.charAt(0).toUpperCase() + capWord.slice(1);
+                    
+                    activePubUrls.forEach((u, index) => {
+                        let urlStr = u.link.trim();
+                        let href = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
+                        html += `<p><a href='${href}' target='_blank'>${capWord} ${index + 1}</a></p>\n`;
+                    });
+                }
+            });
+        }
+
+        if (this.accountType === 'pub' && ['posts', 'photos', 'videos'].includes(this.pubType)) {
+            const activePubUrls = this.pubUrls.filter(u => u.link.trim() !== '');
+            if (activePubUrls.length > 0) {
+                html += `<p>&nbsp;</p>\n`;
+                let capWord = this.pubType.slice(0, -1);
+                capWord = capWord.charAt(0).toUpperCase() + capWord.slice(1);
+                
+                activePubUrls.forEach((u, index) => {
+                    let urlStr = u.link.trim();
+                    let href = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
+                    html += `<p><a href='${href}' target='_blank'>${capWord} ${index + 1}</a></p>\n`;
+                });
+            }
         }
 
         const getOrdinal = (n) => {
             let v = parseInt(n);
-            if (!v || isNaN(v)) return ''; // Return blank if empty
+            if (!v || isNaN(v)) return '';
             let mod100 = v % 100;
-            // Catch 11th, 12th, 13th, otherwise use standard st, nd, rd, th
             let suffix = (mod100 >= 10 && mod100 <= 20) ? 'th' : ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'][v % 10];
             return v + suffix + ' ';
         };
@@ -302,7 +394,7 @@
 @keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 1500); }"
 @keyup.window="if($event.key === 'Control') { clearTimeout(ctrlTimer); ctrlTimer = null; showQuickPreview = false; }">
 
-<div class="navbar" style="position: relative;">
+    <div class="navbar" style="position: relative;">
         <div class="nav-inner">
             <div class="nav-left">
             <div class="nav-left"><a href="https://nstoolkits.site/v3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
@@ -430,20 +522,20 @@
         
         <div class="sidebar-scroll">
             
-<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 10px 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
-    <div style="display: flex; flex-direction: column;">
-        <span style="font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Identified Account #</span>
-        <span style="font-size: 9px; color: #666;">(Leave blank for default)</span>
-    </div>
-    <input type="number" 
-           class="drawer-input no-spinners" 
-           placeholder="#" 
-           x-model="ordNum" 
-           min="1" 
-           max="999"
-           oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);"
-           style="width: 60px; min-width: 60px; height: 35px; text-align: center; font-weight: bold; flex: none; margin: 0;">
-</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 10px 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Identified Account #</span>
+                <span style="font-size: 9px; color: #666;">(Leave blank for default)</span>
+            </div>
+            <input type="number" 
+                   class="drawer-input no-spinners" 
+                   placeholder="#" 
+                   x-model="ordNum" 
+                   min="1" 
+                   max="999"
+                   oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);"
+                   style="width: 60px; min-width: 60px; height: 35px; text-align: center; font-weight: bold; flex: none; margin: 0;">
+        </div>
 
             <div x-show="!Object.values(feats).some(v => v)" style="display: flex; align-items: center; justify-content: center; height: 120px; border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px; color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; text-align: center; padding: 20px; margin-bottom: 15px;">
                 Select identifiers to reveal options
@@ -678,6 +770,76 @@
         </div>
     </div>
 
+    <div x-show="step === 3 && accountType === 'pub'"
+         x-transition:enter="transition ease-out duration-300 delay-100"
+         x-transition:enter-start="opacity-0 translate-x-10"
+         x-transition:enter-end="opacity-100 translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-x-0"
+         x-transition:leave-end="opacity-0 translate-x-10"
+         style="position: fixed; top: 100px; right: 20px; bottom: 100px; width: 340px; background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(246, 201, 14, 0.2); border-radius: 16px; padding: 20px 10px 20px 20px; z-index: 80; box-shadow: 0 10px 40px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;">
+        
+        <h3 style="margin: 0 10px 15px 0; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; flex-shrink: 0;">Public Appearance Type</h3>
+        
+        <div class="sidebar-scroll">
+            <div style="display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px;">
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <strong style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase;">Singular</strong>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="custom-toggle"><input type="radio" id="pubPost" name="pubGroup" value="post" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubPost">Post</label></div>
+                        <div class="custom-toggle"><input type="radio" id="pubPhoto" name="pubGroup" value="photo" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubPhoto">Photo</label></div>
+                        <div class="custom-toggle"><input type="radio" id="pubVideo" name="pubGroup" value="video" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubVideo">Video</label></div>
+                    </div>
+                </div>
+
+                <template x-for="(pSet, sIndex) in pubSets" :key="sIndex">
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase;" x-text="sIndex === 0 ? 'Multiple' : 'Multiple (Set ' + (sIndex + 1) + ')'"></strong>
+                            
+                            <button x-show="sIndex > 0" 
+                                    @click="pubSets.splice(sIndex, 1)" 
+                                    style="color: #e74c3c; background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.2); border-radius: 4px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 10px;" 
+                                    onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" 
+                                    onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'" 
+                                    title="Remove this set">✖</button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div class="custom-toggle"><input type="radio" :id="'pubPosts'+sIndex" :name="'pubGroupMult'+sIndex" value="posts" x-model="pSet.type" @change="pubType = ''"><label :for="'pubPosts'+sIndex">Posts</label></div>
+                            <div class="custom-toggle"><input type="radio" :id="'pubPhotos'+sIndex" :name="'pubGroupMult'+sIndex" value="photos" x-model="pSet.type" @change="pubType = ''"><label :for="'pubPhotos'+sIndex">Photos</label></div>
+                            <div class="custom-toggle"><input type="radio" :id="'pubVideos'+sIndex" :name="'pubGroupMult'+sIndex" value="videos" x-model="pSet.type" @change="pubType = ''"><label :for="'pubVideos'+sIndex">Videos</label></div>
+                        </div>
+                        
+                        <div x-show="pSet.type" x-transition style="margin-top: 5px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                            <strong style="color: var(--accent); font-size: 11px; text-transform: uppercase;">Hyperlinks</strong>
+                            
+                            <template x-for="(pu, index) in pSet.urls" :key="index">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <div style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 4px; width: 24px; height: 24px; color: #777; font-size: 10px; font-weight: bold;" x-text="index + 1"></div>
+                                    <input type="text" x-model="pu.link" class="drawer-input" placeholder="https://..." style="flex: 1; height: 32px; font-size: 13px; min-width: 0;">
+                                    <button x-show="pSet.urls.length > 1" @click="pSet.urls.splice(index, 1)" style="color: #e74c3c; border: none; background: rgba(231, 76, 60, 0.1); border-radius: 4px; width: 28px; height: 28px; cursor: pointer;">✖</button>
+                                </div>
+                            </template>
+                            
+                            <button @click="pSet.urls.push({link: ''})" style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.15); color: #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.2s; width: 100%; margin-top: 5px;">
+                                + ADD LINK
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                
+                <button x-show="pubSets[pubSets.length - 1].type" @click="pubSets.push({type: '', urls: [{link: ''}]})" style="background: rgba(246, 201, 14, 0.1); border: 1px solid rgba(246, 201, 14, 0.3); color: var(--accent); padding: 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; width: 100%; margin-top: 5px;">
+                    + ADD ANOTHER SET
+                </button>
+
+            </div>
+        </div>
+        
+    </div>
+
     <div class="slider-wrapper">
         <div class="mainslider" :style="'transform: translateX(-' + ((step - 1) * 100) + '%);'">
             
@@ -905,10 +1067,20 @@
         <button class="discard-btn" 
                 @click="
                     if(confirm('Are you sure you want to discard all progress and start over?')) {
+                        pubSets.splice(1); 
+                        pubSets[0].type = ''; 
+                        pubSets[0].urls = [{ link: '' }];
+
                         step = 1;
+                        showToast = false;
+                        showQuickPreview = false;
+                        showQuickUrl = false;
+                        ctrlTimer = null;
                         matchType = '';
                         accountType = '';
+                        pubType = '';
                         urls = [{ link: '' }];
+                        ordNum = '';
                         
                         feats = { 
                             alias: false, business: false, fname: false, mname: false, lname: false, 
