@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Writer</title>
+    <style>
+        {
+        margin: 0;
+        padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>TEMPLATE WRITER</h1>
+    <section id="matchtype">
+        <input type="checkbox" id="match"><label for="match">Match</label><input type="checkbox" id="possible"><label for="possible">Possible</label>
+    </section>
+    <br>
+    <section id="accounttype">
+        <input type="checkbox" id="standard"><label for="standard">Standard</label>
+        <input type="checkbox" id="pub"><label for="pub">Public</label>
+        <input type="checkbox" id="bs"><label for="bs">Business</label>
+    </section>
+    <section id="linkbox">
+        <br>
+        <label for="textbox">Link: </label><input type="text" id="textbox">
+    </section>
+    <section id="features">
+        <br>
+        1 POINT:
+        <br>
+        <input type="checkbox" id="flname"><label for="flname">First and Last</label>
+        <input type="checkbox" id="alias"><label for="alias">Alias</label>
+        <input type="checkbox" id="fname"><label for="fname">First Name</label>
+        <input type="checkbox" id="lname"><label for="lname">Last Name Initial</label>
+        <input type="checkbox" id="bname"><label for="bname">Business Name</label>
+        <input type="checkbox" id="age"><label for="age">Age</label>
+        <input type="checkbox" id="loc"><label for="loc">Location</label>
+        <input type="checkbox" id="dob"><label for="dob">Date of Birth</label>
+        <input type="checkbox" id="sch"><label for="sch">School</label>
+        <input type="checkbox" id="pho"><label for="pho">Phone</label>
+        <input type="checkbox" id="mail"><label for="mail">Email</label>
+        <input type="checkbox" id="umail"><label for="umail">User on Email</label>
+	<input type="checkbox" id="job"><label for="job">Employment</label>
+	<input type="checkbox" id="nat"><label for="nat">Nature of Work</label>
+        <input type="checkbox" id="rel"><label for="rel">Relative</label>
+        <br>
+        <br>
+        2 POINTS:
+        <br>
+        <input type="checkbox" id="user"><label for="user">Username</label>
+        <input type="checkbox" id="linko"><label for="linko">Linked</label>
+        <input type="checkbox" id="fbf"><label for="fbf">FB</label>
+        <input type="checkbox" id="igf"><label for="igf">IG</label>
+        <input type="checkbox" id="photo"><label for="photo">Photo</label>
+        <input type="checkbox" id="visual"><label for="visual">Visual</label>
+    </section>
+    <section>
+        <br>
+        <button id="generateBtn">Generate</button>
+        <button id="clearBtn">Clear</button>
+    </section>
+    <section id="builder">
+        <p>Text1</p>
+        &nbsp;
+        <p>Text2</p>
+    </section>
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', generateText);
+        
+        function generateText() {
+            // ── Read inputs ─────────────────────────────────────────────────────────────
+            const match     = document.getElementById('match').checked;
+            const possible  = document.getElementById('possible').checked;
+        
+            const standard  = document.getElementById('standard').checked;
+            const isPublic  = document.getElementById('pub').checked;
+            const business  = document.getElementById('bs').checked;
+        
+            const featFlname = document.getElementById('flname').checked;
+            const featAlias = document.getElementById('alias').checked;
+            const featFname = document.getElementById('fname').checked;
+            const featLname = document.getElementById('lname').checked;
+            const featBname = document.getElementById('bname').checked;
+            const featAge   = document.getElementById('age').checked;
+            const featLoc   = document.getElementById('loc').checked;
+            const featDob   = document.getElementById('dob').checked;
+            const featSch   = document.getElementById('sch').checked;
+            const featPho   = document.getElementById('pho').checked;
+            const featMail   = document.getElementById('mail').checked;
+            const featUmail   = document.getElementById('umail').checked;
+            const featUser  = document.getElementById('user').checked;
+            const featJob   = document.getElementById('job').checked;
+            const featNat   = document.getElementById('nat').checked;
+            const featRel   = document.getElementById('rel').checked;
+            const featLinko = document.getElementById('linko').checked;
+            const featFbf   = document.getElementById('fbf').checked;
+            const featIgf   = document.getElementById('igf').checked;
+            const featPhoto   = document.getElementById('photo').checked;
+            const featVis   = document.getElementById('visual').checked;
+        
+            const link = document.getElementById('textbox').value.trim();
+        
+            // ── Determine account type & prefix ────────────────────────────────────────
+            let accountType = '';
+            let prefix = 'Identified Account';
+        
+            if (business) {
+                accountType = 'Business Page';
+                prefix = 'Identified Business Page';
+            } else if (isPublic) {
+                accountType = 'Public Page';
+                prefix = 'Identified Public Page';
+            } else if (standard) {
+                accountType = 'Account';
+                // prefix stays "Identified Account"
+            }
+        
+            // For non-Standard accounts → ignore "Possible" (treat as invalid combo)
+            const usePossible = possible && standard && !business && !isPublic;
+        
+            if (accountType) {
+                if (match && usePossible) {
+                    prefix = '(Please select Match or Possible only)';
+                } else if (match) {
+                    prefix = 'Identified ' + accountType;
+                } else if (usePossible) {
+                    prefix = 'Possible ' + accountType;
+                }
+            } else {
+                prefix = '(no account type selected)';
+            }
+        
+            // ── Build features string ──────────────────────────────────────────────────
+            const features = [];
+            if (featFlname)  features.push('first and last name');
+            if (featAlias)  features.push('alias');
+            if (featFname)  features.push('first name');
+            if (featLname)  features.push('last name initial');
+            if (featBname)  features.push('business name');
+            if (featAge)  features.push('age');
+            if (featLoc)  features.push('location');
+            if (featDob)  features.push('date of birth');
+            if (featSch)  features.push('school attended ()');
+            if (featPho)  features.push('phone number (+1-)');
+            if (featMail)  features.push('email address ()');
+            if (featUmail)  features.push('username (username) as seen on the email address ()');
+            if (featUser) features.push('same username (username) as seen on the identified account');
+            if (featJob)  features.push('employment (company) as seen on the identified account');
+            if (featNat)  features.push('nature of work (nature) as seen on the identified account');
+            if (featRel)  features.push('a relative (relative) as seen on ');
+            if (featLinko)  features.push('linked to the identified account');
+            if (featFbf)  features.push('followed by a Facebook friend (friend)');
+            if (featIgf)  features.push('a common follower (follower) as seen on the identified Instagram account');
+            if (featPhoto)  features.push('same profile photo as seen on the identified account');
+            if (featVis)  features.push('visual match');
+        
+            let featuresStr = 'none';
+            if (features.length === 1) {
+                featuresStr = features[0];
+            } else if (features.length === 2) {
+                featuresStr = features.join(' and ');
+            } else if (features.length > 2) {
+                const last = features.pop();
+                featuresStr = features.join(', ') + ', and ' + last;
+            }
+        
+            // ── Build final result ─────────────────────────────────────────────────────
+            let result = '';
+        
+            result += `<p><strong>${prefix}:</strong> ${link || '[link missing]'}</p>\n`;
+            result += '<p>&nbsp;</p>\n';
+        
+            if (features.length > 0 || match || possible) {
+                let matchWord = match ? 'Match' : (usePossible ? 'Possible match' : '');
+                if (matchWord) {
+                    result += `<p>${matchWord} found by ${featuresStr}.</p>\n`;
+                }
+            }
+        
+            document.getElementById('builder').innerHTML = result;
+        }
+        
+        // ── Clear button ───────────────────────────────────────────────────────────────
+        document.getElementById("clearBtn").onclick = () => {
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+            document.getElementById("textbox").value = "";
+            document.getElementById("builder").innerHTML = '<p>Text1</p>&nbsp;<p>Text2</p>';
+        };
+        </script>
+</body>
+</html>
