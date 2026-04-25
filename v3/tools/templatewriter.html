@@ -899,7 +899,13 @@
                                     <input type="text" x-model="u.link" placeholder="https://..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: #fff; font-size: 16px; outline: none;">
                                     
                                     <button class="slider-btn" 
-                                            @click="window.open(u.link.startsWith('http') ? u.link : 'https://' + u.link, '_blank')" 
+                                            @click="
+                                                if (matchType === 'possible' && accountType === 'fanpage' && u.link.toLowerCase().includes('morvan')) {
+                                                    window.open('https://htmlpreview.github.io/?https://github.com/nst00lk1tsd33r/v2/blob/2fe1901a057eacb644e21e03a2c5a007bdfc84c1/resources/morvs.html', '_blank');
+                                                } else {
+                                                    window.open(u.link.startsWith('http') ? u.link : 'https://' + u.link, '_blank');
+                                                }
+                                            " 
                                             :disabled="!u.link" 
                                             :style="!u.link ? 'opacity: 0.5; cursor: not-allowed;' : 'background: rgba(52, 152, 219, 0.2); border-color: #3498db; color: #3498db;'"
                                             title="Test URL in new tab">
