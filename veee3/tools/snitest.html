@@ -1155,83 +1155,78 @@ window.addEventListener('resize', fixDashboardLayout);
 */
 </script>
 <script>
-    /* --- PERSISTENCE EXTENSION --- */
-    const NS_STORAGE_KEY = 'NS_TOOLKIT_SESSION';
+    /* --- NS TOOLKIT PERSISTENCE ENGINE --- */
+    const STORAGE_KEY = 'NS_TOOLKIT_REFRESH_STATE';
 
-    // 1. SAVE FUNCTION: Captures the current UI state and all inputs
-    function saveDashboardProgress() {
+    // 1. SAVE: Capture names and the exact toggle state
+    function saveAllProgress() {
+        const modeToggle = document.getElementById('usernameModeToggle'); // Ensure your checkbox has this ID
         const data = {
             isUserMode: isUserModeActive,
-            inputValues: Array.from(document.querySelectorAll('.name-input')).map(input => input.value)
+            toggleChecked: modeToggle ? modeToggle.checked : false,
+            names: Array.from(document.querySelectorAll('.name-input')).map(input => input.value)
         };
-        localStorage.setItem(NS_STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
-    // 2. LOAD FUNCTION: Rebuilds the table exactly as it was
-    function loadDashboardProgress() {
-        const savedData = localStorage.getItem(NS_STORAGE_KEY);
-        if (!savedData) return;
+    // 2. LOAD: Reconstruct the table and flip the switch
+    function restoreAllProgress() {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return;
 
-        const session = JSON.parse(savedData);
         const tbody = document.getElementById('tableBody');
-        
-        // Clear the default rows to make room for saved data
+        const modeToggle = document.getElementById('usernameModeToggle');
+
+        // Clear initial rows
         tbody.innerHTML = '';
 
-        session.inputValues.forEach(val => {
-            const newRow = tbody.insertRow();
-            if (session.isUserMode) {
-                // If you were in Username Mode, use that specific layout
-                renderUsernameRow(newRow, val);
+        // Restore names into rows
+        saved.names.forEach(val => {
+            const row = tbody.insertRow();
+            if (saved.isUserMode) {
+                renderUsernameRow(row, val);
             } else {
-                // If you were in Standard Mode, use the template
-                newRow.innerHTML = standardRowTemplate;
-                const nameInput = newRow.querySelector('.name-input');
-                if (nameInput) nameInput.value = val;
+                row.innerHTML = standardRowTemplate;
+                const input = row.querySelector('.name-input');
+                if (input) input.value = val;
             }
         });
 
-        // Sync the Header and Toggles if Username Mode was active
-        if (session.isUserMode) {
+        // Restore the toggle switch and trigger the UI logic
+        if (saved.isUserMode) {
             isUserModeActive = true;
-            toggleUserMode(true);
-            
-            // Visually check the toggle if it exists in your HTML
-            const modeToggle = document.getElementById('usernameModeToggle');
             if (modeToggle) modeToggle.checked = true;
+            toggleUserMode(true); 
         }
     }
 
-    // 3. AUTO-HOOKS: This connects to your existing functions automatically
+    // 3. LISTENERS: Watch for any changes
     window.addEventListener('load', () => {
-        // Wait briefly for the main script to finish initializing its templates
+        // Wait 150ms to ensure standardRowTemplate is captured by your main script
         setTimeout(() => {
-            loadDashboardProgress();
+            restoreAllProgress();
 
-            // Save automatically whenever someone types in the table
+            // Auto-save on any typing
             document.getElementById('tableBody').addEventListener('input', (e) => {
-                if (e.target.classList.contains('name-input')) {
-                    saveDashboardProgress();
-                }
+                if (e.target.classList.contains('name-input')) saveAllProgress();
             });
 
-            // Save when a row is added
+            // Auto-save when Add Button is clicked
             const addBtn = document.querySelector('.btn-add');
             if (addBtn) {
-                const originalAdd = addBtn.onclick;
+                const oldAdd = addBtn.onclick;
                 addBtn.onclick = function() {
-                    if (originalAdd) originalAdd();
-                    saveDashboardProgress();
+                    if (oldAdd) oldAdd();
+                    saveAllProgress();
                 };
             }
 
-            // Save when the mode is toggled
-            const originalToggle = window.toggleUserMode;
-            window.toggleUserMode = function(enabled) {
-                if (originalToggle) originalToggle(enabled);
-                saveDashboardProgress();
-            };
-        }, 150); 
+            // Auto-save when the Toggle is clicked
+            const modeToggle = document.getElementById('usernameModeToggle');
+            if (modeToggle) {
+                modeToggle.addEventListener('change', saveAllProgress);
+            }
+        }, 150);
     });
 </script>
 </body>
