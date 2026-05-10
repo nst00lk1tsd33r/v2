@@ -228,6 +228,9 @@
         #loader-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #080808; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .gold-ring { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 2px solid #d4af37; border-radius: 50%; animation: spin 1s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
+		th:nth-child(5), td:nth-child(5) { width: auto !important; }
+		th:nth-child(6), td:nth-child(6) { width: 85px !important; white-space: nowrap; }
+		[style*="display: none"] { display: none !important; width: 0 !important; padding: 0 !important; }
     </style>
 </head>
 <body>
@@ -254,7 +257,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <h2>Socmed S&I</h2>
-            <p>Advanced Social Intelligence Gathering. v5.0</p>
+            <p>Advanced Social Intelligence Gathering. v6.0</p>
             
             <div class="input-group">
                 <label>Management</label>
@@ -276,6 +279,20 @@
                     <span class="slider"></span>
                 </label>
             </div>
+			
+			<div class="toggle-container">
+				<label style="font-size: 10px; cursor: pointer;" for="engineToggle">Search Engines</label>
+				<label class="switch">
+				<input type="checkbox" id="engineToggle" onchange="toggleSection('engineSection', this.checked)">
+				<span class="slider"></span>
+			</label>
+			</div>
+
+				<div id="engineSection" style="display: none; flex-direction: column; gap: 4px; border-left: 2px solid var(--accent-gold); padding-left: 10px; margin-top: 5px;">
+					<button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="engineSearch('google')">Google Search</button>
+					<button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="engineSearch('bing')">Bing Search</button>
+					<button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="engineSearch('ddg')">DuckDuckGo</button>
+			</div>
             
             <div class="toggle-container">
                 <label style="font-size: 10px; cursor: pointer;" for="legalToggle">Lawsuit</label>
@@ -320,6 +337,20 @@
 			<button class="btn btn-crim" style="border-color: #00d4ff;" onclick="finSearch('cash')">CashApp ($)</button>
 			<button class="btn btn-crim" style="border-color: #00d4ff;" onclick="finSearch('paypal')">PayPal.me</button>
 			</div>
+			<div class="toggle-container">
+    <label style="font-size: 10px; cursor: pointer;" for="yelpToggle">Yelp Portal</label>
+    <label class="switch">
+        <input type="checkbox" id="yelpToggle" onchange="toggleSection('yelpSection', this.checked)">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<div id="yelpSection" style="display: none; flex-direction: column; gap: 4px; border-left: 2px solid #ff0000; padding-left: 10px; margin-top: 5px;">
+    <p style="font-size: 9px; color: #FFFFFF; margin: 2px 0 6px 0; opacity: 0.8; line-height: 1.2;">
+        Direct Yelp Access. (Find friends via address book)
+    </p>
+    <button class="btn btn-crim" style="border-color: #ff0000; width: 100%;" onclick="openYelpPortal()">Open Yelp Search</button>
+</div>
 			&nbsp;
 			<div class="history-container">
 			<label>Recent Searches</label>
@@ -362,43 +393,41 @@
     let searchTimeout;
 
     const mainSocials = [
-        { short: "FB", full: "Facebook" }, { short: "IG", full: "Instagram" }, { short: "TW", full: "Twitter" },
-        { short: "YT", full: "YouTube" }, { short: "LI", full: "LinkedIn" }, { short: "TK", full: "TikTok" },
-        { short: "PIN", full: "Pinterest" }, { short: "STR", full: "Strava" }, { short: "TUM", full: "Tumblr" },
-        { short: "GO", full: "Google" }
-    ];
+    { short: "FB", full: "Facebook" }, { short: "IG", full: "Instagram" }, { short: "TW", full: "Twitter" },
+    { short: "YT", full: "YouTube" }, { short: "LI", full: "LinkedIn" }, { short: "TK", full: "TikTok" },
+    { short: "PIN", full: "Pinterest" }, { short: "STR", full: "Strava" }, { short: "TUM", full: "Tumblr" }
+];
 
-    const subSocials = [
-        { short: "POS", full: "Poshmark" }, { short: "CLA", full: "Classmates" }, { short: "ETS", full: "Etsy" },
-        { short: "SC", full: "SoundCloud" }, { short: "QU", full: "Quora" }, { short: "MUG", full: "Mugshots" },
-        { short: "VSC", full: "VSCO" }, { short: "MY", full: "MySpace" }, 
-        { short: "VIM", full: "Vimeo" }, { short: "GFM", full: "GoFundMe" }, 
-        { short: "VEN", full: "Venmo" }, { short: "SPO", full: "Spotify" },
-        { short: "BSK", full: "BlueSky" }
-    ];
+const subSocials = [
+    { short: "POS", full: "Poshmark" }, { short: "CLA", full: "Classmates" }, { short: "ETS", full: "Etsy" },
+    { short: "SC", full: "SoundCloud" }, { short: "QU", full: "Quora" }, { short: "MUG", full: "Mugshots" },
+    { short: "VSC", full: "VSCO" }, { short: "MY", full: "MySpace" }, 
+    { short: "VIM", full: "Vimeo" }, { short: "GFM", full: "GoFundMe" }, 
+    { short: "VEN", full: "Venmo" }, { short: "SPO", full: "Spotify" },
+    { short: "BSK", full: "BlueSky" }
+];
 
-    const searchTemplates = [
-        "https://www.facebook.com/search/top/?q=", 
-        "https://imginn.com/search/",              
-        "https://www.x.com/search?q=",             
-        "https://www.youtube.com/results?search_query=",
-        "https://www.linkedin.com/search/results/people/?keywords=", 
-        "https://www.tiktok.com/search/user?q=",
-        "https://www.pinterest.com/search/users/?q=",
-        "https://www.strava.com/athletes/search?text=",
-        "https://www.tumblr.com/search/",
-        "https://www.google.com/search?q=",
-        "https://www.poshmark.com/search?type=people&query=",
-        "https://www.classmates.com/siteui/search/results?q=",
-        "https://www.etsy.com/search_results_people.php?search_query=",
-        "https://soundcloud.com/search/people?q=",
-        "https://www.quora.com/search?type=profile&q=",
-        "https://www.mugshots.com/search.html?q=",
-        "https://vsco.co/search/people/",
-        "https://www.myspace.com/search/people?q=",
-        "https://www.vimeo.com/search?q=",
-        "https://www.gofundme.com/s?q="
-    ];
+const searchTemplates = [
+    "https://www.facebook.com/search/top/?q=", 
+    "https://imginn.com/search/",              
+    "https://www.x.com/search?q=",             
+    "https://www.youtube.com/results?search_query=",
+    "https://www.linkedin.com/search/results/people/?keywords=", 
+    "https://www.tiktok.com/search/user?q=",
+    "https://www.pinterest.com/search/users/?q=",
+    "https://www.strava.com/athletes/search?text=",
+    "https://www.tumblr.com/search/",
+    "https://www.poshmark.com/search?type=people&query=",
+    "https://www.classmates.com/siteui/search/results?q=",
+    "https://www.etsy.com/search_results_people.php?search_query=",
+    "https://soundcloud.com/search/people?q=",
+    "https://www.quora.com/search?type=profile&q=",
+    "https://www.mugshots.com/search.html?q=",
+    "https://vsco.co/search/people/",
+    "https://www.myspace.com/search/people?q=",
+    "https://www.vimeo.com/search?q=",
+    "https://www.gofundme.com/s?q="
+];
 
     function updateHeaderNames() {
         const isMain = document.getElementById('mainToggle').checked;
@@ -424,13 +453,30 @@
             hRow.appendChild(th);
         });
     }
+	
 
     function toggleColumns(className, isVisible) {
-        const displayValue = isVisible ? 'table-cell' : 'none';
-        document.querySelectorAll('.' + className).forEach(col => {
-            col.style.display = displayValue;
-        });
-    }
+    // 1. Existing toggle logic for the social columns
+    const displayValue = isVisible ? 'table-cell' : 'none';
+    document.querySelectorAll('.' + className).forEach(col => {
+        col.style.display = displayValue;
+    });
+
+    // 2. Logic to hide/show the OPEN button
+    // This looks for all checkboxes in your sidebar to see if any are checked
+    const anySocActive = Array.from(document.querySelectorAll('.sidebar input[type="checkbox"]'))
+                              .some(input => input.checked);
+    
+    // Select the 6th column (BULK header and all row cells)
+    const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
+
+    // If NO checkboxes are checked, hide the column. Otherwise, show it.
+    const bulkDisplay = anySocActive ? 'table-cell' : 'none';
+    
+    bulkCols.forEach(col => {
+        col.style.display = bulkDisplay;
+    });
+}
 
     function toggleCrim(cb) {
         document.getElementById('crimSection').style.display = cb.checked ? 'flex' : 'none';
@@ -480,6 +526,32 @@
         const url = `https://trellis.law/cases/${formattedName}?state=${stateParam}&county=&matter_type=`;
         window.open(url, '_blank');
     }
+	
+	function engineSearch(engine) {
+    if (!lastSelectedRow) { alert("Please click/select a row in the table first."); return; }
+    const name = lastSelectedRow.querySelector('.name-input').value.trim();
+    const city = lastSelectedRow.querySelector('.city-input').value.trim();
+    const state = lastSelectedRow.querySelector('.state-input').value.trim();
+    const extra = lastSelectedRow.querySelector('.extra-input').value.trim();
+    
+    if(!name) return;
+    
+    // Combine name with other fields using commas
+    const queryParts = [name];
+    if (city) queryParts.push(city);
+    if (state) queryParts.push(state);
+    if (extra) queryParts.push(extra);
+    
+    // .join(", ") ensures "Name, City, State, Keyword" format
+    const fullQuery = encodeURIComponent(queryParts.join(", "));
+    
+    let url = "";
+    if (engine === 'google') url = `https://www.google.com/search?q=${fullQuery}`;
+    else if (engine === 'bing') url = `https://www.bing.com/search?q=${fullQuery}`;
+    else if (engine === 'ddg') url = `https://duckduckgo.com/?q=${fullQuery}`;
+    
+    window.open(url, '_blank');
+}
 
     function finSearch(type) {
         if (!lastSelectedRow) { alert("Please click/select a row in the table first."); return; }
@@ -489,6 +561,7 @@
         let url = type === 'cash' ? `https://cash.app/$${handle}` : `https://paypal.com/paypalme/${handle}`;
         window.open(url, '_blank');
     }
+	
 
     /* HISTORY LOGIC */
     function renderHistory() {
@@ -523,7 +596,24 @@
         renderHistory();
     }
 
-    function loadHistoryName(name) {
+		function toggleColumns(className, isVisible) {
+    const displayValue = isVisible ? 'table-cell' : 'none';
+    document.querySelectorAll('.' + className).forEach(col => {
+        col.style.display = displayValue;
+    });
+
+    // Directly check your switch IDs
+    const mainOn = document.getElementById('mainToggle').checked;
+    const subOn = document.getElementById('subToggle').checked;
+    const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
+
+    // Hide button ONLY if both are off
+    bulkCols.forEach(col => {
+        col.style.display = (mainOn || subOn) ? 'table-cell' : 'none';
+    });
+	}
+
+	function loadHistoryName(name) {
         // Force a new row for every history click
         const newRow = addRow(); 
         const input = newRow.querySelector('.name-input');
@@ -537,96 +627,109 @@
     }
 
     function addRow(shouldSave = true) {
-        const tbody = document.getElementById('tableBody');
-        const row = document.createElement('tr');
-        row.onclick = () => {
-            if(lastSelectedRow) lastSelectedRow.classList.remove('active-row');
-            row.classList.add('active-row');
-            lastSelectedRow = row;
-        };
+    const tbody = document.getElementById('tableBody');
+    const row = document.createElement('tr');
+    row.onclick = () => {
+        if(lastSelectedRow) lastSelectedRow.classList.remove('active-row');
+        row.classList.add('active-row');
+        lastSelectedRow = row;
+    };
 
-        let cellsHTML = `
-            <td><button class="btn btn-delete" onclick="removeRow(this)">✕</button></td>
-            <td><input type="text" class="name-input" placeholder="Name..." oninput="updateLinks(this)"></td>
-            <td><input type="text" class="city-input" placeholder="City" oninput="updateLinks(this)"></td>
-            <td><input type="text" class="state-input" placeholder="ST" oninput="updateLinks(this)"></td>
-            <td><input type="text" class="extra-input" placeholder="Keyword..." oninput="updateLinks(this)"></td>
-            <td><button class="btn btn-open-all" onclick="openAllInRow(this)" style="display:none">OPEN</button></td>
-        `;
+    let cellsHTML = `
+        <td><button class="btn btn-delete" onclick="removeRow(this)">✕</button></td>
+        <td><input type="text" class="name-input" placeholder="Name..." oninput="updateLinks(this)"></td>
+        <td><input type="text" class="city-input" placeholder="City" oninput="updateLinks(this)"></td>
+        <td><input type="text" class="state-input" placeholder="ST" oninput="updateLinks(this)"></td>
+        <td><input type="text" class="extra-input" placeholder="Keyword..." oninput="updateLinks(this)"></td>
+        <td><button class="btn btn-open-all" onclick="openAllInRow(this)" style="display:none">OPEN</button></td>
+    `;
 
-        const isMain = document.getElementById('mainToggle').checked;
-        const isSub = document.getElementById('subToggle').checked;
+    const isMain = document.getElementById('mainToggle').checked;
+    const isSub = document.getElementById('subToggle').checked;
 
-        for (let i = 0; i < 23; i++) {
-            let colClass = (i < 10) ? "main-col" : "sub-col";
-            let visible = (i < 10) ? isMain : isSub;
-            cellsHTML += `<td class="${colClass}" style="display: ${visible ? 'table-cell' : 'none'}"><a href="#" target="_blank" class="hidden-link">GO</a></td>`;
-        }
+    // Dynamically create exactly the number of cells needed for both arrays
+    const totalSocials = mainSocials.length + subSocials.length;
 
-        row.innerHTML = cellsHTML;
-        tbody.appendChild(row);
-        updateCount();
-        if(shouldSave) saveToLocalStorage();
-        return row;
+    for (let i = 0; i < totalSocials; i++) {
+        let colClass = (i < mainSocials.length) ? "main-col" : "sub-col";
+        let visible = (i < mainSocials.length) ? isMain : isSub;
+        cellsHTML += `<td class="${colClass}" style="display: ${visible ? 'table-cell' : 'none'}"><a href="#" target="_blank" class="hidden-link">GO</a></td>`;
     }
 
+    row.innerHTML = cellsHTML;
+    tbody.appendChild(row);
+    updateCount();
+    if(shouldSave) saveToLocalStorage();
+    return row;
+}
+
     function updateLinks(input) {
-        const row = input.closest('tr');
-        const name = row.querySelector('.name-input').value.trim();
-        const city = row.querySelector('.city-input').value.trim();
-        const state = row.querySelector('.state-input').value.trim();
-        const extra = row.querySelector('.extra-input').value.trim();
-        const links = row.querySelectorAll('a');
-        const bulkBtn = row.querySelector('.btn-open-all');
+    const row = input.closest('tr');
+    const name = row.querySelector('.name-input').value.trim();
+    const city = row.querySelector('.city-input').value.trim();
+    const state = row.querySelector('.state-input').value.trim();
+    const extra = row.querySelector('.extra-input').value.trim();
+    const links = row.querySelectorAll('a');
+    const bulkBtn = row.querySelector('.btn-open-all');
 
-        if (name) {
-            bulkBtn.style.display = "block";
-            const queryParts = [name];
-            if (city) queryParts.push(city);
-            if (state) queryParts.push(state);
-            if (extra) queryParts.push(extra);
-            
-            const query = queryParts.join(", "); 
-            const enc = encodeURIComponent(query);
+    if (name) {
+        bulkBtn.style.display = "block";
+        const queryParts = [name];
+        if (city) queryParts.push(city);
+        if (state) queryParts.push(state);
+        if (extra) queryParts.push(extra);
+        
+        const query = queryParts.join(", "); 
+        const enc = encodeURIComponent(query);
 
-            for (let i = 0; i < searchTemplates.length; i++) {
-                let finalUrl;
-                if (i === 4) { // LinkedIn
-                    const baseName = encodeURIComponent(name);
-                    let stVal = state.trim().toLowerCase();
-                    const geoMap = {"al": "104514075", "ak": "103991206", "az": "104193321", "ar": "105658826", "ca": "102095887", "co": "100913221", "ct": "100742183", "de": "101683931", "fl": "101318387", "ga": "105370425", "hi": "104712771", "id": "104342207", "il": "106297371", "in": "100078170", "ia": "106880053", "ks": "106190547", "ky": "106170940", "la": "103752601", "me": "100589712", "md": "106412613", "ma": "101018698", "mi": "104764831", "mn": "104958045", "ms": "105221971", "mo": "100650570", "mt": "100630737", "ne": "103730999", "nv": "100799797", "nh": "101185038", "nj": "101217735", "nm": "101569426", "ny": "105080838", "nc": "104880996", "nd": "100819957", "oh": "104443421", "ok": "105634629", "or": "105151242", "pa": "103289047", "ri": "106424364", "sc": "104323608", "sd": "105476004", "tn": "106579246", "tx": "102748797", "ut": "102073993", "vt": "101662580", "va": "101026601", "wa": "103212711", "wv": "106144670", "wi": "101452733", "wy": "103294326"};
-                    const stateMap = {"alabama":"al","alaska":"ak","arizona":"az","arkansas":"ar","california":"ca","colorado":"co","connecticut":"ct","delaware":"de","florida":"fl","georgia":"ga","hawaii":"hi","idaho":"id","illinois":"il","indiana":"in","iowa":"ia","kansas":"ks","kentucky":"ky","louisiana":"la","maine":"me","maryland":"md","massachusetts":"ma","michigan":"mi","minnesota":"mn","mississippi":"ms","missouri":"mo","montana":"mt","nebraska":"ne","nevada":"nv","new hampshire":"nh","new jersey":"nj","new mexico":"nm","new york":"ny","north carolina":"nc","north dakota":"nd","ohio":"oh","oklahoma":"ok","oregon":"or","pennsylvania":"pa","rhode island":"ri","south carolina":"sc","south dakota":"sd","tennessee":"tn","texas":"tx","utah":"ut","vermont":"vt","virginia":"va","washington":"wa","west virginia":"wv","wisconsin":"wi","wyoming":"wy"};
-                    const cleanST = stateMap[stVal] || stVal;
-                    const geoId = geoMap[cleanST];
-                    finalUrl = geoId ? `https://www.linkedin.com/search/results/people/?keywords=${baseName}&origin=FACETED_SEARCH&geoUrn=%5B%22${geoId}%22%5D` : `https://www.linkedin.com/search/results/people/?keywords=${baseName}&origin=FACETED_SEARCH`;
-                } else if (i === 2) { // Twitter
-                    finalUrl = searchTemplates[i] + enc + "&f=user";
-                } else if (i === 18) { // Vimeo
-                    finalUrl = searchTemplates[i] + enc + "&type=people";
-                } else {
-                    finalUrl = searchTemplates[i] + enc;
-                }
+        // This loop handles everything in your searchTemplates array
+        for (let i = 0; i < searchTemplates.length; i++) {
+            let finalUrl;
+            if (i === 4) { // LinkedIn
+                const baseName = encodeURIComponent(name);
+                let stVal = state.trim().toLowerCase();
+                const geoMap = {"al": "104514075", "ak": "103991206", "az": "104193321", "ar": "105658826", "ca": "102095887", "co": "100913221", "ct": "100742183", "de": "101683931", "fl": "101318387", "ga": "105370425", "hi": "104712771", "id": "104342207", "il": "106297371", "in": "100078170", "ia": "106880053", "ks": "106190547", "ky": "106170940", "la": "103752601", "me": "100589712", "md": "106412613", "ma": "101018698", "mi": "104764831", "mn": "104958045", "ms": "105221971", "mo": "100650570", "mt": "100630737", "ne": "103730999", "nv": "100799797", "nh": "101185038", "nj": "101217735", "nm": "101569426", "ny": "105080838", "nc": "104880996", "nd": "100819957", "oh": "104443421", "ok": "105634629", "or": "105151242", "pa": "103289047", "ri": "106424364", "sc": "104323608", "sd": "105476004", "tn": "106579246", "tx": "102748797", "ut": "102073993", "vt": "101662580", "va": "101026601", "wa": "103212711", "wv": "106144670", "wi": "101452733", "wy": "103294326"};
+                const stateMap = {"alabama":"al","alaska":"ak","arizona":"az","arkansas":"ar","california":"ca","colorado":"co","connecticut":"ct","delaware":"de","florida":"fl","georgia":"ga","hawaii":"hi","idaho":"id","illinois":"il","indiana":"in","iowa":"ia","kansas":"ks","kentucky":"ky","louisiana":"la","maine":"me","maryland":"md","massachusetts":"ma","michigan":"mi","minnesota":"mn","mississippi":"ms","missouri":"mo","montana":"mt","nebraska":"ne","nv":"nevada","new hampshire":"nh","new jersey":"nj","new mexico":"nm","new york":"ny","north carolina":"nc","north dakota":"nd","ohio":"oh","oklahoma":"ok","oregon":"or","pennsylvania":"pa","rhode island":"ri","south carolina":"sc","south dakota":"sd","tennessee":"tn","texas":"tx","utah":"ut","vermont":"vt","virginia":"va","washington":"wa","west virginia":"wv","wisconsin":"wi","wyoming":"wy"};
+                const cleanST = stateMap[stVal] || stVal;
+                const geoId = geoMap[cleanST];
+                finalUrl = geoId ? `https://www.linkedin.com/search/results/people/?keywords=${baseName}&origin=FACETED_SEARCH&geoUrn=%5B%22${geoId}%22%5D` : `https://www.linkedin.com/search/results/people/?keywords=${baseName}&origin=FACETED_SEARCH`;
+            } else if (i === 2) { // Twitter
+                finalUrl = searchTemplates[i] + enc + "&f=user";
+            } else if (i === 17) { // Vimeo (Shifted from 18 to 17 because Google is gone)
+                finalUrl = searchTemplates[i] + enc + "&type=people";
+            } else {
+                finalUrl = searchTemplates[i] + enc;
+            }
+            if (links[i]) {
                 links[i].href = finalUrl;
                 links[i].classList.remove('hidden-link');
             }
-
-            links[20].href = `https://account.venmo.com/u/${name.replace(/\s+/g, '-')}`;
-            links[20].classList.remove('hidden-link');
-            links[21].href = `https://open.spotify.com/search/$${encodeURIComponent(name)}/users`;
-            links[21].classList.remove('hidden-link');
-            links[22].href = `https://bsky.app/search?q=${enc}`;
-            links[22].classList.remove('hidden-link');
-
-            if (input.classList.contains('name-input')) {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => saveToHistory(name), 2000);
-            }
-        } else {
-            bulkBtn.style.display = "none";
-            links.forEach(l => l.classList.add('hidden-link'));
         }
-        saveToLocalStorage();
+
+        // Indices shifted by -1 due to Google removal
+        if (links[19]) { // Venmo (Was 20)
+            links[19].href = `https://account.venmo.com/u/${name.replace(/\s+/g, '-')}`;
+            links[19].classList.remove('hidden-link');
+        }
+        if (links[20]) { // Spotify (Was 21)
+            links[20].href = `https://open.spotify.com/search/$${encodeURIComponent(name)}/users`;
+            links[20].classList.remove('hidden-link');
+        }
+        if (links[21]) { // BlueSky (Was 22)
+            links[21].href = `https://bsky.app/search?q=${enc}`;
+            links[21].classList.remove('hidden-link');
+        }
+
+        if (input.classList.contains('name-input')) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => saveToHistory(name), 2000);
+        }
+    } else {
+        bulkBtn.style.display = "none";
+        links.forEach(l => l.classList.add('hidden-link'));
     }
+    saveToLocalStorage();
+}
 
     function saveToLocalStorage() {
         const rows = Array.from(document.querySelectorAll('#tableBody tr')).map(row => ({
@@ -730,6 +833,11 @@ document.onkeydown = e => {
         return false;
     }
 };
+</script>
+<script>
+function openYelpPortal() {
+    window.open("https://www.yelp.com/find_friends/address_book?fsid=LpiV-_mJLfXiPGsVN3Wkjw", "_blank");
+}
 </script>
 </body>
 </html>
