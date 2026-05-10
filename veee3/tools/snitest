@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NS Toolkits v3 | Socmed S&I</title>
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --accent-gold: #f6c90e;
+            --text-main: #e0e0e0;
+            --text-dim: #b0b0b0;
+            --border-color: #333;
+            --danger: #ff4d4d;
+            --success: #28a745;
+            --accent: #f6c90e;
+            --nav-bg: rgba(20, 20, 20, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+
+        .nav-menu {
+            display: flex;
+            gap: 28px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-menu a {
+            color: #e6e6e6;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: normal;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .nav-menu a:hover { color: var(--accent); opacity: 1; }
+
+        .app-container { display: flex; flex-grow: 1; overflow: hidden; }
+
+        .sidebar {
+		width: 260px; 
+		background-color: var(--card-bg);
+		border-right: 1px solid var(--border-color);
+		padding: 20px;
+		display: flex;
+		flex-direction: column;
+		height: calc(100vh - 55px); 
+		flex-shrink: 0;
+		overflow-y: auto;
+		box-sizing: border-box;
+		}
+
+        .sidebar h2 { color: var(--accent-gold); font-size: 1.1rem; margin: 0; text-transform: uppercase; }
+        .sidebar p { font-size: 0.75rem; color: var(--text-dim); line-height: 1.4; }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - 260px);
+            overflow: hidden;
+        }
+
+        .header-bar {
+            padding: 10px 20px;
+            background: rgba(30, 30, 30, 0.5);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.7rem; font-weight: bold; color: var(--accent-gold); text-transform: uppercase; }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.03);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .switch { position: relative; display: inline-block; width: 30px; height: 16px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-gold); }
+        input:checked + .slider:before { transform: translateX(14px); }
+
+        /* History Specific Styles */
+        .history-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 5px 0 0 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .history-item {
+            font-size: 10px;
+            padding: 6px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            margin-bottom: 4px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .history-item:hover {
+            background: rgba(246, 201, 14, 0.1);
+            border-color: var(--accent-gold);
+        }
+        .history-item span { color: var(--text-main); flex-grow: 1; }
+        .history-item .del-hist { color: var(--danger); opacity: 0.5; padding: 0 4px; cursor: pointer; }
+        .history-item .del-hist:hover { opacity: 1; }
+
+        #crimSection { display: none; flex-direction: column; gap: 4px; border-left: 2px solid var(--danger); padding-left: 10px; }
+
+        .btn { cursor: pointer; border: none; border-radius: 4px; padding: 10px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-add { background: var(--accent-gold); color: black; width: 100%; }
+        .btn-crim { background: transparent; color: var(--text-dim); border: 1px solid #444; font-size: 9px; padding: 6px; justify-content: flex-start; }
+        .btn-crim:hover { border-color: var(--danger); color: white; background: rgba(255, 77, 77, 0.1); }
+        .btn-open-all { background: #333; color: var(--accent-gold); font-size: 9px; padding: 4px 6px; border: 1px solid var(--accent-gold); }
+        .btn-delete { background: transparent; color: var(--danger); padding: 5px; opacity: 0.6; }
+
+        .table-container { flex-grow: 1; overflow: auto; padding: 5px 15px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0 6px; table-layout: auto; min-width: 1000px; }
+        
+        th { 
+            text-align: center; 
+            padding: 8px 4px; 
+            color: var(--text-dim); 
+            font-size: 9px; 
+            text-transform: uppercase; 
+            position: sticky; 
+            top: 0; 
+            background: transparent; 
+            z-index: 20;
+            white-space: nowrap;
+        }
+
+        td { 
+            background: var(--card-bg); padding: 6px 4px; font-size: 10px;
+            border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        th:nth-child(2), td:nth-child(2) { 
+            position: sticky; left: 0; z-index: 15; background: var(--card-bg); 
+            width: 150px; text-align: left; padding-left: 10px;
+            border-left: 1px solid var(--border-color);
+        }
+        th:nth-child(2) { 
+            background: transparent; 
+            z-index: 25; 
+        }
+
+        tr.active-row td { border-color: var(--accent-gold); background: rgba(246, 201, 14, 0.05); }
+
+        .main-col, .sub-col { min-width: 60px; max-width: 100px; }
+
+        td:first-child { border-left: 1px solid var(--border-color); border-radius: 6px 0 0 6px; width: 35px; }
+        td:last-child { border-right: 1px solid var(--border-color); border-radius: 0 6px 6px 0; }
+
+        .name-input, .city-input, .state-input, .extra-input { 
+            background: transparent; border: none; color: var(--accent-gold); 
+            font-weight: 700; width: 100%; font-size: 10.5px;
+        }
+        .city-input, .state-input, .extra-input { color: var(--text-main); font-weight: 400; text-align: center; }
+        .name-input { text-align: left; }
+        input:focus { outline: none; border-bottom: 1px solid var(--accent-gold); }
+
+        a { color: var(--accent-gold); text-decoration: none; font-size: 9.5px; font-weight: bold; display: block; }
+        .hidden-link { visibility: hidden; }
+
+        #loader-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #080808; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .gold-ring { width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); border-top: 2px solid #d4af37; border-radius: 50%; animation: spin 1s infinite linear; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+		th:nth-child(5), td:nth-child(5) { width: auto !important; }
+		th:nth-child(6), td:nth-child(6) { width: 85px !important; white-space: nowrap; }
+		[style*="display: none"] { display: none !important; width: 0 !important; padding: 0 !important; }
+		/* FORCE VIEWPORT LOCK */
+/* Clean slate for the table */
+#resultsTable {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+/* Horizontal Gold Lines */
+#resultsTable tr td, 
+#resultsTable tr th {
+    border-top: 1px solid #f6c90e !important;
+    border-bottom: 1px solid #f6c90e !important;
+}
+
+/* Left Gold Line (Always on the 'DEL' column) */
+#resultsTable tr td:first-child, 
+#resultsTable tr th:first-child {
+    border-left: 1px solid #f6c90e !important;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+.mgmt-btn {
+    background-color: #f6c90e; /* Modern Gold */
+    color: #000;
+    border: none;
+    cursor: pointer;
+    
+    /* PRECISE SIZE MATCH */
+    width: 100%;             
+    height: 32px;            /* Slimmer height to match screenshot */
+    border-radius: 4px;      /* Sharp but slightly rounded corners */
+    
+    /* SYMBOL ALIGNMENT */
+    font-size: 16px;         
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* SPACING & RESET */
+    margin: 5px 0;           
+    padding: 0;              
+    outline: none;
+    transition: background-color 0.2s ease;
+}
+
+/* Hover Animation */
+.mgmt-btn:hover {
+    background-color: #e5ba0d; 
+}
+
+/* Click Animation */
+.mgmt-btn:active {
+    transform: scale(0.98);
+}
+    </style>
+</head>
+<body>
+
+    <div id="loader-wrapper">
+        <div class="gold-ring"></div>
+        <div style="margin-top: 20px; color: #d4af37; font-size: 8px; letter-spacing: 6px;">ESTABLISHING CONNECTION</div>
+    </div>
+
+    <canvas id="bg"></canvas>
+
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-left"><a href="https://nstoolkits.site/v3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
+            <div class="nav-menu">
+             <a href="https://nstoolkits.site/v3/">Home</a>
+            <a href="https://nstoolkits.site/v3/about.html">About Us</a>
+         <a href="https://nstoolkits.site/v3/download.html">Metascraper</a>
+            <a href="https://nstoolkits.site/">Version 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2>Socmed S&I</h2>
+            <p>Advanced Social Intelligence Gathering. v7.0</p>
+            
+            <div class="input-group">
+                <label>Management</label>
+                <button class="mgmt-btn" onclick="addRow()">+</button>
+            </div>
+&nbsp;
+
+<div class="toggle-container">
+    <label style="font-size: 10px; cursor: pointer;" for="userModeToggle">Username Mode</label>
+    <label class="switch">
+        <input type="checkbox" id="userModeToggle" onchange="toggleUserMode(this.checked)">
+        <span class="slider"></span>
+    </label>
+</div>
+            <div class="toggle-container">
+                <label style="font-size: 10px; cursor: pointer;" for="mainToggle">Main Socmed</label>
+                <label class="switch">
+                    <input type="checkbox" id="mainToggle" checked onchange="updateHeaderNames(); toggleColumns('main-col', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-container">
+                <label style="font-size: 10px; cursor: pointer;" for="subToggle">Sub Socmed</label>
+                <label class="switch">
+                    <input type="checkbox" id="subToggle" onchange="updateHeaderNames(); toggleColumns('sub-col', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+			
+			<div class="toggle-container">
+				<label style="font-size: 10px; cursor: pointer;" for="engineToggle">Search Engines</label>
+				<label class="switch">
+				<input type="checkbox" id="engineToggle" onchange="toggleSection('engineSection', this.checked)">
+				<span class="slider"></span>
+			</label>
+			</div>
+
+				<div id="engineSection" style="display: none; flex-direction: column; gap: 4px; border-left: 2px solid var(--accent-gold); padding-left: 10px; margin-top: 5px;">
+					<button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="engineSearch('google')">Google Search</button>
+					<button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="engineSearch('bing')">Bing Search</button>
+					<button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="engineSearch('ddg')">DuckDuckGo</button>
+			</div>
+            
+            <div class="toggle-container">
+                <label style="font-size: 10px; cursor: pointer;" for="legalToggle">Lawsuit</label>
+                <label class="switch">
+                    <input type="checkbox" id="legalToggle" onchange="toggleSection('legalSection', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div id="legalSection" style="display: none; flex-direction: column; gap: 4px; border-left: 2px solid var(--accent-gold); padding-left: 10px; margin-top: 5px;">
+                <button class="btn btn-crim" style="border-color: var(--accent-gold);" onclick="legalSearch()">Trellis Law (Click Me)</button>
+            </div>
+
+            <div class="toggle-container">
+                <label style="font-size: 10px; cursor: pointer;" for="crimToggle">Criminal History</label>
+                <label class="switch">
+                    <input type="checkbox" id="crimToggle" onchange="toggleCrim(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div id="crimSection">
+                <button class="btn btn-crim" onclick="crimSearch('https://recentlybooked.com/search?q=')">Recently Booked</button>
+                <button class="btn btn-crim" onclick="crimSearch('https://mugshots.zone/search?q=')">Mugshots Zone</button>
+                <button class="btn btn-crim" onclick="crimSearch('arrests')">Arrests.org</button>
+                <button class="btn btn-crim" onclick="crimSearch('rainstreet')">Rain Street</button>
+                <button class="btn btn-crim" onclick="crimSearch('localcrimenews')">Local Crime News</button>
+            </div>
+			
+			<div class="toggle-container">
+				<label style="font-size: 10px; cursor: pointer;" for="finToggle">Wallet Search</label>
+				<label class="switch">
+				<input type="checkbox" id="finToggle" onchange="toggleSection('finSection', this.checked)">
+				<span class="slider"></span>
+				</label>
+			</div>
+
+			<div id="finSection" style="display: none; flex-direction: column; gap: 4px; border-left: 2px solid #00d4ff; padding-left: 10px; margin-top: 5px;">
+			<p style="font-size: 9px; color: #00d4ff; margin: 2px 0 6px 0; opacity: 0.8; line-height: 1.2;">
+			Direct username. (Ignores First and Last name, City/State filters)
+			</p>
+			<button class="btn btn-crim" style="border-color: #00d4ff;" onclick="finSearch('cash')">CashApp ($)</button>
+			<button class="btn btn-crim" style="border-color: #00d4ff;" onclick="finSearch('paypal')">PayPal.me</button>
+			</div>
+			<div class="toggle-container">
+    <label style="font-size: 10px; cursor: pointer;" for="yelpToggle">Yelp Portal</label>
+    <label class="switch">
+        <input type="checkbox" id="yelpToggle" onchange="toggleSection('yelpSection', this.checked)">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<div id="yelpSection" style="display: none; flex-direction: column; gap: 4px; border-left: 2px solid #ff0000; padding-left: 10px; margin-top: 5px;">
+    <p style="font-size: 9px; color: #FFFFFF; margin: 2px 0 6px 0; opacity: 0.8; line-height: 1.2;">
+        Direct Yelp Access. (Find friends via address book)
+    </p>
+    <button class="btn btn-crim" style="border-color: #ff0000; width: 100%;" onclick="openYelpPortal()">Open Yelp Search</button>
+</div>
+			&nbsp;
+			<div class="history-container">
+			<label>Recent Searches</label>
+			<div id="historyList" class="history-list"></div>
+		</div>
+
+			<div style="flex-grow: 1;"></div>
+
+		<div style="padding-top: 20px; border-top: 1px solid var(--border-color); flex-shrink: 0; margin-top: 20px;">
+		<div style="font-size: 10px; color: var(--text-dim);">Made by Darel Miranda | NS ToolKits Team</div>
+		</div>
+		</aside>
+
+        <main class="main-content">
+            <header class="header-bar">
+                <div style="font-size: 10px; font-weight: bold; color: var(--text-dim);">S&I DASHBOARD // ACTIVE SESSION</div>
+                <div id="rowCount" style="font-size: 10px; color: var(--accent-gold);">0 TARGETS LOADED</div>
+            </header>
+
+            <div class="table-container">
+                <table id="siTable">
+                    <thead>
+                        <tr id="headerRow">
+                            <th>Del</th>
+                            <th>Name</th>
+                            <th>CT</th>
+                            <th>ST</th>
+                            <th>Keyword</th>
+                            <th>Bulk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+<script>
+    let lastSelectedRow = null;
+    let searchTimeout;
+
+    const mainSocials = [
+    { short: "FB", full: "Facebook" }, { short: "IG", full: "Instagram" }, { short: "TW", full: "Twitter" },
+    { short: "YT", full: "YouTube" }, { short: "LK", full: "LinkedIn" }, { short: "TK", full: "TikTok" },
+    { short: "PIN", full: "Pinterest" }, { short: "STR", full: "Strava" }, { short: "TUM", full: "Tumblr" }
+];
+
+const subSocials = [
+    { short: "POS", full: "Poshmark" }, { short: "CLA", full: "Classmates" }, { short: "ETS", full: "Etsy" },
+    { short: "SC", full: "SoundCloud" }, { short: "QU", full: "Quora" }, { short: "MUG", full: "Mugshots" },
+    { short: "VSC", full: "VSCO" }, { short: "MY", full: "MySpace" }, 
+    { short: "VIM", full: "Vimeo" }, { short: "GFM", full: "GoFundMe" }, 
+    { short: "VEN", full: "Venmo" }, { short: "SPO", full: "Spotify" },
+    { short: "BSK", full: "BlueSky" },
+    { short: "ZOM", full: "Zoominfo" }
+];
+
+const searchTemplates = [
+    "https://www.facebook.com/search/top/?q=", 
+    "https://imginn.com/search/",              
+    "https://www.x.com/search?q=",             
+    "https://www.youtube.com/results?search_query=",
+    "https://www.linkedin.com/search/results/people/?keywords=", 
+    "https://www.tiktok.com/search/user?q=",
+    "https://www.pinterest.com/search/users/?q=",
+    "https://www.strava.com/athletes/search?text=",
+    "https://www.tumblr.com/search/",
+    "https://www.poshmark.com/search?type=people&query=",
+    "https://www.classmates.com/siteui/search/results?q=",
+    "https://www.etsy.com/search_results_people.php?search_query=",
+    "https://soundcloud.com/search/people?q=",
+    "https://www.quora.com/search?type=profile&q=",
+    "https://www.mugshots.com/search.html?q=",
+    "https://vsco.co/search/people/",
+    "https://www.myspace.com/search/people?q=",
+    "https://www.vimeo.com/search?q=",
+    "https://www.gofundme.com/s?q="
+];
+
+    function updateHeaderNames() {
+        const isMain = document.getElementById('mainToggle').checked;
+        const isSub = document.getElementById('subToggle').checked;
+        const hRow = document.getElementById('headerRow');
+        
+        hRow.querySelectorAll('.main-col, .sub-col').forEach(el => el.remove());
+        const useFull = !(isMain && isSub);
+
+        mainSocials.forEach(s => {
+            let th = document.createElement('th');
+            th.className = 'main-col';
+            th.innerText = useFull ? s.full : s.short;
+            th.style.display = isMain ? 'table-cell' : 'none';
+            hRow.appendChild(th);
+        });
+
+        subSocials.forEach(s => {
+            let th = document.createElement('th');
+            th.className = 'sub-col';
+            th.innerText = useFull ? s.full : s.short;
+            th.style.display = isSub ? 'table-cell' : 'none';
+            hRow.appendChild(th);
+        });
+    }
+	
+
+    function toggleColumns(className, isVisible) {
+    // 1. Existing toggle logic for the social columns
+    const displayValue = isVisible ? 'table-cell' : 'none';
+    document.querySelectorAll('.' + className).forEach(col => {
+        col.style.display = displayValue;
+    });
+
+    // 2. Logic to hide/show the OPEN button
+    // This looks for all checkboxes in your sidebar to see if any are checked
+    const anySocActive = Array.from(document.querySelectorAll('.sidebar input[type="checkbox"]'))
+                              .some(input => input.checked);
+    
+    // Select the 6th column (BULK header and all row cells)
+    const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
+
+    // If NO checkboxes are checked, hide the column. Otherwise, show it.
+    const bulkDisplay = anySocActive ? 'table-cell' : 'none';
+    
+    bulkCols.forEach(col => {
+        col.style.display = bulkDisplay;
+    });
+}
+
+    function toggleCrim(cb) {
+        document.getElementById('crimSection').style.display = cb.checked ? 'flex' : 'none';
+    }
+
+    function crimSearch(baseUrl) {
+        if (!lastSelectedRow) { alert("Please click/select a row in the table first."); return; }
+        const name = lastSelectedRow.querySelector('.name-input').value.trim();
+        const state = lastSelectedRow.querySelector('.state-input').value.trim();
+        const city = lastSelectedRow.querySelector('.city-input').value.trim();
+        if(!name) return;
+        const parts = name.split(' ');
+        const first = parts[0], last = parts.slice(1).join(' ');
+        let url = "";
+        if (baseUrl.includes('recentlybooked')) url = `https://recentlybooked.com/search?Name=${encodeURIComponent(name)}&FromDate=2024-01-01&ToDate=2026-12-31`;
+        else if (baseUrl.includes('mugshots.zone')) url = `https://mugshots.zone/?s=${encodeURIComponent(first)}+${encodeURIComponent(last)}`;
+        else if (baseUrl === 'arrests') url = `https://${state ? state.toLowerCase() : 'www'}.arrests.org/search.php?fname=${first}&lname=${last}&fpartial=True`;
+        else if (baseUrl === 'localcrimenews') url = `https://www.localcrimenews.com/welcome/searchArrests?firstname=${first}&lastname=${last}&city=${city}`;
+        else if (baseUrl === 'rainstreet') url = `https://rain-street.org/ng/search?fname=${first}&lname=${last}&state=${state}&city=${city}`;
+        else url = baseUrl + encodeURIComponent(name);
+        window.open(url, '_blank');
+    }
+    
+    function toggleSection(id, isVisible) {
+        document.getElementById(id).style.display = isVisible ? 'flex' : 'none';
+    }
+
+    function legalSearch() {
+        if (!lastSelectedRow) { alert("Please click/select a row in the table first."); return; }
+        const name = lastSelectedRow.querySelector('.name-input').value.trim();
+        let stateInput = lastSelectedRow.querySelector('.state-input').value.trim().toLowerCase();
+        if(!name) { alert("Please enter a name."); return; }
+        const stateMap = {
+            "alabama": "al", "alaska": "ak", "arizona": "az", "arkansas": "ar", "california": "ca",
+            "colorado": "co", "connecticut": "ct", "delaware": "de", "florida": "fl", "georgia": "ga",
+            "hawaii": "hi", "idaho": "id", "illinois": "il", "indiana": "in", "iowa": "ia",
+            "kansas": "ks", "kentucky": "ky", "louisiana": "la", "maine": "me", "maryland": "md",
+            "massachusetts": "ma", "michigan": "mi", "minnesota": "mn", "mississippi": "ms", "missouri": "mo",
+            "montana": "mt", "nebraska": "ne", "nevada": "nv", "new hampshire": "nh", "new jersey": "nj",
+            "new mexico": "nm", "new york": "ny", "north carolina": "nc", "north dakota": "nd", "ohio": "oh",
+            "oklahoma": "ok", "oregon": "or", "pennsylvania": "pa", "rhode island": "ri", "south carolina": "sc",
+            "south dakota": "sd", "tennessee": "tn", "texas": "tx", "utah": "ut", "vermont": "vt",
+            "virginia": "va", "washington": "wa", "west virginia": "wv", "wisconsin": "wi", "wyoming": "wy"
+        };
+        const stateParam = stateMap[stateInput] || stateInput;
+        const formattedName = encodeURIComponent(name.replace(/\s+/g, '-'));
+        const url = `https://trellis.law/cases/${formattedName}?state=${stateParam}&county=&matter_type=`;
+        window.open(url, '_blank');
+    }
+	
+	function engineSearch(engine) {
+    if (!lastSelectedRow) { alert("Please click/select a row in the table first."); return; }
+    const name = lastSelectedRow.querySelector('.name-input').value.trim();
+    const city = lastSelectedRow.querySelector('.city-input').value.trim();
+    const state = lastSelectedRow.querySelector('.state-input').value.trim();
+    const extra = lastSelectedRow.querySelector('.extra-input').value.trim();
+    
+    if(!name) return;
+    
+    // Combine name with other fields using commas
+    const queryParts = [name];
+    if (city) queryParts.push(city);
+    if (state) queryParts.push(state);
+    if (extra) queryParts.push(extra);
+    
+    // .join(", ") ensures "Name, City, State, Keyword" format
+    const fullQuery = encodeURIComponent(queryParts.join(", "));
+    
+    let url = "";
+    if (engine === 'google') url = `https://www.google.com/search?q=${fullQuery}`;
+    else if (engine === 'bing') url = `https://www.bing.com/search?q=${fullQuery}`;
+    else if (engine === 'ddg') url = `https://duckduckgo.com/?q=${fullQuery}`;
+    
+    window.open(url, '_blank');
+}
+
+    function finSearch(type) {
+        if (!lastSelectedRow) { alert("Please click/select a row in the table first."); return; }
+        const name = lastSelectedRow.querySelector('.name-input').value.trim();
+        if(!name) { alert("Please enter a username."); return; }
+        const handle = name.replace(/\s+/g, '');
+        let url = type === 'cash' ? `https://cash.app/$${handle}` : `https://paypal.com/paypalme/${handle}`;
+        window.open(url, '_blank');
+    }
+	
+
+    /* HISTORY LOGIC */
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('ns_search_history') || '[]');
+        const container = document.getElementById('historyList');
+        container.innerHTML = '';
+        history.forEach((name, index) => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <span onclick="loadHistoryName('${name}')">${name}</span>
+                <div class="del-hist" onclick="deleteHistory(${index})">✕</div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function saveToHistory(name) {
+        if (!name) return;
+        let history = JSON.parse(localStorage.getItem('ns_search_history') || '[]');
+        history = history.filter(h => h.toLowerCase() !== name.toLowerCase());
+        history.unshift(name);
+        if (history.length > 10) history.pop();
+        localStorage.setItem('ns_search_history', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function deleteHistory(index) {
+        let history = JSON.parse(localStorage.getItem('ns_search_history') || '[]');
+        history.splice(index, 1);
+        localStorage.setItem('ns_search_history', JSON.stringify(history));
+        renderHistory();
+    }
+
+		function toggleColumns(className, isVisible) {
+    const displayValue = isVisible ? 'table-cell' : 'none';
+    document.querySelectorAll('.' + className).forEach(col => {
+        col.style.display = displayValue;
+    });
+
+    // Directly check your switch IDs
+    const mainOn = document.getElementById('mainToggle').checked;
+    const subOn = document.getElementById('subToggle').checked;
+    const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
+
+    // Hide button ONLY if both are off
+    bulkCols.forEach(col => {
+        col.style.display = (mainOn || subOn) ? 'table-cell' : 'none';
+    });
+	}
+
+	function loadHistoryName(name) {
+        // Force a new row for every history click
+        const newRow = addRow(); 
+        const input = newRow.querySelector('.name-input');
+        input.value = name;
+        updateLinks(input);
+        
+        // Visual selection handling
+        if (lastSelectedRow) lastSelectedRow.classList.remove('active-row');
+        newRow.classList.add('active-row');
+        lastSelectedRow = newRow;
+    }
+
+    function addRow(shouldSave = true) {
+    const tbody = document.getElementById('tableBody');
+    const row = document.createElement('tr');
+    row.onclick = () => {
+        if(lastSelectedRow) lastSelectedRow.classList.remove('active-row');
+        row.classList.add('active-row');
+        lastSelectedRow = row;
+    };
+
+    let cellsHTML = `
+        <td><button class="btn btn-delete" onclick="removeRow(this)">✕</button></td>
+        <td><input type="text" class="name-input" placeholder="Name..." oninput="updateLinks(this)"></td>
+        <td><input type="text" class="city-input" placeholder="City" oninput="updateLinks(this)"></td>
+        <td><input type="text" class="state-input" placeholder="ST" oninput="updateLinks(this)"></td>
+        <td><input type="text" class="extra-input" placeholder="Keyword..." oninput="updateLinks(this)"></td>
+        <td><button class="btn btn-open-all" onclick="openAllInRow(this)" style="display:none">OPEN</button></td>
+    `;
+
+    const isMain = document.getElementById('mainToggle').checked;
+    const isSub = document.getElementById('subToggle').checked;
+
+    // Dynamically create exactly the number of cells needed for both arrays
+    const totalSocials = mainSocials.length + subSocials.length;
+
+    for (let i = 0; i < totalSocials; i++) {
+        let colClass = (i < mainSocials.length) ? "main-col" : "sub-col";
+        let visible = (i < mainSocials.length) ? isMain : isSub;
+        cellsHTML += `<td class="${colClass}" style="display: ${visible ? 'table-cell' : 'none'}"><a href="#" target="_blank" class="hidden-link">GO</a></td>`;
+    }
+
+    row.innerHTML = cellsHTML;
+    tbody.appendChild(row);
+    updateCount();
+    if(shouldSave) saveToLocalStorage();
+    return row;
+}
+
+    function updateLinks(input) {
+    const row = input.closest('tr');
+    const name = row.querySelector('.name-input').value.trim();
+    const city = row.querySelector('.city-input').value.trim();
+    const state = row.querySelector('.state-input').value.trim();
+    const extra = row.querySelector('.extra-input').value.trim();
+    const links = row.querySelectorAll('a');
+    const bulkBtn = row.querySelector('.btn-open-all');
+
+    if (name) {
+        bulkBtn.style.display = "block";
+        const queryParts = [name];
+        if (city) queryParts.push(city);
+        if (state) queryParts.push(state);
+        if (extra) queryParts.push(extra);
+        
+        const query = queryParts.join(", "); 
+        const enc = encodeURIComponent(query);
+
+        // This loop handles everything in your searchTemplates array
+        for (let i = 0; i < searchTemplates.length; i++) {
+            let finalUrl;
+            if (i === 4) { // LinkedIn
+                const baseName = encodeURIComponent(name);
+                let stVal = state.trim().toLowerCase();
+                const geoMap = {"al": "104514075", "ak": "103991206", "az": "104193321", "ar": "105658826", "ca": "102095887", "co": "100913221", "ct": "100742183", "de": "101683931", "fl": "101318387", "ga": "105370425", "hi": "104712771", "id": "104342207", "il": "106297371", "in": "100078170", "ia": "106880053", "ks": "106190547", "ky": "106170940", "la": "103752601", "me": "100589712", "md": "106412613", "ma": "101018698", "mi": "104764831", "mn": "104958045", "ms": "105221971", "mo": "100650570", "mt": "100630737", "ne": "103730999", "nv": "100799797", "nh": "101185038", "nj": "101217735", "nm": "101569426", "ny": "105080838", "nc": "104880996", "nd": "100819957", "oh": "104443421", "ok": "105634629", "or": "105151242", "pa": "103289047", "ri": "106424364", "sc": "104323608", "sd": "105476004", "tn": "106579246", "tx": "102748797", "ut": "102073993", "vt": "101662580", "va": "101026601", "wa": "103212711", "wv": "106144670", "wi": "101452733", "wy": "103294326"};
+                const stateMap = {"alabama":"al","alaska":"ak","arizona":"az","arkansas":"ar","california":"ca","colorado":"co","connecticut":"ct","delaware":"de","florida":"fl","georgia":"ga","hawaii":"hi","idaho":"id","illinois":"il","indiana":"in","iowa":"ia","kansas":"ks","kentucky":"ky","louisiana":"la","maine":"me","maryland":"md","massachusetts":"ma","michigan":"mi","minnesota":"mn","mississippi":"ms","missouri":"mo","montana":"mt","nebraska":"ne","nv":"nevada","new hampshire":"nh","new jersey":"nj","new mexico":"nm","new york":"ny","north carolina":"nc","north dakota":"nd","ohio":"oh","oklahoma":"ok","oregon":"or","pennsylvania":"pa","rhode island":"ri","south carolina":"sc","south dakota":"sd","tennessee":"tn","texas":"tx","utah":"ut","vermont":"vt","virginia":"va","washington":"wa","west virginia":"wv","wisconsin":"wi","wyoming":"wy"};
+                const cleanST = stateMap[stVal] || stVal;
+                const geoId = geoMap[cleanST];
+                finalUrl = geoId ? `https://www.linkedin.com/search/results/people/?keywords=${baseName}&origin=FACETED_SEARCH&geoUrn=%5B%22${geoId}%22%5D` : `https://www.linkedin.com/search/results/people/?keywords=${baseName}&origin=FACETED_SEARCH`;
+            } else if (i === 2) { // Twitter
+                finalUrl = searchTemplates[i] + enc + "&f=user";
+            } else if (i === 17) { // Vimeo (Shifted from 18 to 17 because Google is gone)
+                finalUrl = searchTemplates[i] + enc + "&type=people";
+            } else {
+                finalUrl = searchTemplates[i] + enc;
+            }
+            if (links[i]) {
+                links[i].href = finalUrl;
+                links[i].classList.remove('hidden-link');
+            }
+        }
+
+        // Indices shifted by -1 due to Google removal
+        if (links[19]) { // Venmo (Was 20)
+            links[19].href = `https://account.venmo.com/u/${name.replace(/\s+/g, '-')}`;
+            links[19].classList.remove('hidden-link');
+        }
+        if (links[20]) { // Spotify (Was 21)
+            links[20].href = `https://open.spotify.com/search/$${encodeURIComponent(name)}/users`;
+            links[20].classList.remove('hidden-link');
+        }
+        if (links[21]) { // BlueSky (Was 22)
+            links[21].href = `https://bsky.app/search?q=${enc}`;
+            links[21].classList.remove('hidden-link');
+        }
+		
+		const totalSocCount = mainSocials.length + subSocials.length;
+        const zoomIndex = totalSocCount - 1; 
+
+        if (links[zoomIndex]) {
+            // Re-using your logic: Clean name and join with /
+            const cleanZomName = name.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const zomPath = cleanZomName.split(/\s+/).join('/');
+            
+            links[zoomIndex].href = `https://www.zoominfo.com/people/${zomPath}`;
+            links[zoomIndex].classList.remove('hidden-link');
+        }
+
+        if (input.classList.contains('name-input')) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => saveToHistory(name), 2000);
+        }
+    } else {
+        bulkBtn.style.display = "none";
+        links.forEach(l => l.classList.add('hidden-link'));
+    }
+    saveToLocalStorage();
+}
+
+    function saveToLocalStorage() {
+        const rows = Array.from(document.querySelectorAll('#tableBody tr')).map(row => ({
+            name: row.querySelector('.name-input').value,
+            city: row.querySelector('.city-input').value,
+            state: row.querySelector('.state-input').value,
+            extra: row.querySelector('.extra-input').value
+        }));
+        localStorage.setItem('ns_si_data_v3', JSON.stringify(rows));
+    }
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('ns_si_data_v3');
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.length === 0) addRow();
+            else data.forEach(d => {
+                const row = addRow(false);
+                row.querySelector('.name-input').value = d.name;
+                row.querySelector('.city-input').value = d.city;
+                row.querySelector('.state-input').value = d.state;
+                row.querySelector('.extra-input').value = d.extra || "";
+                updateLinks(row.querySelector('.name-input'));
+            });
+        } else addRow();
+    }
+
+    function removeRow(btn) { btn.closest('tr').remove(); updateCount(); saveToLocalStorage(); }
+    function updateCount() { document.getElementById('rowCount').innerText = `${document.getElementById('tableBody').children.length} TARGETS LOADED`; }
+    
+    function openAllInRow(btn) { 
+        btn.closest('tr').querySelectorAll('a:not(.hidden-link)').forEach(l => {
+            if (l.parentElement.style.display !== 'none') window.open(l.href, '_blank');
+        }); 
+    }
+
+    window.onload = () => {
+        updateHeaderNames();
+        loadFromLocalStorage();
+        renderHistory();
+        setTimeout(() => document.getElementById('loader-wrapper').style.display = 'none', 3500);
+    };
+
+    // Canvas animation logic preserved below...
+        // Canvas animation logic preserved
+const canvas = document.getElementById("bg");
+const ctx = canvas.getContext("2d");
+let pts = [];
+
+const resize = () => { 
+    canvas.width = window.innerWidth; 
+    canvas.height = window.innerHeight; 
+};
+window.onresize = resize; 
+resize();
+
+for(let i=0; i<80; i++) {
+    pts.push({
+        x: Math.random() * canvas.width, 
+        y: Math.random() * canvas.height, 
+        r: Math.random() * 2, 
+        dx: Math.random() - 0.5, 
+        dy: Math.random() - 0.5
+    });
+}
+
+function anim() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pts.forEach(p => {
+        p.x += p.dx; p.y += p.dy;
+        if(p.x < 0 || p.x > canvas.width) p.dx *= -1; 
+        if(p.y < 0 || p.y > canvas.height) p.dy *= -1;
+        ctx.beginPath(); 
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); 
+        ctx.fillStyle = "rgba(246,201,14,0.3)"; 
+        ctx.fill();
+    });
+    requestAnimationFrame(anim);
+}
+anim();
+
+// --- Protection Logic ---
+
+// Disable Right Click
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+// Disable Shortcuts
+document.onkeydown = e => {
+    // F12
+    if (e.keyCode === 123) return false;
+
+    // Ctrl + Shift + I (Inspect)
+    // Ctrl + Shift + J (Console)
+    // Ctrl + Shift + C (Element Selector)
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+        return false;
+    }
+
+    // Ctrl + U (View Source)
+    if (e.ctrlKey && e.keyCode === 85) {
+        return false;
+    }
+};
+</script>
+<script>
+function openYelpPortal() {
+    window.open("https://www.yelp.com/find_friends/address_book?fsid=LpiV-_mJLfXiPGsVN3Wkjw", "_blank");
+}
+</script>
+<script>
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .btn-open, .btn-open-all {
+            transition: all 0.3s ease !important;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .btn-open:hover, .btn-open-all:hover {
+            background-color: #f6c90e !important;
+            color: #111 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(246, 201, 14, 0.4);
+            cursor: pointer;
+        }
+        .btn-open:active, .btn-open-all:active {
+            transform: translateY(0);
+        }
+    `;
+    document.head.appendChild(style);
+
+    /* --- 2. LOGIC & UI SYNC --- */
+    let isUserModeActive = false;
+    let standardRowTemplate = ''; 
+    let deleteBtnHTML = ''; 
+
+    const userPlatforms = [
+        { id: 'Facebook', url: 'https://facebook.com/' },
+        { id: 'Instagram', url: 'https://instagram.com/' },
+        { id: 'X (Twitter)', url: 'https://x.com/' },
+        { id: 'YouTube', url: 'https://www.youtube.com/@' },
+        { id: 'LinkedIn', url: 'https://linkedin.com/in/' },
+        { id: 'TikTok', url: 'https://www.tiktok.com/@' },
+        { id: 'Pinterest', url: 'https://www.pinterest.com/' },
+        { id: 'Poshmark', url: 'https://poshmark.com/closet/' },
+        { id: 'VSCO', url: 'https://vsco.co/' },
+        { id: 'MySpace', url: 'https://myspace.com/' },
+        /* --- UPDATED PLATFORMS LIST --- */
+        { id: 'Snapchat', url: 'https://www.snapchat.com/add/' },
+        { id: 'Twitch', url: 'https://www.twitch.tv/' },
+        { id: 'Flickr', url: 'https://www.flickr.com/photos/' },
+        { id: 'Medium', url: 'https://medium.com/@' },
+        { id: 'DeviantArt', url: 'https://www.deviantart.com/' },
+        { id: 'Tripadvisor', url: 'https://www.tripadvisor.com/members/' },
+        { id: 'OnlyFans', url: 'https://onlyfans.com/' },
+        { id: 'Tinder', url: 'https://tinder.com/@' },
+        { id: 'Kik', url: 'https://kik.me/' }
+    ];
+
+    window.addEventListener('load', () => {
+        const firstRow = document.querySelector('#tableBody tr');
+        if (firstRow) {
+            standardRowTemplate = firstRow.innerHTML;
+            deleteBtnHTML = firstRow.cells[0].innerHTML; 
+        }
+    });
+
+    function toggleUserMode(enabled) {
+        isUserModeActive = enabled;
+        const headerRow = document.getElementById('headerRow');
+        const tableBody = document.getElementById('tableBody');
+        const otherToggles = ['mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 'crimToggle', 'finToggle', 'yelpToggle'];
+
+        otherToggles.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.disabled = enabled;
+                const container = el.closest('.toggle-container');
+                if (container) {
+                    container.style.opacity = enabled ? '0.2' : '1';
+                    container.style.pointerEvents = enabled ? 'none' : 'auto';
+                }
+            }
+        });
+
+        if (enabled) {
+            headerRow.innerHTML = `
+                <th style="width:40px">DEL</th>
+                <th style="width:220px">TARGET USERNAME</th>
+                <th style="width:130px">BULK</th>
+                ${userPlatforms.map(p => `<th style="color:#f6c90e">${p.id}</th>`).join('')}
+            `;
+            
+            Array.from(tableBody.rows).forEach(row => {
+                const currentName = row.querySelector('.name-input')?.value || "";
+                renderUsernameRow(row, currentName);
+            });
+        } else {
+            headerRow.innerHTML = `
+                <th style="width:40px">DEL</th>
+                <th style="width:200px">NAME</th>
+                <th>CT</th>
+                <th style="width:40px">ST</th>
+                <th>Keyword</th>
+                <th style="width:80px">BULK</th>
+                <th class="main-col">FACEBOOK</th><th class="main-col">INSTAGRAM</th><th class="main-col">TWITTER</th><th class="main-col">YOUTUBE</th><th class="main-col">LINKEDIN</th>
+                <th class="sub-col">TIKTOK</th><th class="sub-col">PINTEREST</th><th class="sub-col">STRAVA</th><th class="sub-col">TUMBLR</th>
+            `;
+            
+            Array.from(tableBody.rows).forEach(row => {
+                const currentName = row.querySelector('.name-input')?.value || "";
+                row.innerHTML = standardRowTemplate;
+                const nameInput = row.querySelector('.name-input');
+                if (nameInput) nameInput.value = currentName;
+
+                const openBtn = row.querySelector('.btn-open');
+                if (openBtn) openBtn.classList.add('btn-open'); 
+            });
+
+            otherToggles.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.dispatchEvent(new Event('change'));
+                    if (el.onclick) el.onclick();
+                }
+            });
+        }
+
+        if (typeof fixDashboardLayout === "function") {
+            setTimeout(fixDashboardLayout, 100);
+        }
+    }
+
+    function renderUsernameRow(row, val) {
+        row.innerHTML = `
+            <td>${deleteBtnHTML}</td>
+            <td><input type="text" class="name-input" value="${val}" style="color:#f6c90e; background:transparent; border:none; outline:none; width:100%; font-weight:bold;"></td>
+            <td><button class="btn-open-all" style="border:1px solid #f6c90e; color:#f6c90e; background:transparent; border-radius:4px; padding:3px 15px; cursor:pointer; font-size:10px;" onclick="bulkDirectOpen(this)">OPEN ALL</button></td>
+            ${userPlatforms.map(p => `<td><a href="#" onclick="openDirectUser('${p.url}', this); return false;" style="color:#f6c90e; text-decoration:none; font-weight:bold;">GO</a></td>`).join('')}
+        `;
+    }
+
+    function openDirectUser(url, el) {
+        const u = el.closest('tr').querySelector('.name-input').value.trim().replace('@','');
+        if(u) window.open(url + u, '_blank');
+    }
+
+    function bulkDirectOpen(btn) {
+        const u = btn.closest('tr').querySelector('.name-input').value.trim().replace('@','');
+        if(u) userPlatforms.forEach(p => window.open(p.url + u, '_blank'));
+    }
+
+    const addBtn = document.querySelector('.btn-add');
+    if (addBtn) {
+        addBtn.onclick = function() {
+            const tbody = document.getElementById('tableBody');
+            const newRow = tbody.insertRow();
+            if (isUserModeActive) {
+                renderUsernameRow(newRow, "");
+            } else {
+                newRow.innerHTML = standardRowTemplate;
+                ['mainToggle', 'subToggle'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.dispatchEvent(new Event('change'));
+                });
+            }
+            if (typeof fixDashboardLayout === "function") {
+                setTimeout(fixDashboardLayout, 50);
+            }
+        };
+    }
+</script>
+<script>
+    /* --- ZOOMINFO SUB-SOCMED MODULE --- */
+    
+    function getZoominfoUrl(fullName) {
+        if (!fullName) return "#";
+        // Clean name and convert "John Doe" to "john/doe"
+        const cleanName = fullName.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
+        const namePath = cleanName.split(/\s+/).join('/');
+        return `https://www.zoominfo.com/people/${namePath}`;
+    }
+
+    // This function will be called inside your updateLinks loop
+    function updateZoominfoLink(row, name) {
+        // Zoominfo is the LAST item in the total socials list
+        const allLinks = row.querySelectorAll('a');
+        const zoomIndex = mainSocials.length + subSocials.length - 1;
+        
+        if (allLinks[zoomIndex]) {
+            const link = allLinks[zoomIndex];
+            if (name) {
+                link.href = getZoominfoUrl(name);
+                link.classList.remove('hidden-link');
+            } else {
+                link.classList.add('hidden-link');
+            }
+        }
+    }
+</script>
+<script>
+function fixDashboardLayout() {
+    const table = document.getElementById('resultsTable');
+    const container = document.querySelector('.results-container');
+    if (!table || !container) return;
+
+    // --- PART 1: FIX THE GOLD LINE ---
+    // Remove the right edge from everything first
+    const allCells = table.querySelectorAll('th, td');
+    allCells.forEach(cell => cell.classList.remove('edge-right'));
+
+    // Find the last visible cell in each row and add the gold line
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+        const visibleCells = Array.from(row.querySelectorAll('th, td')).filter(cell => {
+            return window.getComputedStyle(cell).display !== 'none';
+        });
+        if (visibleCells.length > 0) {
+            visibleCells[visibleCells.length - 1].classList.add('edge-right');
+        }
+    });
+
+    // --- PART 2: ELIMINATE SCROLLBAR ---
+    table.style.transform = "none";
+    table.style.width = "100%";
+    table.style.transformOrigin = "top left";
+
+    const availableWidth = container.clientWidth;
+    const actualWidth = table.scrollWidth;
+
+    if (actualWidth > availableWidth) {
+        const scaleFactor = availableWidth / actualWidth;
+        table.style.transform = `scale(${scaleFactor})`;
+        table.style.width = (100 / scaleFactor) + "%";
+    }
+}
+
+// Run on window resize
+window.addEventListener('resize', fixDashboardLayout);
+
+// IMPORTANT: Call this at the end of your Toggle functions!
+/* function toggleMain() { 
+      ... your code ...
+      setTimeout(fixDashboardLayout, 50); 
+   }
+*/
+</script>
+</body>
+</html>
