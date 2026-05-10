@@ -678,6 +678,13 @@ body {
     box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
 }
 
+/* Progressive Mode Toggle */
+.gender-switch:has(input[value="progressive"]:checked)::after {
+    transform: translateX(100%);
+    background-color: #9b59b6; /* Progressive Purple */
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.5);
+}
+
 /* Network Toggle Switch */
 .network-switch-label {
     display: flex;
