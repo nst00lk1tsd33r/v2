@@ -1417,5 +1417,67 @@ window.addEventListener('resize', fixDashboardLayout);
         };
     })();
 </script>
+<script>
+/* --- NS TOOLKIT: CONDITIONAL OPEN BUTTON CLEANUP --- */
+(function() {
+    function handleOpenButtonVisibility() {
+        // 1. Identify all your toggle inputs
+        const toggles = [
+            'pseSearchToggle', 
+            'userModeToggle', 
+            'mainToggle', 
+            'subToggle', 
+            'engineToggle', 
+            'legalToggle', 
+            'crimToggle', 
+            'finToggle', 
+            'yelpToggle'
+        ];
+
+        // 2. Check if ANY toggle is currently active
+        const anyActive = toggles.some(id => {
+            const el = document.getElementById(id);
+            return el && el.checked;
+        });
+
+        // 3. Select all "OPEN" buttons
+        const buttons = document.querySelectorAll('button');
+        
+        buttons.forEach(btn => {
+            const text = btn.textContent.trim();
+            if (text === 'OPEN' || text === 'OPEN ALL') {
+                const parentTd = btn.closest('td');
+                
+                if (!anyActive) {
+                    // NOTHING IS TOGGLED: Hide the button/cell
+                    if (parentTd) parentTd.style.display = 'none';
+                    else btn.style.display = 'none';
+                } else {
+                    // SOMETHING IS TOGGLED: Show the button/cell
+                    if (parentTd) parentTd.style.display = 'table-cell';
+                    else btn.style.display = 'inline-block';
+                }
+            }
+        });
+    }
+
+    // Run on load to handle the 'restore' state
+    window.addEventListener('load', handleOpenButtonVisibility);
+
+    // Watch for toggle changes to show/hide the button in real-time
+    document.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
+            handleOpenButtonVisibility();
+        }
+    });
+
+    // Watch for new rows being added via the '+' button
+    const observer = new MutationObserver(handleOpenButtonVisibility);
+    const tableBody = document.getElementById('tableBody');
+    if (tableBody) {
+        observer.observe(tableBody, { childList: true, subtree: true });
+    }
+})();
+</script>
 </body>
 </html>
