@@ -1154,72 +1154,77 @@ window.addEventListener('resize', fixDashboardLayout);
 */
 </script>
 <script>
-    /* --- NS TOOLKIT: TOGGLE PERSISTENCE --- */
-    const UI_STORAGE_KEY = 'ns_ui_toggle_states';
-
-    // 1. SAVE: Capture every toggle's status
-    function saveAllToggles() {
+    /* --- NS TOOLKIT: ROBUST TOGGLE PERSISTENCE --- */
+    (function() {
+        const UI_STORAGE_KEY = 'ns_ui_toggle_states';
         const toggleIds = [
             'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
             'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
         ];
-        
-        const state = {};
-        toggleIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                state[id] = el.checked;
-            }
-        });
-        
-        localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(state));
-    }
 
-    // 2. RESTORE: Re-apply the states and trigger the logic
-    function restoreAllToggles() {
-        const saved = JSON.parse(localStorage.getItem(UI_STORAGE_KEY));
-        if (!saved) return;
+        function saveAllToggles() {
+            const state = {};
+            toggleIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) state[id] = el.checked;
+            });
+            localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(state));
+        }
 
-        Object.keys(saved).forEach(id => {
-            const el = document.getElementById(id);
-            if (el && saved[id] !== undefined) {
-                // Set the physical checkmark
-                el.checked = saved[id];
-                
-                // Trigger the 'change' event so your existing CSS/Logic reacts
-                el.dispatchEvent(new Event('change'));
+        function restoreAllToggles() {
+            const saved = JSON.parse(localStorage.getItem(UI_STORAGE_KEY));
+            if (!saved) return;
 
-                // Special handling for the Username Mode toggle
-                if (id === 'usernameModeToggle' && saved[id] === true) {
-                    if (typeof toggleUserMode === 'function') {
-                        // Force the header columns (Snapchat, Twitch, etc.) to rebuild
-                        toggleUserMode(true);
+            // Sort so usernameModeToggle runs LAST to prevent it being overridden
+            const sortedKeys = Object.keys(saved).sort((a, b) => 
+                (a === 'usernameModeToggle') ? 1 : (b === 'usernameModeToggle') ? -1 : 0
+            );
+
+            sortedKeys.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && saved[id] !== undefined) {
+                    el.checked = saved[id];
+                    
+                    // Trigger events
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (el.onclick) el.onclick();
+
+                    // Specific trigger for the UI reconstruction
+                    if (id === 'usernameModeToggle' && saved[id] === true) {
+                        if (typeof window.toggleUserMode === 'function') {
+                            window.toggleUserMode(true);
+                        }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    // 3. INITIALIZE: Set up listeners
-    window.addEventListener('load', () => {
-        // Delay ensures your main script has finished its own window.load tasks
-        setTimeout(() => {
+        // Initialize with a safer check
+        function initPersistence() {
             restoreAllToggles();
-
-            // Attach listeners to all toggles to save whenever they are clicked
-            const toggleIds = [
-                'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
-                'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
-            ];
-
+            
             toggleIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
+                    // Use both 'change' and 'click' to catch all user interactions
                     el.addEventListener('change', saveAllToggles);
+                    el.addEventListener('click', saveAllToggles);
                 }
             });
-        }, 250); 
-    });
+        }
+
+        // Wait for the DOM and your specific functions to be ready
+        const checkReady = setInterval(() => {
+            // Checks if the table body exists and your main function is defined
+            if (document.getElementById('tableBody') && typeof window.toggleUserMode === 'function') {
+                clearInterval(checkReady);
+                initPersistence();
+            }
+        }, 100);
+
+        // Fallback: stop checking after 3 seconds
+        setTimeout(() => clearInterval(checkReady), 3000);
+    })();
 </script>
 <script>
     /* --- YOUTUBE FIX FOR MAIN SOCMED TOGGLE --- */
