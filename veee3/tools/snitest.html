@@ -473,7 +473,7 @@ const subSocials = [
 ];
 
 const searchTemplates = [
-    "https://www.facebook.com/search/top/?q=", 
+    "https://www.facebook.com/search/people/?q=", 
     "https://imginn.com/search/",              
     "https://www.x.com/search?q=",             
     "https://www.youtube.com/results?search_query=",
@@ -1155,78 +1155,77 @@ window.addEventListener('resize', fixDashboardLayout);
 */
 </script>
 <script>
-    /* --- NS TOOLKIT PERSISTENCE ENGINE --- */
-    const STORAGE_KEY = 'NS_TOOLKIT_REFRESH_STATE';
+    /* --- TOGGLE PERSISTENCE ONLY --- */
+    const TOGGLE_STORAGE_KEY = 'ns_toolkit_toggles';
 
-    // 1. SAVE: Capture names and the exact toggle state
-    function saveAllProgress() {
-        const modeToggle = document.getElementById('usernameModeToggle'); // Ensure your checkbox has this ID
-        const data = {
-            isUserMode: isUserModeActive,
-            toggleChecked: modeToggle ? modeToggle.checked : false,
-            names: Array.from(document.querySelectorAll('.name-input')).map(input => input.value)
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-
-    // 2. LOAD: Reconstruct the table and flip the switch
-    function restoreAllProgress() {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (!saved) return;
-
-        const tbody = document.getElementById('tableBody');
-        const modeToggle = document.getElementById('usernameModeToggle');
-
-        // Clear initial rows
-        tbody.innerHTML = '';
-
-        // Restore names into rows
-        saved.names.forEach(val => {
-            const row = tbody.insertRow();
-            if (saved.isUserMode) {
-                renderUsernameRow(row, val);
-            } else {
-                row.innerHTML = standardRowTemplate;
-                const input = row.querySelector('.name-input');
-                if (input) input.value = val;
+    // 1. SAVE: Capture the 'checked' state of all functional toggles
+    function saveToggleStates() {
+        const toggles = [
+            'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
+            'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
+        ];
+        const state = {};
+        
+        toggles.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                state[id] = el.type === 'checkbox' ? el.checked : el.value;
             }
         });
-
-        // Restore the toggle switch and trigger the UI logic
-        if (saved.isUserMode) {
-            isUserModeActive = true;
-            if (modeToggle) modeToggle.checked = true;
-            toggleUserMode(true); 
-        }
+        
+        localStorage.setItem(TOGGLE_STORAGE_KEY, JSON.stringify(state));
     }
 
-    // 3. LISTENERS: Watch for any changes
+    // 2. LOAD: Restore the states and trigger their logic
+    function restoreToggleStates() {
+        const savedState = JSON.parse(localStorage.getItem(TOGGLE_STORAGE_KEY));
+        if (!savedState) return;
+
+        Object.keys(savedState).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                // Restore the visual state
+                if (el.type === 'checkbox') {
+                    el.checked = savedState[id];
+                } else {
+                    el.value = savedState[id];
+                }
+
+                // Trigger the existing logic attached to the toggle
+                // This ensures columns hide/show or Username Mode activates
+                el.dispatchEvent(new Event('change'));
+                if (el.onclick) el.onclick();
+                
+                // Special case: if it's the Username Mode toggle, run your specific function
+                if (id === 'usernameModeToggle' && savedState[id] === true) {
+                    if (typeof toggleUserMode === 'function') {
+                        toggleUserMode(true);
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. LISTENERS: Watch for toggle flips
     window.addEventListener('load', () => {
-        // Wait 150ms to ensure standardRowTemplate is captured by your main script
+        // Small delay to ensure the main script is ready
         setTimeout(() => {
-            restoreAllProgress();
+            restoreToggleStates();
 
-            // Auto-save on any typing
-            document.getElementById('tableBody').addEventListener('input', (e) => {
-                if (e.target.classList.contains('name-input')) saveAllProgress();
+            const toggles = [
+                'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
+                'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
+            ];
+
+            toggles.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', saveToggleStates);
+                    // Also capture if you use direct clicks
+                    el.addEventListener('click', saveToggleStates);
+                }
             });
-
-            // Auto-save when Add Button is clicked
-            const addBtn = document.querySelector('.btn-add');
-            if (addBtn) {
-                const oldAdd = addBtn.onclick;
-                addBtn.onclick = function() {
-                    if (oldAdd) oldAdd();
-                    saveAllProgress();
-                };
-            }
-
-            // Auto-save when the Toggle is clicked
-            const modeToggle = document.getElementById('usernameModeToggle');
-            if (modeToggle) {
-                modeToggle.addEventListener('change', saveAllProgress);
-            }
-        }, 150);
+        }, 200);
     });
 </script>
 </body>
