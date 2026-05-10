@@ -322,12 +322,21 @@
 &nbsp;
 
 <div class="toggle-container">
+    <label style="font-size: 10px; cursor: pointer;" for="pseSearchToggle">PSE Search Mode (Beta)</label>
+    <label class="switch">
+        <input type="checkbox" id="pseSearchToggle" onchange="handlePSESwitch(this)">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<div class="toggle-container">
     <label style="font-size: 10px; cursor: pointer;" for="userModeToggle">Username Mode</label>
     <label class="switch">
         <input type="checkbox" id="userModeToggle" onchange="toggleUserMode(this.checked)">
         <span class="slider"></span>
     </label>
 </div>
+
             <div class="toggle-container">
                 <label style="font-size: 10px; cursor: pointer;" for="mainToggle">Main Socmed</label>
                 <label class="switch">
@@ -424,7 +433,7 @@
 			<div style="flex-grow: 1;"></div>
 
 		<div style="padding-top: 20px; border-top: 1px solid var(--border-color); flex-shrink: 0; margin-top: 20px;">
-		<div style="font-size: 10px; color: var(--text-dim);">Made by Darel Miranda | NS ToolKits Team</div>
+		<div style="font-size: 10px; color: var(--text-dim);">Created by Darel Miranda | NS ToolKits Team</div>
 		</div>
 		</aside>
 
@@ -977,7 +986,7 @@ function openYelpPortal() {
         isUserModeActive = enabled;
         const headerRow = document.getElementById('headerRow');
         const tableBody = document.getElementById('tableBody');
-        const otherToggles = ['mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 'crimToggle', 'finToggle', 'yelpToggle'];
+        const otherToggles = ['mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 'crimToggle', 'pseSearchToggle', 'finToggle', 'yelpToggle'];
 
         otherToggles.forEach(id => {
             const el = document.getElementById(id);
@@ -1159,7 +1168,7 @@ window.addEventListener('resize', fixDashboardLayout);
         const UI_STORAGE_KEY = 'ns_ui_toggle_states';
         const toggleIds = [
             'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
-            'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
+            'crimToggle', 'finToggle', 'yelpToggle', 'pseSearchToggle', 'usernameModeToggle'
         ];
 
         function saveAllToggles() {
@@ -1289,6 +1298,123 @@ window.addEventListener('resize', fixDashboardLayout);
         window.addEventListener('load', () => {
             setTimeout(fixMainTableYoutubeLinks, 500);
         });
+    })();
+</script>
+<script>
+    /* --- NS TOOLKIT: PSE STYLE RECOVERY (V47) --- */
+    (function() {
+        let originalRows = [];
+        const W_DEL = "50px", W_NAME = "220px", W_CT = "220px", W_ST = "70px";
+
+        const stateMap = {'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD', 'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'};
+
+        function getStateAbbr(input) {
+            let clean = input.trim().toLowerCase();
+            return stateMap[clean] || input.trim().toUpperCase();
+        }
+
+        window.handlePSESwitch = function(checkbox) {
+            if (checkbox.checked) {
+                sessionStorage.setItem('pse_active', 'true');
+                togglePSEMode(true);
+            } else {
+                if (sessionStorage.getItem('pse_active') === 'true') {
+                    sessionStorage.removeItem('pse_active');
+                    location.reload(); 
+                }
+            }
+        };
+
+        window.togglePSEMode = function(isActive) {
+            const tbody = document.getElementById('tableBody');
+            const thead = document.querySelector('thead tr');
+            const otherToggles = ['userModeToggle', 'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 'crimToggle', 'finToggle', 'yelpToggle'];
+            
+            if (isActive) {
+                otherToggles.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = true;
+                        const container = el.closest('.toggle-container') || el.parentElement;
+                        container.style.opacity = '0.3';
+                        container.style.pointerEvents = 'none';
+                    }
+                });
+
+                originalRows = Array.from(tbody.rows).map(row => ({
+                    name: row.querySelector('.name-input')?.value || "",
+                    ct: row.cells[2]?.querySelector('input')?.value || "",
+                    st: row.cells[3]?.querySelector('input')?.value || ""
+                }));
+
+                // Headers bumped to 10px
+                thead.innerHTML = `
+                    <th style="width: ${W_DEL}; text-align: center; font-size: 10px; opacity: 0.8;">DEL</th>
+                    <th style="width: ${W_NAME}; text-align: left; padding-left: 15px; font-size: 10px; opacity: 0.8;">FULL NAME</th>
+                    <th style="width: ${W_CT}; text-align: left; font-size: 10px; opacity: 0.8;">CITY, STATE</th>
+                    <th style="width: ${W_ST}; text-align: center; font-size: 10px; opacity: 0.8;">BULK</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Truepeoplesearch</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Searchpeoplefree</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Fastpeoplesearch</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Fastbackgroundcheck</th>
+                `;
+
+                tbody.innerHTML = '';
+                (originalRows.length ? originalRows : [{name: ""}]).forEach(data => renderPSERow(tbody.insertRow(), data.name, data.ct));
+            }
+        };
+
+        function renderPSERow(row, name, ct) {
+            const goStyle = `background:none; border:none; color:#f6c90e; cursor:pointer; outline:none; font-size: 11px; font-weight: normal;`;
+            // Inputs bumped to 11px for better readability
+            row.innerHTML = `
+                <td style="text-align: center;"><button class="btn btn-delete" style="color:#ff4d4d; background:transparent; border:none; font-size: 10px;" onclick="this.closest('tr').remove()">✕</button></td>
+                <td style="padding-left: 15px;"><input type="text" class="ps-fullname name-input" value="${name}" style="background:transparent; border:none; width:100%; outline:none; font-size: 11px; font-weight: normal;"></td>
+                <td style="padding-left: 5px;"><input type="text" class="ps-address" value="${ct}" placeholder="City, State" style="background:transparent; border:none; width:100%; outline:none; color:white; font-size: 11px; font-weight: normal;"></td>
+                <td style="text-align:center;"><button style="border:1px solid #f6c90e; color:#f6c90e; background:transparent; border-radius:4px; padding:1px 6px; cursor:pointer; font-size: 9px; text-transform: uppercase;" onclick="bulkPSESearch(this)">OPEN</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('true', this)">GO</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('free', this)">GO</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('fast', this)">GO</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('check', this)">GO</button></td>
+            `;
+        }
+
+        window.runPSESearch = function(type, btn) {
+            const row = btn.closest('tr');
+            const fullName = row.querySelector('.ps-fullname').value.trim();
+            const addr = row.querySelector('.ps-address').value.trim();
+            if (!fullName && !addr) return;
+
+            const nameSlug = fullName.toLowerCase().replace(/ /g, '-');
+            const nameParts = fullName.toLowerCase().split(' ');
+            const first = nameParts[0] || "", last = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+
+            let citySlug = "", fullAddrSlug = "";
+            const addrParts = addr.split(',');
+            
+            if (addrParts.length >= 2) {
+                let city = addrParts[addrParts.length - 2].trim().toLowerCase();
+                citySlug = city.replace(/ /g, '-');
+                let state = getStateAbbr(addrParts[addrParts.length - 1].trim()).toLowerCase();
+                fullAddrSlug = `${citySlug}-${state}`;
+            } else { 
+                citySlug = addr.trim().toLowerCase().replace(/ /g, '-'); 
+                fullAddrSlug = citySlug;
+            }
+
+            let url = "";
+            switch(type) {
+                case 'true': url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(fullName)}&citystate=${encodeURIComponent(addr)}`; break;
+                case 'free': url = `https://www.searchpeoplefree.com/find/${first}-${last}/${fullAddrSlug}`; break;
+                case 'fast': url = `https://www.fastpeoplesearch.com/name/${first}-${last}_${fullAddrSlug}`; break;
+                case 'check': url = `https://www.fastbackgroundcheck.com/people/${nameSlug}/${fullAddrSlug}`; break;
+            }
+            window.open(url, '_blank');
+        };
+
+        window.bulkPSESearch = function(btn) {
+            ['true', 'free', 'fast', 'check'].forEach(t => runPSESearch(t, btn));
+        };
     })();
 </script>
 </body>
