@@ -69,7 +69,7 @@
 <body>
     <div class="navbar">
         <div class="nav-inner">
-            <div class="nav-left"><a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
+            <div class="nav-left"><a href="https://nstoolkits.site/v3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
             <div class="nav-menu">
              <a href="https://nstoolkits.site/veee3/">Home</a>
             <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
@@ -82,8 +82,10 @@
 <div class="holy-grail-body" x-data="{ 
     isNull: false,
     isEditing: false,
+    isManuallyOverridden: false,
     manualReportHTML: '',
     activeSection: 'nullset',
+    reportType: 'plus',
     subjectGender: 'male',
     accountType: 'personal',
     mentionMedia: 'public post/s',
@@ -101,6 +103,9 @@
         if (confirm('Are you sure you want to discard all report data? Your sticky notes will be saved.')) {
             // 1. Reset Global Variables
             this.isNull = false;
+            this.isManuallyOverridden = false;
+            this.manualReportHTML = '';
+            this.reportType = 'plus';
             this.subjectGender = 'male';
             this.accountType = 'personal';
             this.mentionMedia = 'public post/s';
@@ -112,14 +117,11 @@
             // 3. Destruct and Rebuild Networks safely!
             this.networks.forEach(net => {
                 net.checked = false;
-                // Delete the array completely to destroy the old HTML elements
                 net.instances = []; 
             });
             
-            // Wait 1 millisecond for the HTML to clear, then inject fresh objects
             this.$nextTick(() => {
                 this.networks.forEach(net => {
-                    // This forces Alpine to build fresh HTML and trigger x-init perfectly!
                     net.instances = [{}]; 
                 });
             });
@@ -131,15 +133,31 @@
 
     toggleEdit() {
         if (!this.isEditing) {
-            if (confirm('The fill-up form and networks panel will be disabled beyond this point and any changes will be permanent. It is suggested to use this for finalizing your report. Proceed?')) {
-                // Freeze the current generated text so the user can type in it
-                this.manualReportHTML = this.reportText;
+            if (!this.isManuallyOverridden) {
+                if (confirm('The fill-up form and networks panel will be disabled. Proceed?')) {
+                    this.manualReportHTML = this.reportText;
+                    this.isEditing = true;
+                }
+            } else {
+                // If already overridden, just re-open the editor
                 this.isEditing = true;
             }
         } else {
-            if (confirm('Are you sure you want to cancel? This will revert all manual changes and re-enable the form.')) {
+            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
                 this.isEditing = false;
             }
+        }
+    },
+
+    saveEdits() {
+        this.isManuallyOverridden = true;
+        this.isEditing = false;
+    },
+
+    unlockForm() {
+        if (confirm('This will permanently delete your manual edits and restore the auto-generated text. Proceed?')) {
+            this.isManuallyOverridden = false;
+            this.manualReportHTML = '';
         }
     },
 
@@ -159,6 +177,20 @@
         let paragraphs = [];
         let regularParagraphs = [];
         let businessParagraphs = [];
+
+        // Helper to format arrays with Oxford commas
+        let joinList = (arr) => {
+            if (arr.length === 0) return '';
+            if (arr.length === 1) return arr[0];
+            if (arr.length === 2) return arr.join(' and ');
+            return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
+        };
+
+        // Progressive Mode Trackers
+        let progNetworks = [];
+        let progMugshots = 0;
+        let progWebsites = 0;
+        let progGoogle = false;
 
         // ==========================================
         // 1. THE TALLY SYSTEM (For the Final Bullet)
@@ -189,9 +221,22 @@
                     }
 
                     if (net.id === 'goog') {
+                        progGoogle = true;
                         if (data.matchStatus === 'possible') tally.hasPossibleGoogle = true;
                         else tally.hasGoogle = true;
                         } else {
+                        
+                        // Progressive Network Tracking
+                        if (net.id === 'other') {
+                            if (data.subType === 'mugshot') progMugshots++;
+                            else if (data.accountType === 'business') progWebsites++; 
+                            else if (['general', 'ecommerce', 'myspace', 'zoominfo', 'classmates'].includes(data.subType)) {
+                                progNetworks.push(data.networkName ? data.networkName.trim() : 'Other');
+                            }
+                        } else {
+                            progNetworks.push(net.name);
+                        }
+
                         if (data.accountType === 'no-page' || data.accountType === 'no-relative') {
                             tally.hasMentions = true;
                         } 
@@ -213,10 +258,119 @@
             }
         });
 
+        // Remove duplicate network names
+        progNetworks = [...new Set(progNetworks)];
+
+        let isMale = this.subjectGender === 'male';
+        let proSubj = isMale ? 'he' : 'she';
+        let proPoss = isMale ? 'his' : 'her';
 
         // ==========================================
-        // 2. THE MANDATORY INTRO
+        // THE LOGIC SPLIT
         // ==========================================
+        if (this.reportType === 'progressive') {
+            
+            // --- PROGRESSIVE BULLET 1: Intro & Networks ---
+            let b1 = `Searches of multiple social media sites including but not limited to Facebook, Instagram, X (Twitter), YouTube, LinkedIn, TikTok, Pinterest, Strava, Foursquare, and Tumblr, in addition to an in-depth Google search was performed with a specific analysis focused on the aforementioned categories. All provided information, as well as discovered information, was utilized in the search.`;
+
+            if (this.isNull) {
+                b1 += ` No social media accounts were found for the party at this time.`;
+            } else {
+                let accStr = '';
+                if (progNetworks.length > 0) accStr = `Social media accounts for the party were found on ${joinList(progNetworks)}`;
+
+                let extraStr = [];
+                if (progMugshots > 0) extraStr.push(progMugshots === 1 ? 'a Mugshot' : 'multiple Mugshots');
+                if (progWebsites > 0) extraStr.push(progWebsites === 1 ? 'a personal website' : `${progWebsites} personal websites`);
+                if (progGoogle) extraStr.push('Google search results');
+
+                if (accStr && extraStr.length > 0) {
+                    b1 += ` ${accStr}; ${proSubj} was also found to have ${joinList(extraStr)}.`;
+                } else if (accStr) {
+                    b1 += ` ${accStr}.`;
+                } else if (extraStr.length > 0) {
+                    b1 += ` The party was found to have ${joinList(extraStr)}.`;
+                }
+
+                if (tally.hasGlobalRH) {
+                    b1 += ` [Insert findings/activity dates here, e.g., Photos and videos of the party's activities from April of 2020 through July of 2024 were found.]`;
+                }
+            }
+            paragraphs.push(b1);
+
+            // --- PROGRESSIVE BULLET 2: Family Members ---
+            let scopeWord = this.relData.scope === 'both' ? 'family members and associates' : 'family members';
+            let b2 = `Searches for the party’s ${scopeWord} were also conducted`;
+
+            if (!this.relData.found) {
+                b2 += `, but none were positively identified at this time.`;
+            } else {
+                let validRows = this.relData.rows.filter(r => (r.name || '').trim() !== '');
+                let count = validRows.length;
+                if (count > 0) {
+                    let nameArray = validRows.map(r => {
+                        let cleanName = (r.name || '').trim();
+                        let rawLink = (r.link || '').trim();
+                        let nameString = cleanName;
+                        
+                        if (rawLink) {
+                            let match = rawLink.match(/href=[\x22']([^\x22']+)[\x22']/i);
+                            let url = match ? match[1] : rawLink.replace(/<[^>]*>?/gm, '').trim();
+                            if (url) {
+                                if (!url.startsWith('http')) url = 'https://' + url;
+                                let netName = 'Website';
+                                try {
+                                    let domain = new URL(url).hostname;
+                                    domain = domain.replace(/^www\./i, '').split('.')[0];
+                                    netName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                                    if (netName.toLowerCase() === 'linkedin') netName = 'LinkedIn';
+                                    if (netName.toLowerCase() === 'youtube') netName = 'YouTube';
+                                    if (netName.toLowerCase() === 'tiktok') netName = 'TikTok';
+                                } catch(e) {}
+                                nameString = `<a href='${url}' style='color: #0563c1; text-decoration: underline;'>${cleanName}</a> (${netName})`;
+                            }
+                        }
+                        return nameString;
+                    });
+
+                    b2 += ` and ${count} were identified: ${joinList(nameArray)}. These accounts were thoroughly investigated and `;
+                    if (this.relData.finding === 'none') {
+                        b2 += `no apparent relevant information regarding the case was found on them at this time.`;
+                    } else {
+                        b2 += (this.relData.rhText || '').trim() ? this.relData.rhText.trim() : `[Insert relevant findings here]`;
+                    }
+                } else {
+                    b2 += `, but none were positively identified at this time.`;
+                }
+            }
+            paragraphs.push(b2);
+
+            // --- PROGRESSIVE BULLET 3: Summation ---
+            let b3 = `In summation, `;
+            if (this.isNull) {
+                b3 += `the party did not appear to have any forms of personal social media. After a thorough investigation, no apparent relevant information regarding the party’s accident on [Date] was found at this time, nor were any social media posts pertaining to ${proPoss} injuries, treatment, or activities.`;
+            } else {
+                let sumParts = [];
+                let totalSocial = tally.personalCount + tally.possibleSocialCount;
+                if (totalSocial > 0) sumParts.push(`${totalSocial} personal social media account${totalSocial > 1 ? 's' : ''}`);
+                if (progMugshots > 0) sumParts.push(progMugshots === 1 ? 'a Mugshot' : 'multiple Mugshots');
+                if (progWebsites > 0) sumParts.push(progWebsites === 1 ? '1 personal website' : `${progWebsites} personal websites`);
+                if (progGoogle) sumParts.push('Google search results');
+
+                b3 += `${joinList(sumParts) || 'no accounts'} were identified for the party. After a thorough investigation, `;
+
+                if (tally.hasGlobalRH) {
+                    b3 += `[Insert findings here, e.g., a post relating to the party's accident and injuries was found...].`;
+                } else {
+                    b3 += `no apparent relevant information regarding the party’s accident on [Date] was found at this time, nor were any social media posts pertaining to ${proPoss} injuries, treatment, or activities.`;
+                }
+            }
+            paragraphs.push(b3);
+
+        } else {
+            // ==========================================
+            // 2. THE MANDATORY INTRO (Plus Mode)
+            // ==========================================
         paragraphs.push(`Searches of multiple social media sites including (but not limited to) Facebook, X (Twitter), Instagram, YouTube, LinkedIn, Pinterest, Tumblr, Foursquare, Strava, and TikTok, in addition to an in-depth Google search, was performed on the subject. All provided information, as well as discovered information, was utilized in the search.`);
 
 
@@ -788,7 +942,8 @@
 
             paragraphs.push(`<strong>${finalBullet}</strong>`);
         }
-
+        
+        }
 
         // ==========================================
         // 6. FORMATTING THE OUTPUT
@@ -853,7 +1008,7 @@
     ]
 }">
         
-        <nav class="networks" :class="isEditing ? 'dimmed-row' : ''">
+        <nav class="networks" :class="(isEditing || isManuallyOverridden) ? 'dimmed-row' : ''">
             <h3 style="color: #e0e0e0; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Networks</h3>
             <div class="network-grid">
                 <template x-for="(net, nIndex) in networks" :key="net.id">
@@ -891,12 +1046,24 @@
             </div>
         </nav>
 
-    <section class="fill-up-form" :class="isEditing ? 'dimmed-row' : ''">
+    <section class="fill-up-form" :class="(isEditing || isManuallyOverridden) ? 'dimmed-row' : ''">
         <h3 style="color: #e0e0e0; opacity: 0.9; margin-bottom: 15px; padding-bottom: 5px; display: inline-block; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Fill Up Form</h3>
 
         <details class="styled-details" :open="activeSection === 'nullset'">
-            <summary @click.prevent="activeSection = activeSection === 'nullset' ? '' : 'nullset'">Null Set</summary>
+            <summary @click.prevent="activeSection = activeSection === 'nullset' ? '' : 'nullset'">Report Type</summary>
             <form action="" class="details-content">
+
+                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                    <legend>Report Version</legend>
+                    <div class="gender-switch" style="margin-top: 5px;">
+                        <input type="radio" id="report-plus" name="report-type" value="plus" x-model="reportType">
+                        <label for="report-plus">Plus</label>
+                    
+                        <input type="radio" id="report-prog" name="report-type" value="progressive" x-model="reportType">
+                        <label for="report-prog">Progressive</label>
+                    </div>
+                </fieldset>
+
                 <fieldset class="custom-fieldset">
                     <legend>Null?</legend>
                     <div class="checkbox-group">
@@ -1617,79 +1784,115 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button type="button" 
-                            x-show="!isEditing"
-                            @click="toggleEdit()"
-                            class="add-btn" 
-                            style="border: 2px solid #f39c12; color: #f39c12; width: 130px; justify-content: center;">
-                        Edit Report
-                    </button>
+                <!-- EDIT BUTTON -->
+                <button type="button" 
+                        x-show="!isEditing"
+                        @click="toggleEdit()"
+                        class="add-btn" 
+                        style="border: 2px solid #f39c12; color: #f39c12; width: 130px; justify-content: center;">
+                    Edit Report
+                </button>
 
-                    <button type="button" 
-                            x-show="isEditing"
-                            @click="toggleEdit()"
-                            class="add-btn" 
-                            style="border: 2px solid #95a5a6; color: #95a5a6; width: 130px; justify-content: center;" x-cloak>
-                        Cancel Edit
-                    </button>
+                <!-- SAVE EDITS BUTTON (NEW) -->
+                <button type="button" 
+                        x-show="isEditing"
+                        @click="saveEdits()"
+                        class="add-btn" 
+                        style="border: 2px solid #2ecc71; color: #2ecc71; width: 130px; justify-content: center;" x-cloak>
+                    Save Edits
+                </button>
 
-                    <button type="button" 
-                            @click="resetForm()"
-                            :disabled="isEditing"
-                            class="add-btn" 
-                            style="border: 2px solid #e74c3c; color: #e74c3c; width: 130px; justify-content: center;">
-                        Discard
-                    </button>
-                
-                    <button type="button" 
-                            class="add-btn" 
-                            style="border: 2px solid #3498db; color: #3498db; width: 130px; justify-content: center;"
-                            @click="
-                                const outputHtml = isEditing ? manualReportHTML : reportText;
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = outputHtml;
-                                
-                                const htmlBlob = new Blob([outputHtml], { type: 'text/html' });
-                                const textBlob = new Blob([tempDiv.innerText], { type: 'text/plain' });
-                
-                                const clipboardItem = new ClipboardItem({
-                                    'text/html': htmlBlob,
-                                    'text/plain': textBlob
-                                });
+                <!-- CANCEL EDIT BUTTON -->
+                <button type="button" 
+                        x-show="isEditing"
+                        @click="toggleEdit()"
+                        class="add-btn" 
+                        style="border: 2px solid #95a5a6; color: #95a5a6; width: 130px; justify-content: center;" x-cloak>
+                    Cancel Edit
+                </button>
+
+                <!-- UNLOCK FORM BUTTON (NEW) -->
+                <button type="button" 
+                        x-show="!isEditing && isManuallyOverridden"
+                        @click="unlockForm()"
+                        class="add-btn" 
+                        style="border: 2px solid #e67e22; color: #e67e22; width: 130px; justify-content: center;" x-cloak>
+                    Unlock Form
+                </button>
+
+                <button type="button" 
+                        @click="resetForm()"
+                        :disabled="isEditing"
+                        class="add-btn" 
+                        style="border: 2px solid #e74c3c; color: #e74c3c; width: 130px; justify-content: center;">
+                    Discard All
+                </button>
+            
+                <button type="button" 
+                        class="add-btn" 
+                        style="border: 2px solid #3498db; color: #3498db; width: 130px; justify-content: center;"
+                        @click="
+                            const outputHtml = isManuallyOverridden ? manualReportHTML : reportText;
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = outputHtml;
                             
-                                navigator.clipboard.write([clipboardItem]).then(() => {
-                                    let btn = $event.currentTarget;
-                                    let originalText = btn.innerHTML;
-                                    btn.innerHTML = '✓ Copied!';
-                                    btn.style.backgroundColor = '#3498db';
-                                    btn.style.color = '#fff';
-                                    setTimeout(() => { 
-                                        btn.innerHTML = originalText; 
-                                        btn.style.backgroundColor = 'transparent';
-                                        btn.style.color = '#3498db';
-                                    }, 2000);
-                                });
-                            ">
-                        Copy Report
-                    </button>
+                            const htmlBlob = new Blob([outputHtml], { type: 'text/html' });
+                            const textBlob = new Blob([tempDiv.innerText], { type: 'text/plain' });
+            
+                            const clipboardItem = new ClipboardItem({
+                                'text/html': htmlBlob,
+                                'text/plain': textBlob
+                            });
+                        
+                            navigator.clipboard.write([clipboardItem]).then(() => {
+                                let btn = $event.currentTarget;
+                                let originalText = btn.innerHTML;
+                                btn.innerHTML = '✓ Copied!';
+                                btn.style.backgroundColor = '#3498db';
+                                btn.style.color = '#fff';
+                                setTimeout(() => { 
+                                    btn.innerHTML = originalText; 
+                                    btn.style.backgroundColor = 'transparent';
+                                    btn.style.color = '#3498db';
+                                }, 2000);
+                            });
+                        ">
+                    Copy Report
+                </button>
                 </div>
             </div>
 
-            <div x-show="!isEditing" 
-                 x-html="reportText" 
-                 style="font-size: 15px; color: #e0e0e0; background: rgba(0, 0, 0, 0.4); padding: 25px; border-radius: 8px; border: 1px solid rgba(246, 201, 14, 0.15); min-height: 300px; transition: all 0.3s ease;">
-            </div>
+        <div x-show="!isEditing" 
+             x-html="isManuallyOverridden ? manualReportHTML : reportText" 
+             style="font-size: 15px; color: #e0e0e0; background: rgba(0, 0, 0, 0.4); padding: 25px; border-radius: 8px; border: 1px solid rgba(246, 201, 14, 0.15); min-height: 300px; transition: all 0.3s ease;">
+        </div>
 
-            <div x-show="isEditing" x-cloak style="background: rgba(255, 255, 255, 0.9); color: #000; border-radius: 8px; margin-top: 15px; overflow: hidden; border: 2px dashed #f6c90e;">
-                <div x-ref="quillReportEditor"
-                     x-init="
-                        let quill = new Quill($refs.quillReportEditor, { theme: 'snow', modules: { toolbar: [['bold', 'italic', 'underline'], ['link', 'clean']] } });
-                        $watch('isEditing', val => { if(val) { quill.root.innerHTML = manualReportHTML; } });
-                        quill.on('text-change', () => { manualReportHTML = quill.root.innerHTML; });
-                     "
-                     style="min-height: 250px; font-size: 15px; padding: 10px;">
-                </div>
+        <div x-show="isEditing" x-cloak style="background: rgba(255, 255, 255, 0.9); color: #000; border-radius: 8px; margin-top: 15px; overflow: hidden; border: 2px dashed #f6c90e;">
+            <div x-ref="quillReportEditor"
+                 x-init="
+                    let quill = new Quill($refs.quillReportEditor, { 
+                        theme: 'snow', 
+                        modules: { toolbar: [['bold', 'italic', 'underline'], ['link', 'clean']] } 
+                    });
+                    
+                    /* Watch for the user clicking 'Edit Report' */
+                    $watch('isEditing', val => { 
+                        if(val) { 
+                            /* Safely inject the generated text into Quill's engine */
+                            quill.clipboard.dangerouslyPasteHTML(manualReportHTML);
+                        } 
+                    });
+                    
+                    /* Only save text if the source is an actual 'user' typing/modifying */
+                    quill.on('text-change', (delta, oldDelta, source) => { 
+                        if (source === 'user') {
+                            manualReportHTML = quill.root.innerHTML; 
+                        }
+                    });
+                 "
+                 style="min-height: 250px; font-size: 15px; padding: 10px;">
             </div>
+        </div>
 
         </main>
 
