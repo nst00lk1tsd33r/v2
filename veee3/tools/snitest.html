@@ -946,7 +946,7 @@ function openYelpPortal() {
     const userPlatforms = [
         { id: 'Facebook', url: 'https://facebook.com/' },
         { id: 'Instagram', url: 'https://instagram.com/' },
-        { id: 'X (Twitter)', url: 'https://x.com/' },
+        { id: 'Twitter', url: 'https://x.com/' },
         { id: 'YouTube', url: 'https://www.youtube.com/@' },
         { id: 'LinkedIn', url: 'https://linkedin.com/in/' },
         { id: 'TikTok', url: 'https://www.tiktok.com/@' },
@@ -954,16 +954,15 @@ function openYelpPortal() {
         { id: 'Poshmark', url: 'https://poshmark.com/closet/' },
         { id: 'VSCO', url: 'https://vsco.co/' },
         { id: 'MySpace', url: 'https://myspace.com/' },
-        /* --- UPDATED PLATFORMS LIST --- */
+        { id: 'Kik', url: 'https://kik.me/' },
         { id: 'Snapchat', url: 'https://www.snapchat.com/add/' },
         { id: 'Twitch', url: 'https://www.twitch.tv/' },
         { id: 'Flickr', url: 'https://www.flickr.com/photos/' },
         { id: 'Medium', url: 'https://medium.com/@' },
         { id: 'DeviantArt', url: 'https://www.deviantart.com/' },
-        { id: 'Tripadvisor', url: 'https://www.tripadvisor.com/members/' },
+        { id: 'Tripadvisor', url: 'https://www.tripadvisor.com/profile/' },
         { id: 'OnlyFans', url: 'https://onlyfans.com/' },
-        { id: 'Tinder', url: 'https://tinder.com/@' },
-        { id: 'Kik', url: 'https://kik.me/' }
+        { id: 'Tinder', url: 'https://tinder.com/@' }
     ];
 
     window.addEventListener('load', () => {
@@ -1155,50 +1154,45 @@ window.addEventListener('resize', fixDashboardLayout);
 */
 </script>
 <script>
-    /* --- TOGGLE PERSISTENCE ONLY --- */
-    const TOGGLE_STORAGE_KEY = 'ns_toolkit_toggles';
+    /* --- NS TOOLKIT: TOGGLE PERSISTENCE --- */
+    const UI_STORAGE_KEY = 'ns_ui_toggle_states';
 
-    // 1. SAVE: Capture the 'checked' state of all functional toggles
-    function saveToggleStates() {
-        const toggles = [
+    // 1. SAVE: Capture every toggle's status
+    function saveAllToggles() {
+        const toggleIds = [
             'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
             'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
         ];
-        const state = {};
         
-        toggles.forEach(id => {
+        const state = {};
+        toggleIds.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                state[id] = el.type === 'checkbox' ? el.checked : el.value;
+                state[id] = el.checked;
             }
         });
         
-        localStorage.setItem(TOGGLE_STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(state));
     }
 
-    // 2. LOAD: Restore the states and trigger their logic
-    function restoreToggleStates() {
-        const savedState = JSON.parse(localStorage.getItem(TOGGLE_STORAGE_KEY));
-        if (!savedState) return;
+    // 2. RESTORE: Re-apply the states and trigger the logic
+    function restoreAllToggles() {
+        const saved = JSON.parse(localStorage.getItem(UI_STORAGE_KEY));
+        if (!saved) return;
 
-        Object.keys(savedState).forEach(id => {
+        Object.keys(saved).forEach(id => {
             const el = document.getElementById(id);
-            if (el) {
-                // Restore the visual state
-                if (el.type === 'checkbox') {
-                    el.checked = savedState[id];
-                } else {
-                    el.value = savedState[id];
-                }
-
-                // Trigger the existing logic attached to the toggle
-                // This ensures columns hide/show or Username Mode activates
-                el.dispatchEvent(new Event('change'));
-                if (el.onclick) el.onclick();
+            if (el && saved[id] !== undefined) {
+                // Set the physical checkmark
+                el.checked = saved[id];
                 
-                // Special case: if it's the Username Mode toggle, run your specific function
-                if (id === 'usernameModeToggle' && savedState[id] === true) {
+                // Trigger the 'change' event so your existing CSS/Logic reacts
+                el.dispatchEvent(new Event('change'));
+
+                // Special handling for the Username Mode toggle
+                if (id === 'usernameModeToggle' && saved[id] === true) {
                     if (typeof toggleUserMode === 'function') {
+                        // Force the header columns (Snapchat, Twitch, etc.) to rebuild
                         toggleUserMode(true);
                     }
                 }
@@ -1206,27 +1200,91 @@ window.addEventListener('resize', fixDashboardLayout);
         });
     }
 
-    // 3. LISTENERS: Watch for toggle flips
+    // 3. INITIALIZE: Set up listeners
     window.addEventListener('load', () => {
-        // Small delay to ensure the main script is ready
+        // Delay ensures your main script has finished its own window.load tasks
         setTimeout(() => {
-            restoreToggleStates();
+            restoreAllToggles();
 
-            const toggles = [
+            // Attach listeners to all toggles to save whenever they are clicked
+            const toggleIds = [
                 'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
                 'crimToggle', 'finToggle', 'yelpToggle', 'usernameModeToggle'
             ];
 
-            toggles.forEach(id => {
+            toggleIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
-                    el.addEventListener('change', saveToggleStates);
-                    // Also capture if you use direct clicks
-                    el.addEventListener('click', saveToggleStates);
+                    el.addEventListener('change', saveAllToggles);
                 }
             });
-        }, 200);
+        }, 250); 
     });
+</script>
+<script>
+    /* --- YOUTUBE FIX FOR MAIN SOCMED TOGGLE --- */
+    (function() {
+        const YT_BASE = "https://www.youtube.com/results?search_query=";
+        const YT_FILTER = "&sp=EgIQAg%253D%253D";
+
+        // 1. Function to find and fix YouTube links in the standard table
+        function fixMainTableYoutubeLinks() {
+            // Find all rows in your table
+            const rows = document.querySelectorAll('#tableBody tr');
+            
+            rows.forEach(row => {
+                // Find the specific cell for YouTube. 
+                // In your Main Mode, YouTube is the 10th column (index 9)
+                const cells = row.cells;
+                if (cells.length > 9) {
+                    const ytCell = cells[9]; 
+                    const link = ytCell.querySelector('a');
+                    
+                    if (link && !link.dataset.ytFixed) {
+                        link.onclick = function(e) {
+                            e.preventDefault();
+                            // Get the name from the 2nd column (index 1) in Main Mode
+                            const nameInput = row.querySelector('.name-input');
+                            const name = nameInput ? nameInput.value.trim() : "";
+                            
+                            if (name) {
+                                window.open(YT_BASE + encodeURIComponent(name) + YT_FILTER, '_blank');
+                            }
+                        };
+                        // Mark as fixed so we don't double-bind
+                        link.dataset.ytFixed = "true";
+                        link.style.color = "#f6c90e"; // Keep your gold style
+                    }
+                }
+            });
+        }
+
+        // 2. Watch for the Main Toggle click
+        const mainToggle = document.getElementById('mainToggle');
+        if (mainToggle) {
+            mainToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    // Small delay to let the table render before fixing links
+                    setTimeout(fixMainTableYoutubeLinks, 100);
+                }
+            });
+        }
+
+        // 3. Also run when the "Add" button is clicked in Main Mode
+        const addBtn = document.querySelector('.btn-add');
+        if (addBtn) {
+            const originalAdd = addBtn.onclick;
+            addBtn.onclick = function() {
+                if (originalAdd) originalAdd();
+                setTimeout(fixMainTableYoutubeLinks, 100);
+            };
+        }
+
+        // 4. Initial run in case Main Mode is already active
+        window.addEventListener('load', () => {
+            setTimeout(fixMainTableYoutubeLinks, 500);
+        });
+    })();
 </script>
 </body>
 </html>
