@@ -530,21 +530,16 @@ const searchTemplates = [
 	
 
     function toggleColumns(className, isVisible) {
-    // 1. Existing toggle logic for the social columns
     const displayValue = isVisible ? 'table-cell' : 'none';
     document.querySelectorAll('.' + className).forEach(col => {
         col.style.display = displayValue;
     });
 
-    // 2. Logic to hide/show the OPEN button
-    // This looks for all checkboxes in your sidebar to see if any are checked
     const anySocActive = Array.from(document.querySelectorAll('.sidebar input[type="checkbox"]'))
                               .some(input => input.checked);
     
-    // Select the 6th column (BULK header and all row cells)
     const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
 
-    // If NO checkboxes are checked, hide the column. Otherwise, show it.
     const bulkDisplay = anySocActive ? 'table-cell' : 'none';
     
     bulkCols.forEach(col => {
@@ -676,19 +671,16 @@ const searchTemplates = [
         col.style.display = displayValue;
     });
 
-    // Directly check your switch IDs
     const mainOn = document.getElementById('mainToggle').checked;
     const subOn = document.getElementById('subToggle').checked;
     const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
 
-    // Hide button ONLY if both are off
     bulkCols.forEach(col => {
         col.style.display = (mainOn || subOn) ? 'table-cell' : 'none';
     });
 	}
 
 	function loadHistoryName(name) {
-        // Force a new row for every history click
         const newRow = addRow(); 
         const input = newRow.querySelector('.name-input');
         input.value = name;
@@ -1121,12 +1113,9 @@ function fixDashboardLayout() {
     const container = document.querySelector('.results-container');
     if (!table || !container) return;
 
-    // --- PART 1: FIX THE GOLD LINE ---
-    // Remove the right edge from everything first
     const allCells = table.querySelectorAll('th, td');
     allCells.forEach(cell => cell.classList.remove('edge-right'));
 
-    // Find the last visible cell in each row and add the gold line
     const rows = table.querySelectorAll('tr');
     rows.forEach(row => {
         const visibleCells = Array.from(row.querySelectorAll('th, td')).filter(cell => {
@@ -1137,7 +1126,6 @@ function fixDashboardLayout() {
         }
     });
 
-    // --- PART 2: ELIMINATE SCROLLBAR ---
     table.style.transform = "none";
     table.style.width = "100%";
     table.style.transformOrigin = "top left";
@@ -1152,18 +1140,14 @@ function fixDashboardLayout() {
     }
 }
 
-// Run on window resize
 window.addEventListener('resize', fixDashboardLayout);
 
-// IMPORTANT: Call this at the end of your Toggle functions!
 /* function toggleMain() { 
-      ... your code ...
       setTimeout(fixDashboardLayout, 50); 
    }
 */
 </script>
 <script>
-    /* --- NS TOOLKIT: ROBUST TOGGLE PERSISTENCE --- */
     (function() {
         const UI_STORAGE_KEY = 'ns_ui_toggle_states';
         const toggleIds = [
@@ -1222,7 +1206,6 @@ window.addEventListener('resize', fixDashboardLayout);
             });
         }
 
-        // Wait for the DOM and your specific functions to be ready
         const checkReady = setInterval(() => {
             // Checks if the table body exists and your main function is defined
             if (document.getElementById('tableBody') && typeof window.toggleUserMode === 'function') {
@@ -1236,72 +1219,58 @@ window.addEventListener('resize', fixDashboardLayout);
     })();
 </script>
 <script>
-    /* --- YOUTUBE FIX FOR MAIN SOCMED TOGGLE --- */
     (function() {
-        const YT_BASE = "https://www.youtube.com/results?search_query=";
         const YT_FILTER = "&sp=EgIQAg%253D%253D";
 
-        // 1. Function to find and fix YouTube links in the standard table
-        function fixMainTableYoutubeLinks() {
+        function applyFilterToHrefs() {
             // Find all rows in your table
             const rows = document.querySelectorAll('#tableBody tr');
             
             rows.forEach(row => {
-                // Find the specific cell for YouTube. 
-                // In your Main Mode, YouTube is the 10th column (index 9)
-                const cells = row.cells;
-                if (cells.length > 9) {
-                    const ytCell = cells[9]; 
-                    const link = ytCell.querySelector('a');
-                    
-                    if (link && !link.dataset.ytFixed) {
-                        link.onclick = function(e) {
-                            e.preventDefault();
-                            // Get the name from the 2nd column (index 1) in Main Mode
-                            const nameInput = row.querySelector('.name-input');
-                            const name = nameInput ? nameInput.value.trim() : "";
-                            
-                            if (name) {
-                                window.open(YT_BASE + encodeURIComponent(name) + YT_FILTER, '_blank');
-                            }
-                        };
-                        // Mark as fixed so we don't double-bind
-                        link.dataset.ytFixed = "true";
-                        link.style.color = "#f6c90e"; // Keep your gold style
+                const nameInput = row.querySelector('.name-input');
+                const name = nameInput ? nameInput.value.trim() : "";
+                if (!name) return;
+
+                // Look for any link that points to YouTube
+                const links = row.querySelectorAll('a[href*="youtube.com"]');
+                
+                links.forEach(link => {
+                    // Update the actual href so bulk scripts see the filter
+                    if (!link.href.includes(YT_FILTER)) {
+                        // Construct the clean filtered URL
+                        const filteredUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(name)}${YT_FILTER}`;
+                        link.href = filteredUrl;
                     }
-                }
+                });
             });
         }
 
-        // 2. Watch for the Main Toggle click
-        const mainToggle = document.getElementById('mainToggle');
-        if (mainToggle) {
-            mainToggle.addEventListener('change', function() {
-                if (this.checked) {
-                    // Small delay to let the table render before fixing links
-                    setTimeout(fixMainTableYoutubeLinks, 100);
-                }
+        // 1. Run whenever the table changes (new rows or name edits)
+        const observer = new MutationObserver(applyFilterToHrefs);
+        const tableBody = document.getElementById('tableBody');
+        
+        if (tableBody) {
+            observer.observe(tableBody, { 
+                childList: true, 
+                subtree: true, 
+                characterData: true 
             });
         }
 
-        // 3. Also run when the "Add" button is clicked in Main Mode
-        const addBtn = document.querySelector('.btn-add');
-        if (addBtn) {
-            const originalAdd = addBtn.onclick;
-            addBtn.onclick = function() {
-                if (originalAdd) originalAdd();
-                setTimeout(fixMainTableYoutubeLinks, 100);
-            };
-        }
+        // 2. Run when the Main Toggle is flipped
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'mainToggle' || e.target.classList.contains('name-input')) {
+                setTimeout(applyFilterToHrefs, 100);
+            }
+        });
 
-        // 4. Initial run in case Main Mode is already active
+        // 3. Initial run
         window.addEventListener('load', () => {
-            setTimeout(fixMainTableYoutubeLinks, 500);
+            setTimeout(applyFilterToHrefs, 500);
         });
     })();
 </script>
 <script>
-    /* --- NS TOOLKIT: PSE STYLE RECOVERY (V47) --- */
     (function() {
         let originalRows = [];
         const W_DEL = "50px", W_NAME = "220px", W_CT = "220px", W_ST = "70px";
@@ -1421,7 +1390,6 @@ window.addEventListener('resize', fixDashboardLayout);
 /* --- NS TOOLKIT: CONDITIONAL OPEN BUTTON CLEANUP --- */
 (function() {
     function handleOpenButtonVisibility() {
-        // 1. Identify all your toggle inputs
         const toggles = [
             'pseSearchToggle', 
             'userModeToggle', 
@@ -1434,13 +1402,11 @@ window.addEventListener('resize', fixDashboardLayout);
             'yelpToggle'
         ];
 
-        // 2. Check if ANY toggle is currently active
         const anyActive = toggles.some(id => {
             const el = document.getElementById(id);
             return el && el.checked;
         });
 
-        // 3. Select all "OPEN" buttons
         const buttons = document.querySelectorAll('button');
         
         buttons.forEach(btn => {
@@ -1449,11 +1415,9 @@ window.addEventListener('resize', fixDashboardLayout);
                 const parentTd = btn.closest('td');
                 
                 if (!anyActive) {
-                    // NOTHING IS TOGGLED: Hide the button/cell
                     if (parentTd) parentTd.style.display = 'none';
                     else btn.style.display = 'none';
                 } else {
-                    // SOMETHING IS TOGGLED: Show the button/cell
                     if (parentTd) parentTd.style.display = 'table-cell';
                     else btn.style.display = 'inline-block';
                 }
@@ -1461,17 +1425,14 @@ window.addEventListener('resize', fixDashboardLayout);
         });
     }
 
-    // Run on load to handle the 'restore' state
     window.addEventListener('load', handleOpenButtonVisibility);
 
-    // Watch for toggle changes to show/hide the button in real-time
     document.addEventListener('change', (e) => {
         if (e.target.type === 'checkbox') {
             handleOpenButtonVisibility();
         }
     });
 
-    // Watch for new rows being added via the '+' button
     const observer = new MutationObserver(handleOpenButtonVisibility);
     const tableBody = document.getElementById('tableBody');
     if (tableBody) {
