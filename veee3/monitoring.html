@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NS Toolkits | Live Monitor</title>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+    <style>
+        :root { 
+            --gold: #d4af37; 
+            --gold-bright: #f1c40f;
+            --bg: #050505; 
+            --panel: #111111; 
+            --green: #4cd137; 
+            --red: #ff4757;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body { 
+            background: var(--bg); 
+            color: white; 
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
+            display: flex; 
+            gap: 25px; 
+            padding: 40px; 
+            margin: 0; 
+            justify-content: center; 
+            flex-wrap: wrap;
+            background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
+        }
+        
+        /* Main Container */
+        .container { 
+            width: 100%; 
+            max-width: 450px; 
+            background: var(--panel); 
+            border: 1px solid rgba(212, 175, 55, 0.2); 
+            border-radius: 16px; 
+            padding: 25px; 
+            height: fit-content; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.9);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Log Panel */
+        .log-container { 
+            width: 100%; 
+            max-width: 380px; 
+            background: rgba(0, 0, 0, 0.6); 
+            border: 1px solid #222; 
+            border-radius: 16px; 
+            padding: 25px; 
+            display: flex; 
+            flex-direction: column; 
+            height: 620px; 
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Headers */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1); 
+            padding-bottom: 18px; 
+            margin-bottom: 20px; 
+        }
+        
+        .header-title { 
+            color: var(--gold); 
+            text-transform: uppercase; 
+            letter-spacing: 3px; 
+            font-weight: 800; 
+            font-size: 14px; 
+        }
+
+        /* Status Dot */
+        .dot { 
+            width: 10px; 
+            height: 10px; 
+            background: var(--green); 
+            border-radius: 50%; 
+            box-shadow: 0 0 15px var(--green); 
+            animation: pulse 2s infinite; 
+        }
+        .dot.error { 
+            background: var(--red); 
+            box-shadow: 0 0 15px var(--red); 
+            animation: none; 
+        }
+
+        /* Page Rows */
+        .page-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--glass); 
+            margin-bottom: 12px; 
+            padding: 16px 20px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            transition: all 0.3s ease;
+        }
+        
+        .page-row:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            background: rgba(212, 175, 55, 0.03);
+            transform: translateY(-2px);
+        }
+
+        .info .name { 
+            display: block; 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: #ffffff; 
+            margin-bottom: 4px; 
+        }
+        
+        .info .path { 
+            font-size: 10px; 
+            color: #555; 
+            font-family: 'JetBrains Mono', 'Fira Code', monospace; 
+            letter-spacing: 0.5px;
+        }
+
+        /* Count Number */
+        .count { 
+            color: var(--gold); 
+            font-size: 26px; 
+            font-weight: 900; 
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Logs */
+        #activity-log { 
+            font-size: 11px; 
+            color: #aaa; 
+            overflow-y: auto; 
+            flex-grow: 1; 
+            font-family: 'JetBrains Mono', monospace; 
+            padding-right: 10px; 
+            line-height: 1.6;
+        }
+        
+        .log-entry { 
+            padding: 8px 0; 
+            border-bottom: 1px solid #1a1a1a; 
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .log-entry.join { color: var(--green); font-weight: 500; }
+        .log-entry.leave { color: #bbbbbb; opacity: 0.7; }
+        .log-entry.error { color: var(--red); font-weight: bold; }
+        
+        /* Scrollbar */
+        #activity-log::-webkit-scrollbar { width: 4px; }
+        #activity-log::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <span class="header-title">Live Traffic</span>
+        <div class="dot" id="status-dot"></div>
+    </div>
+    <div id="monitor-list"></div>
+</div>
+
+<div class="log-container">
+    <div class="header"><span class="header-title">System Feed</span></div>
+    <div id="activity-log"></div>
+</div>
+
+<script>
+    const ADMIN_ID = "monitor_admin_view";
+    const logEl = document.getElementById('activity-log');
+    
+    function addLog(msg, type = 'info') {
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logEl.prepend(entry);
+        if (type === 'error') document.getElementById('status-dot').classList.add('error');
+    }
+
+    addLog("System starting up...", "info");
+
+    const pubnub = new PubNub({
+        publishKey: "pub-c-26632e5c-7507-490a-a4d3-3a61c0604810",
+        subscribeKey: "sub-c-8f72695a-3b73-486c-986c-17c7cebf36b5",
+        userId: ADMIN_ID
+    });
+
+    const tools = [
+        { name: "Veee3 Main Hub", id: "v3_main", path: "veee3/" },
+        { name: "Excellence Extractor", id: "v3_ext", path: "veee3/tools/excellenceextractor.html" },
+        { name: "Template Writer Advance", id: "v3_tw1", path: "veee3/tools/templatewriter.html" },
+        { name: "Template Writer Lite", id: "v3_tw2", path: "veee3/tools/templatewriterv2.html" },
+        { name: "Search & Identify", id: "v3_si", path: "veee3/tools/search&identify.html" },
+        { name: "NS Wheel", id: "v3_whl", path: "veee3/nswheel.html" },
+        { name: "Ease App", id: "v3_eas", path: "veee3/tools/easeapp.html" },
+        { name: "Case Flip", id: "v3_flp", path: "veee3/tools/caseflip.html" }
+    ];
+
+    const list = document.getElementById('monitor-list');
+    tools.forEach(tool => {
+        list.innerHTML += `
+            <div class="page-row">
+                <div class="info">
+                    <span class="name">${tool.name}</span>
+                    <span class="path">/${tool.path}</span>
+                </div>
+                <div class="count" id="count_${tool.id}">0</div>
+            </div>`;
+    });
+
+    function updateDisplay(channel, count) {
+        const el = document.getElementById(`count_${channel}`);
+        if (el) el.innerText = Math.max(0, count);
+    }
+
+    // LISTENER FOR LIVE EVENTS
+    pubnub.addListener({
+        status: (s) => {
+            if (s.error) addLog(`Network Error: ${s.errorData?.message || 'Unknown'}`, 'error');
+            if (s.category === 'PNConnectedCategory') addLog("Connected to live network.", "join");
+        },
+        presence: (p) => {
+            if (p.uuid === ADMIN_ID) return; // Ignore dashboard
+            
+            const toolName = tools.find(t => t.id === p.channel)?.name || p.channel;
+            
+            if (p.action === 'join') addLog(`+ ${toolName} (User joined)`, 'join');
+            if (p.action === 'leave' || p.action === 'timeout') addLog(`- ${toolName} (User left)`, 'leave');
+            
+            let safeCount = p.occupancy;
+            if (p.occupancy === 1 && p.action === 'leave') safeCount = 0; 
+            
+            updateDisplay(p.channel, safeCount);
+        }
+    });
+
+    const allChannels = tools.map(t => t.id);
+    
+    // Subscribe to listen to traffic
+    pubnub.subscribe({ channels: allChannels, withPresence: true });
+
+    // Initial Sync
+    setTimeout(() => {
+        pubnub.hereNow({ channels: allChannels }, (status, response) => {
+            if (status.error) {
+                addLog(`Sync failed: Check PubNub Portal settings.`, 'error');
+                return;
+            }
+            if (response && response.channels) {
+                Object.keys(response.channels).forEach(ch => {
+                    // Assume if it's 1, it's just the admin panel. If > 1, show actual users.
+                    let count = response.channels[ch].occupancy;
+                    if (count === 1) count = 0; else if (count > 1) count -= 1;
+                    updateDisplay(ch, count);
+                });
+                addLog("Initial counts loaded.", "info");
+            }
+        });
+    }, 1500);
+
+</script>
+</body>
+</html>
