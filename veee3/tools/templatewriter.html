@@ -1166,6 +1166,32 @@
         }
     });
 </script>
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script>
+    (function() {
+        // 1. Initialize with your specific keys
+        const pn = new PubNub({
+            publishKey: "pub-c-26632e5c-7507-490a-a4d3-3a61c0604810",
+            subscribeKey: "sub-c-8f72695a-3b73-486c-986c-17c7cebf36b5",
+            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
+            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
+        });
 
+        // 2. IDENTIFY THE PAGE
+        // Change the channel name below for EACH page based on the mapping table
+        const pageChannel = "v3_main"; 
+
+        // 3. Connect and signal "Presence"
+        pn.subscribe({ 
+            channels: [pageChannel], 
+            withPresence: true 
+        });
+
+        // 4. Clean up connection when the tab is closed
+        window.addEventListener('beforeunload', function() {
+            pn.unsubscribe({ channels: [pageChannel] });
+        });
+    })();
+</script>
 </body>
 </html>
