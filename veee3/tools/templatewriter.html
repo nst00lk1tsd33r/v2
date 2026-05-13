@@ -392,7 +392,21 @@
     }
 }"
 @keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 1500); }"
-@keyup.window="if($event.key === 'Control') { clearTimeout(ctrlTimer); ctrlTimer = null; showQuickPreview = false; }">
+@keyup.window="if($event.key === 'Control') { clearTimeout(ctrlTimer); ctrlTimer = null; showQuickPreview = false; }"
+@change.window="
+    let t = $event.target;
+    if (t.tagName === 'INPUT' && t.placeholder) {
+        let p = t.placeholder.toLowerCase();
+        /* Targets Modifiers & Details ('link') and Step 2 URLs ('https://') */
+        if (p.includes('link') || p.includes('https://')) {
+            let val = t.value.trim();
+            if (val && !/^https?:\/\//i.test(val)) {
+                t.value = 'https://' + val;
+                t.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+    }
+">
 
     <div class="navbar" style="position: relative;">
         <div class="nav-inner">
