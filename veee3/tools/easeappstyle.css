@@ -136,6 +136,27 @@ body {
     background-color: transparent;
     padding: 20px;
     min-width: 150px; 
+    /* NEW: Sticky Positioning */
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+/* Optional: Clean dark-mode scrollbar for the builder pane */
+.builder::-webkit-scrollbar {
+    width: 6px;
+}
+.builder::-webkit-scrollbar-track {
+    background: transparent;
+}
+.builder::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+.builder::-webkit-scrollbar-thumb:hover {
+    background: rgba(246, 201, 14, 0.5); /* Yellow accent */
 }
 
 /* Responsive adjustment for Mobile */
@@ -317,6 +338,7 @@ body {
     border-radius: 6px;
     color: #fff !important;
     font-size: 14px;
+    font-family: inherit; /* Forces text areas to match standard inputs */
     transition: all 0.25s ease;
     outline: none;
     margin-bottom: 5px;
@@ -681,7 +703,7 @@ body {
 /* Progressive Mode Toggle */
 .gender-switch:has(input[value="progressive"]:checked)::after {
     transform: translateX(100%);
-    background-color: #9b59b6; /* Progressive Purple */
+    background-color: #1877F2; /* Progressive Purple */
     box-shadow: 0 0 10px rgba(155, 89, 182, 0.5);
 }
 
