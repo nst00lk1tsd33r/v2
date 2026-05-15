@@ -96,6 +96,7 @@
         scope: 'relatives',    /* 'relatives' or 'both' */
         finding: 'none',       /* 'none' or 'relevant' */
         rhText: '',            /* The relevant info text */
+        progFindings: [{ type: 'none', text: '' }],
         rows: [{name: '', link: ''}]
     },
 
@@ -112,7 +113,7 @@
             this.mentionConnection = 'relative’s';
             
             // 2. Reset Relatives
-            this.relData = { found: null, scope: 'relatives', finding: 'none', rhText: '', rows: [{name: '', link: ''}] };
+            this.relData = { found: null, scope: 'relatives', finding: 'none', rhText: '', progFindings: [{ type: 'none', text: '' }], rows: [{name: '', link: ''}] };
             
             // 3. Destruct and Rebuild Networks safely!
             this.networks.forEach(net => {
@@ -186,10 +187,11 @@
             return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
         };
 
-        // Progressive Mode Trackers
-        let progNetworks = [];
+// Progressive Mode Trackers
+        let progPersonalNets = [];
+        let progBusinessNets = [];
+        let progMentionNets = [];
         let progMugshots = 0;
-        let progWebsites = 0;
         let progGoogle = false;
 
         // ==========================================
@@ -204,11 +206,28 @@
             hasMentions: false, 
             hasGoogle: false,
             hasPossibleGoogle: false,
-            hasGlobalRH: false 
+            hasGlobalRH: false,
+            hasNetworkRH: false // <-- NEW: Tracks ONLY primary networks
         };
 
-        if (this.relData.found === true && this.relData.finding === 'relevant') {
-            tally.hasGlobalRH = true;
+        let allProgTexts = [];
+        let relProgTexts = [];
+
+        if (this.reportType === 'plus') {
+            if (this.relData.found === true && this.relData.finding === 'relevant') {
+                tally.hasGlobalRH = true;
+            }
+        } else if (this.reportType === 'progressive') {
+            if (this.relData.found === true && this.relData.progFindings) {
+                this.relData.progFindings.forEach(pf => {
+                    if (pf.type === 'relevant') {
+                        tally.hasGlobalRH = true;
+                    }
+                    if (pf.text && pf.text.trim() !== '') {
+                        relProgTexts.push(pf.text.trim());
+                    }
+                });
+            }
         }
 
         this.networks.forEach(net => {
@@ -216,25 +235,52 @@
                 net.instances.forEach(data => {
                     if (!data.initialized) return;
 
-                    if (data.finding === 'relevant') {
-                        tally.hasGlobalRH = true;
+                    if (this.reportType === 'plus') {
+                        if (data.finding === 'relevant') {
+                            tally.hasGlobalRH = true;
+                            tally.hasNetworkRH = true; // <-- NEW
+                        }
+                    } else if (this.reportType === 'progressive') {
+                        if (data.progFindings) {
+                            data.progFindings.forEach(pf => {
+                                if (pf.type === 'relevant') {
+                                    tally.hasGlobalRH = true;
+                                    tally.hasNetworkRH = true; // <-- NEW
+                                }
+                                if (pf.text && pf.text.trim() !== '') {
+                                    allProgTexts.push(pf.text.trim());
+                                }
+                            });
+                        }
                     }
 
                     if (net.id === 'goog') {
                         progGoogle = true;
                         if (data.matchStatus === 'possible') tally.hasPossibleGoogle = true;
                         else tally.hasGoogle = true;
-                        } else {
+                    } else {
                         
                         // Progressive Network Tracking
+                        let netName = net.name;
                         if (net.id === 'other') {
-                            if (data.subType === 'mugshot') progMugshots++;
-                            else if (data.accountType === 'business') progWebsites++; 
-                            else if (['general', 'ecommerce', 'myspace', 'zoominfo', 'classmates'].includes(data.subType)) {
-                                progNetworks.push(data.networkName ? data.networkName.trim() : 'Other');
+                            if (data.subType === 'mugshot') {
+                                progMugshots++;
+                                netName = null; 
+                            } else if (['general', 'ecommerce', 'myspace', 'zoominfo', 'classmates'].includes(data.subType)) {
+                                netName = data.networkName ? data.networkName.trim() : 'Other';
+                            } else {
+                                netName = null;
                             }
-                        } else {
-                            progNetworks.push(net.name);
+                        }
+
+                        if (netName) {
+                            if (data.accountType === 'business') {
+                                progBusinessNets.push(netName);
+                            } else if (data.accountType === 'no-page' || data.accountType === 'no-relative') {
+                                progMentionNets.push(netName);
+                            } else {
+                                progPersonalNets.push(netName);
+                            }
                         }
 
                         if (data.accountType === 'no-page' || data.accountType === 'no-relative') {
@@ -258,11 +304,9 @@
             }
         });
 
-        // Remove duplicate network names
-        progNetworks = [...new Set(progNetworks)];
-
         let isMale = this.subjectGender === 'male';
         let proSubj = isMale ? 'he' : 'she';
+        let proSubjCap = isMale ? 'He' : 'She';
         let proPoss = isMale ? 'his' : 'her';
 
         // ==========================================
@@ -276,24 +320,60 @@
             if (this.isNull) {
                 b1 += ` No social media accounts were found for the party at this time.`;
             } else {
-                let accStr = '';
-                if (progNetworks.length > 0) accStr = `Social media accounts for the party were found on ${joinList(progNetworks)}`;
+                let pNetsUniq = [...new Set(progPersonalNets)];
+                let mNetsUniq = [...new Set(progMentionNets)];
+                let bNetsUniq = [...new Set(progBusinessNets)];
+                
+                let hasPersonal = pNetsUniq.length > 0;
+                let hasMentions = mNetsUniq.length > 0;
+                
+                let extraItems = [];
+                if (bNetsUniq.length > 0) {
+                    let bWord = bNetsUniq.length === 1 ? 'a business page' : 'business pages';
+                    extraItems.push(`${bWord} on ${joinList(bNetsUniq)}`);
+                }
+                if (progMugshots > 0) extraItems.push(progMugshots === 1 ? 'a Mugshot' : 'multiple Mugshots');
+                if (progGoogle) extraItems.push('Google search results');
+                let hasExtras = extraItems.length > 0;
 
-                let extraStr = [];
-                if (progMugshots > 0) extraStr.push(progMugshots === 1 ? 'a Mugshot' : 'multiple Mugshots');
-                if (progWebsites > 0) extraStr.push(progWebsites === 1 ? 'a personal website' : `${progWebsites} personal websites`);
-                if (progGoogle) extraStr.push('Google search results');
+                let sentence = '';
 
-                if (accStr && extraStr.length > 0) {
-                    b1 += ` ${accStr}; ${proSubj} was also found to have ${joinList(extraStr)}.`;
-                } else if (accStr) {
-                    b1 += ` ${accStr}.`;
-                } else if (extraStr.length > 0) {
-                    b1 += ` The party was found to have ${joinList(extraStr)}.`;
+                // Phase 1: Build the Social Media & Mentions Base
+                if (hasPersonal && hasMentions) {
+                    sentence = `Social media accounts for the party were found on ${joinList(pNetsUniq)}, and ${proSubj} was identified on public posts, photos, and videos on ${joinList(mNetsUniq)}`;
+                } else if (hasPersonal) {
+                    sentence = `Social media accounts for the party were found on ${joinList(pNetsUniq)}`;
+                } else if (hasMentions) {
+                    sentence = `No social media accounts were found for the party at this time; however, ${proSubj} was identified on public posts, photos, and videos on ${joinList(mNetsUniq)}`;
+                } else {
+                    sentence = `No social media accounts were found for the party at this time`;
                 }
 
-                if (tally.hasGlobalRH) {
-                    b1 += ` [Insert findings/activity dates here, e.g., Photos and videos of the party's activities from April of 2020 through July of 2024 were found.]`;
+                // Phase 2: Beautifully stitch the Extras (Business, Mugshots, Google)
+                if (hasExtras) {
+                    if (hasPersonal) {
+                        sentence += `; ${proSubj} was also found to have ${joinList(extraItems)}`;
+                    } else if (hasMentions) {
+                        // Prevent double semicolons if we already used 'however'
+                        sentence += `, and was also found to have ${joinList(extraItems)}`;
+                    } else {
+                        sentence += `; however, ${proSubj} was found to have ${joinList(extraItems)}`;
+                    }
+                }
+
+                b1 += ` ${sentence}.`;
+
+                if (allProgTexts.length > 0) {
+                    let stitched = allProgTexts[0];
+                    let transWords = ['Along with this,', 'In addition,', 'Furthermore,'];
+                    
+                    for (let i = 1; i < allProgTexts.length; i++) {
+                        let trans = transWords[(i - 1) % transWords.length];
+                        stitched += ` ${trans} ${allProgTexts[i]}`;
+                    }
+                    b1 += ` <strong>${stitched}</strong>`;
+                } else if (tally.hasNetworkRH) { 
+                    b1 += ` <strong>(state RH in bold, if any)</strong>`;
                 }
             }
             paragraphs.push(b1);
@@ -334,10 +414,20 @@
                     });
 
                     b2 += ` and ${count} were identified: ${joinList(nameArray)}. These accounts were thoroughly investigated and `;
-                    if (this.relData.finding === 'none') {
-                        b2 += `no apparent relevant information regarding the case was found on them at this time.`;
+                    
+                    if (relProgTexts.length > 0) {
+                        let stitched = relProgTexts[0];
+                        let transWords = ['Along with this,', 'In addition,', 'Furthermore,'];
+                        
+                        for (let i = 1; i < relProgTexts.length; i++) {
+                            let trans = transWords[(i - 1) % transWords.length];
+                            stitched += ` ${trans} ${relProgTexts[i]}`;
+                        }
+                        b2 += `<strong>${stitched}</strong>`;
+                    } else if (this.relData.progFindings && this.relData.progFindings.some(pf => pf.type === 'relevant')) {
+                        b2 += `<strong>(state relevant info found on relatives)</strong>`;
                     } else {
-                        b2 += (this.relData.rhText || '').trim() ? this.relData.rhText.trim() : `[Insert relevant findings here]`;
+                        b2 += `no apparent relevant information regarding the case was found on them at this time.`;
                     }
                 } else {
                     b2 += `, but none were positively identified at this time.`;
@@ -352,15 +442,18 @@
             } else {
                 let sumParts = [];
                 let totalSocial = tally.personalCount + tally.possibleSocialCount;
+                
+                // STRICT ORDER: Personal -> Mentions -> Business -> Mugshot -> Google
                 if (totalSocial > 0) sumParts.push(`${totalSocial} personal social media account${totalSocial > 1 ? 's' : ''}`);
+                if (tally.hasMentions) sumParts.push('public posts, photos, and videos');
+                if (tally.businessCount > 0) sumParts.push(`${tally.businessCount} business page${tally.businessCount > 1 ? 's' : ''}`);
                 if (progMugshots > 0) sumParts.push(progMugshots === 1 ? 'a Mugshot' : 'multiple Mugshots');
-                if (progWebsites > 0) sumParts.push(progWebsites === 1 ? '1 personal website' : `${progWebsites} personal websites`);
                 if (progGoogle) sumParts.push('Google search results');
 
                 b3 += `${joinList(sumParts) || 'no accounts'} were identified for the party. After a thorough investigation, `;
 
                 if (tally.hasGlobalRH) {
-                    b3 += `[Insert findings here, e.g., a post relating to the party's accident and injuries was found...].`;
+                    b3 += `<strong>(state what was found/not found)</strong>.`;
                 } else {
                     b3 += `no apparent relevant information regarding the party’s accident on [Date] was found at this time, nor were any social media posts pertaining to ${proPoss} injuries, treatment, or activities.`;
                 }
@@ -922,8 +1015,13 @@
                 let proSubj = this.subjectGender === 'male' ? 'he' : 'she';
                 let finalBullet = `In summation, the subject did not appear to have any forms of personal social media; however, ${proSubj} was identified on ${listStr}. After a thorough investigation, `;
                 
+                // --- UPDATE #1 IS HERE ---
                 if (tally.hasGlobalRH) {
-                    finalBullet += `(state the relevant information).`;
+                    if (allProgTexts.length > 0) {
+                        finalBullet += `<strong>relevant information regarding the case was found.</strong>`;
+                    } else {
+                        finalBullet += `(state the relevant information).`;
+                    }
                 } else {
                     finalBullet += `no apparent relevant information regarding the case was found at this time.`;
                 }
@@ -934,16 +1032,20 @@
             if (closingComponents.length === 0) listStr = 'no accounts or results'; 
             let finalBullet = `In summation, ${listStr} ${verb} identified for the subject. After a thorough investigation, `;
             
+            // --- UPDATE #2 IS HERE ---
             if (tally.hasGlobalRH) {
-                finalBullet += `(state the relevant information).`;
+                if (allProgTexts.length > 0) {
+                    finalBullet += `<strong>relevant information regarding the case was found.</strong>`;
+                } else {
+                    finalBullet += `(state the relevant information).`;
+                }
             } else {
                 finalBullet += `no apparent relevant information regarding the case was found at this time.`;
             }
 
             paragraphs.push(`<strong>${finalBullet}</strong>`);
         }
-        
-        }
+    }
 
         // ==========================================
         // 6. FORMATTING THE OUTPUT
@@ -965,7 +1067,7 @@
             metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
             locPrev: false, locCurr: false, workEd: false, joined: false, activity: true 
         }},
-        { id: 'tw', name: 'Twitter', checked: false, color: '#1DA1F2', instances: [{}], config: { 
+        { id: 'tw', name: 'X (Twitter)', checked: false, color: '#1DA1F2', instances: [{}], config: { 
             metrics: [{k:'posts', l:'Posts/Tweets'}, {k:'following', l:'Following'}, {k:'followers', l:'Followers'}, {k:'photos', l:'Photos'}], 
             locPrev: false, locCurr: true, workEd: false, joined: true, activity: true 
         }},
@@ -1182,7 +1284,8 @@
                         </div>
                     </fieldset>
 
-                    <fieldset class="custom-fieldset">
+                    <!-- AP MODE CONTAINER -->
+                    <fieldset class="custom-fieldset" x-show="reportType === 'plus'" x-transition>
                         <legend>Findings</legend>
                         <div class="checkbox-group" style="margin-bottom: 10px; margin-top: 0;">
                             <label class="custom-checkbox">
@@ -1198,6 +1301,47 @@
                             <input type="text" class="custom-text-input" placeholder="Details (e.g. 2 photos were found...)" x-model="relData.rhText">
                         </div>
                     </fieldset>
+
+                    <!-- PROGRESSIVE MODE CONTAINER -->
+                    <div x-show="reportType === 'progressive'" x-cloak>
+                        <fieldset class="custom-fieldset">
+                            <legend>Progressive Findings</legend>
+                            
+                            <template x-for="(prog, pIndex) in relData.progFindings" :key="pIndex">
+                                <div style="margin-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 15px;">
+                                    
+                                    <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                        <label class="custom-checkbox">
+                                            <input type="radio" :name="'rel-pfind-' + pIndex" value="none" x-model="prog.type">
+                                            <span class="checkmark"></span> No Findings Found
+                                        </label>
+                                        <label class="custom-checkbox">
+                                            <input type="radio" :name="'rel-pfind-' + pIndex" value="relevant" x-model="prog.type">
+                                            <span class="checkmark"></span> Findings
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="input-row" style="margin-bottom: 10px;">
+                                        <textarea class="custom-text-input" 
+                                                  style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
+                                                  placeholder="Enter findings or text details here..." 
+                                                  x-model="prog.text"></textarea>
+                                    </div>
+                                    
+                                    <div class="action-area" style="justify-content: flex-end;">
+                                        <button type="button" class="remove-btn-secondary" @click="relData.progFindings.splice(pIndex, 1)" x-show="relData.progFindings.length > 1">
+                                            <span class="minus-icon">−</span> Remove This Finding
+                                        </button>
+                                    </div>
+                                    
+                                </div>
+                            </template>
+                            
+                            <button type="button" class="add-btn" @click="relData.progFindings.push({ type: 'none', text: '' })">
+                                <span class="plus-icon">+</span> Add Another Finding Field
+                            </button>
+                        </fieldset>
+                    </div>
 
                 </div>
             </form>
@@ -1237,19 +1381,20 @@
                                     data.actDate = ''; data.actDetails = '';
                                     data.finding = 'relevant';
                                     data.mediaType = '';
+                                    data.progFindings = [{ type: 'none', text: '' }];
                                     data.initialized = true;
                                 }
                             ">
                                 <form action="" class="details-content">
-
-                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <!-- UNIVERSAL STATUS (AP & Progressive) -->
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="reportType === 'plus'" x-transition>
                                         <legend>Match Status</legend>
                                         <div class="checkbox-group" style="margin-top: 0;">
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-match-' + index" x-model="data.matchStatus" value="matched"><span class="checkmark"></span> Matched</label>
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-match-' + index" x-model="data.matchStatus" value="possible"><span class="checkmark"></span> Possible</label>
                                         </div>
                                     </fieldset>
-                                
+                                        
                                     <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
                                         <legend>Account Presence</legend>
                                         <div class="checkbox-group" style="flex-wrap: wrap; gap: 15px; margin-top: 0;">
@@ -1259,7 +1404,7 @@
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-acc-' + index" value="no-relative" x-model="data.accountType"><span class="checkmark"></span> No Acc (Relative)</label>
                                         </div>
                                     </fieldset>
-                                
+                                        
                                     <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-page'" x-transition>
                                         <legend>Identified On</legend>
                                         <div class="checkbox-group" style="margin-top: 0;">
@@ -1268,9 +1413,20 @@
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-media-' + index" value="public video/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Video/s</label>
                                         </div>
                                     </fieldset>
-                                
+                                        
                                     <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-relative'" x-transition>
                                         <legend>Found On Account Of</legend>
+                                        <div class="checkbox-group" style="margin-top: 0;">
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="relative’s" x-model="data.mentionConnection"><span class="checkmark"></span> Relative</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="associate’s" x-model="data.mentionConnection"><span class="checkmark"></span> Associate</label>
+                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="family member’s" x-model="data.mentionConnection"><span class="checkmark"></span> Family Member</label>
+                                        </div>
+                                    </fieldset>
+
+                                    <!-- AP MODE CONTAINER -->
+                                    <div x-show="reportType === 'plus'" x-transition>
+                                        <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                            <legend>Identified By</legend>
                                         <div class="checkbox-group" style="margin-top: 0;">
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="relative’s" x-model="data.mentionConnection"><span class="checkmark"></span> Relative</label>
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="associate’s" x-model="data.mentionConnection"><span class="checkmark"></span> Associate</label>
@@ -1376,6 +1532,52 @@
                                             <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
                                         </div>
                                     </fieldset>
+
+                                    </div>
+                                
+                                    <!-- PROGRESSIVE MODE CONTAINER -->
+                                    <div x-show="reportType === 'progressive'" x-cloak>
+                                        <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                            <legend>Progressive Findings</legend>
+                                            
+                                            <template x-for="(prog, pIndex) in data.progFindings" :key="pIndex">
+                                                <div style="margin-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 15px;">
+                                                    
+                                                    <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                                        <label class="custom-checkbox">
+                                                            <!-- Binding unique name so radios don't override other clones -->
+                                                            <input type="radio" :name="net.id + '-pfind-' + index + '-' + pIndex" value="none" x-model="prog.type">
+                                                            <span class="checkmark"></span> No Findings Found
+                                                        </label>
+                                                        <label class="custom-checkbox">
+                                                            <input type="radio" :name="net.id + '-pfind-' + index + '-' + pIndex" value="relevant" x-model="prog.type">
+                                                            <span class="checkmark"></span> Findings
+                                                        </label>
+                                                    </div>
+                                                
+                                                    <div class="input-row" style="margin-bottom: 10px;">
+                                                        <textarea class="custom-text-input" 
+                                                                  style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
+                                                                  placeholder="Enter findings or text details here..." 
+                                                                  x-model="prog.text"></textarea>
+                                                    </div>
+                                                
+                                                    <div class="action-area" style="justify-content: flex-end;">
+                                                        <button type="button" class="remove-btn-secondary" @click="data.progFindings.splice(pIndex, 1)" x-show="data.progFindings.length > 1">
+                                                            <span class="minus-icon">−</span> Remove This Finding
+                                                        </button>
+                                                    </div>
+                                                    
+                                                </div>
+                                            </template>
+                                        
+                                            <!-- Add More Button -->
+                                            <button type="button" class="add-btn" @click="data.progFindings.push({ type: 'none', text: '' })">
+                                                <span class="plus-icon">+</span> Add Another Finding Field
+                                            </button>
+                                            
+                                        </fieldset>
+                                    </div>
                                 
                                 </form>
                             </div>
@@ -1420,6 +1622,7 @@
                                 
                                 data.activity = 'active'; data.actDate = ''; data.actAction = '';
                                 data.finding = 'relevant'; data.mediaType = '';
+                                data.progFindings = [{ type: 'none', text: '' }];
                                 data.initialized = true;
                             }
                         ">
@@ -1577,7 +1780,7 @@
                                     </div>
                                 </fieldset>
 
-                                <fieldset class="custom-fieldset">
+                                <fieldset class="custom-fieldset" x-show="reportType === 'plus'" x-transition>
                                     <legend>Findings</legend>
                                     <div class="checkbox-group" style="margin-bottom: 10px;">
                                         <label class="custom-checkbox"><input type="radio" :name="'other-find-'+index" x-model="data.finding" value="relevant"><span class="checkmark"></span> Relevant Info</label>
@@ -1587,6 +1790,48 @@
                                         <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
                                     </div>
                                 </fieldset>
+                                
+                                <!-- PROGRESSIVE MODE CONTAINER -->
+                                <div x-show="reportType === 'progressive'" x-cloak>
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                        <legend>Findings</legend>
+                                        
+                                        <template x-for="(prog, pIndex) in (data.progFindings || [])" :key="pIndex">
+                                            <div style="margin-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 15px;">
+                                                
+                                                <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                                    <label class="custom-checkbox">
+                                                        <input type="radio" :name="net.id + '-pfind-' + index + '-' + pIndex" value="none" x-model="prog.type">
+                                                        <span class="checkmark"></span> No Findings Found
+                                                    </label>
+                                                    <label class="custom-checkbox">
+                                                        <input type="radio" :name="net.id + '-pfind-' + index + '-' + pIndex" value="relevant" x-model="prog.type">
+                                                        <span class="checkmark"></span> Findings
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="input-row" style="margin-bottom: 10px;">
+                                                    <textarea class="custom-text-input" 
+                                                              style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
+                                                              placeholder="Enter findings or text details here..." 
+                                                              x-model="prog.text"></textarea>
+                                                </div>
+                                                
+                                                <div class="action-area" style="justify-content: flex-end;">
+                                                    <button type="button" class="remove-btn-secondary" @click="data.progFindings.splice(pIndex, 1)" x-show="data.progFindings.length > 1">
+                                                        <span class="minus-icon">−</span> Remove This Finding
+                                                    </button>
+                                                </div>
+                                                
+                                            </div>
+                                        </template>
+                                        
+                                        <button type="button" class="add-btn" @click="data.progFindings.push({ type: 'none', text: '' })">
+                                            <span class="plus-icon">+</span> Add Another Finding Field
+                                        </button>
+                                        
+                                    </fieldset>
+                                </div>
 
                             </form>
                         </div>
@@ -1626,6 +1871,7 @@
                                 
                                 data.finding = 'relevant'; 
                                 data.mediaType = '';
+                                data.progFindings = [{ type: 'none', text: '' }];
                                 data.initialized = true;
                             }
                         ">
@@ -1755,7 +2001,7 @@
                                     </div>
                                 </fieldset>
 
-                                <fieldset class="custom-fieldset">
+                                <fieldset class="custom-fieldset" x-show="reportType === 'plus'" x-transition>
                                     <legend>Findings</legend>
                                     <div class="checkbox-group" style="margin-bottom: 10px;">
                                         <label class="custom-checkbox"><input type="radio" :name="'goog-find-'+index" x-model="data.finding" value="relevant"><span class="checkmark"></span> Relevant Info</label>
@@ -1765,6 +2011,48 @@
                                         <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
                                     </div>
                                 </fieldset>
+
+                                <!-- PROGRESSIVE MODE CONTAINER -->
+                                <div x-show="reportType === 'progressive'" x-cloak>
+                                    <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                        <legend>Findings</legend>
+                                        
+                                        <template x-for="(prog, pIndex) in (data.progFindings || [])" :key="pIndex">
+                                            <div style="margin-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 15px;">
+                                                
+                                                <div class="checkbox-group" style="margin-top: 0; margin-bottom: 10px;">
+                                                    <label class="custom-checkbox">
+                                                        <input type="radio" :name="net.id + '-pfind-' + index + '-' + pIndex" value="none" x-model="prog.type">
+                                                        <span class="checkmark"></span> No Findings Found
+                                                    </label>
+                                                    <label class="custom-checkbox">
+                                                        <input type="radio" :name="net.id + '-pfind-' + index + '-' + pIndex" value="relevant" x-model="prog.type">
+                                                        <span class="checkmark"></span> Findings
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="input-row" style="margin-bottom: 10px;">
+                                                    <textarea class="custom-text-input" 
+                                                              style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
+                                                              placeholder="Enter findings or text details here..." 
+                                                              x-model="prog.text"></textarea>
+                                                </div>
+                                                
+                                                <div class="action-area" style="justify-content: flex-end;">
+                                                    <button type="button" class="remove-btn-secondary" @click="data.progFindings.splice(pIndex, 1)" x-show="data.progFindings.length > 1">
+                                                        <span class="minus-icon">−</span> Remove This Finding
+                                                    </button>
+                                                </div>
+                                                
+                                            </div>
+                                        </template>
+                                        
+                                        <button type="button" class="add-btn" @click="data.progFindings.push({ type: 'none', text: '' })">
+                                            <span class="plus-icon">+</span> Add Another Finding Field
+                                        </button>
+                                        
+                                    </fieldset>
+                                </div>
 
                             </form>
                         </div>
@@ -1965,7 +2253,6 @@
         });
 
         // 2. IDENTIFY THE PAGE
-        // Change the channel name below for EACH page based on the mapping table
         const pageChannel = "v3_eas"; 
 
         // 3. Connect and signal "Presence"
