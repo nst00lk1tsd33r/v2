@@ -322,7 +322,7 @@
 &nbsp;
 
 <div class="toggle-container">
-    <label style="font-size: 10px; cursor: pointer;" for="pseSearchToggle">PSE Search Mode (Beta)</label>
+    <label style="font-size: 10px; cursor: pointer;" for="pseSearchToggle">PSE Search Mode</label>
     <label class="switch">
         <input type="checkbox" id="pseSearchToggle" onchange="handlePSESwitch(this)">
         <span class="slider"></span>
@@ -440,7 +440,7 @@
         <main class="main-content">
             <header class="header-bar">
                 <div style="font-size: 10px; font-weight: bold; color: var(--text-dim);">S&I DASHBOARD // ACTIVE SESSION</div>
-                <div id="rowCount" style="font-size: 10px; color: var(--accent-gold);">0 TARGETS LOADED</div>
+                <div id="rowCount" style="font-size: 10px; color: var(--accent-gold);">0 TARGET/S LOADED</div>
             </header>
 
             <div class="table-container">
@@ -1316,7 +1316,6 @@ window.addEventListener('resize', fixDashboardLayout);
                     st: row.cells[3]?.querySelector('input')?.value || ""
                 }));
 
-                // Headers bumped to 10px
                 thead.innerHTML = `
                     <th style="width: ${W_DEL}; text-align: center; font-size: 10px; opacity: 0.8;">DEL</th>
                     <th style="width: ${W_NAME}; text-align: left; padding-left: 15px; font-size: 10px; opacity: 0.8;">FULL NAME</th>
@@ -1335,7 +1334,6 @@ window.addEventListener('resize', fixDashboardLayout);
 
         function renderPSERow(row, name, ct) {
             const goStyle = `background:none; border:none; color:#f6c90e; cursor:pointer; outline:none; font-size: 11px; font-weight: normal;`;
-            // Inputs bumped to 11px for better readability
             row.innerHTML = `
                 <td style="text-align: center;"><button class="btn btn-delete" style="color:#ff4d4d; background:transparent; border:none; font-size: 10px;" onclick="this.closest('tr').remove()">✕</button></td>
                 <td style="padding-left: 15px;"><input type="text" class="ps-fullname name-input" value="${name}" style="background:transparent; border:none; width:100%; outline:none; font-size: 11px; font-weight: normal;"></td>
@@ -1358,13 +1356,13 @@ window.addEventListener('resize', fixDashboardLayout);
             const nameParts = fullName.toLowerCase().split(' ');
             const first = nameParts[0] || "", last = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
 
-            let citySlug = "", fullAddrSlug = "";
+            let citySlug = "", state = "", fullAddrSlug = "";
             const addrParts = addr.split(',');
             
             if (addrParts.length >= 2) {
                 let city = addrParts[addrParts.length - 2].trim().toLowerCase();
                 citySlug = city.replace(/ /g, '-');
-                let state = getStateAbbr(addrParts[addrParts.length - 1].trim()).toLowerCase();
+                state = getStateAbbr(addrParts[addrParts.length - 1].trim()).toLowerCase();
                 fullAddrSlug = `${citySlug}-${state}`;
             } else { 
                 citySlug = addr.trim().toLowerCase().replace(/ /g, '-'); 
@@ -1374,7 +1372,7 @@ window.addEventListener('resize', fixDashboardLayout);
             let url = "";
             switch(type) {
                 case 'true': url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(fullName)}&citystate=${encodeURIComponent(addr)}`; break;
-                case 'free': url = `https://www.searchpeoplefree.com/find/${first}-${last}/${fullAddrSlug}`; break;
+                case 'free': url = `https://www.searchpeoplefree.com/find/${first}-${last}/${state}/${citySlug}`; break;
                 case 'fast': url = `https://www.fastpeoplesearch.com/name/${first}-${last}_${fullAddrSlug}`; break;
                 case 'check': url = `https://www.fastbackgroundcheck.com/people/${nameSlug}/${fullAddrSlug}`; break;
             }
