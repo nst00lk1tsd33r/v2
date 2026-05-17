@@ -830,3 +830,14 @@ input[type="checkbox"]:disabled {
     padding: 8px;
     min-height: 40px;
 }
+
+.clone-label {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+    transition: color 0.2s ease;
+}
+
+.clone-label:hover {
+    color: var(--accent);
+}
