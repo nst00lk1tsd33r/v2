@@ -4,217 +4,326 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NS Excellence Extractor | v3</title>
-     <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
     
+    <!-- External CSS -->
+    <link rel="stylesheet" href="excellenceextractorstyle.css">
+    
+    <!-- QuillJS CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
+    <!-- AlpineJS -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <style>
-        :root {
-            --bg: #0b0b0b;
-            --card: rgba(255, 255, 255, 0.05);
-            --accent: #f6c90e;
-            --text: #fff;
-            --border: rgba(246, 201, 14, 0.15);
-        }
-
-        /* Prevent scrolling on the main page */
-        html, body {
-            margin: 0;
-            padding: 0;
+        /* Ensure the Quill editor has a physical height to click inside */
+        #quill-editor {
+            min-height: 400px;
             height: 100%;
-            overflow: hidden; 
-            font-family: 'Segoe UI', sans-serif;
-            background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
-            color: var(--text);
-        }
-
-        canvas#bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -1;
-        }
-
-        /* NAVBAR */
-        /* NAVBAR */
-        .navbar {
-            width: 100%;
-            background: rgba(20, 20, 20, 0.6);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(246, 201, 14, 0.15);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .nav-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
-
-        .nav-menu {
-            display: flex;
-            gap: 28px;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .nav-menu a {
-            color: #e6e6e6;
-            text-decoration: none;
-            font-size: 14px;
-            opacity: 0.8;
-            transition: 0.3s;
-        }
-
-        .nav-menu a:hover, .nav-menu a.active { color: var(--accent); opacity: 1; }
-
-        /* MAIN LAYOUT FOR SINGLE PAGE */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            height: calc(100vh - 120px); /* Height minus nav and footer */
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-        }
-
-        .app-title {
-            font-size: 2rem;
-            margin: 0 0 5px 0;
-            color: var(--accent);
-            text-shadow: 0 0 15px rgba(246, 201, 14, 0.2);
-        }
-
-        .subtitle {
-            color: #bdc3c7;
-            font-size: 13px;
-            margin: 0;
-        }
-
-        /* BUTTONS */
-        .button-container {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin: 15px 0;
-            flex-shrink: 0;
-        }
-
-        .buttons {
-            background: linear-gradient(135deg, #f6c90e, #d4a800);
-            color: #111;
-            border: none;
-            padding: 8px 22px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .buttons:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(246, 201, 14, 0.4);
-        }
-
-        .buttons:active {
-            transform: translateY(0);
-        }
-
-        /* EDITOR LAYOUT */
-        .editor-container {
-            flex-grow: 1; /* Fills remaining height */
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 15px;
-            backdrop-filter: blur(5px);
-            display: flex;
-            flex-direction: column;
-            min-height: 0; /* Important for flex child scrolling */
-        }
-
-        .main-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            height: 100%;
-        }
-
-        .input-section, .output-section {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .inputarea {
-            flex-grow: 1;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            padding: 15px;
-            color: #fff;
             font-family: 'Courier New', monospace;
             font-size: 14px;
-            overflow-y: auto;
-            outline: none;
-            transition: border-color 0.3s;
-            line-height: 1.5;
         }
-
-        .inputarea:focus {
-            border-color: var(--accent);
-        }
-
-        [contenteditable]:empty:before {
-            content: attr(placeholder);
-            color: #555;
-        }
-
-        footer {
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: .5;
-            font-size: 0.8rem;
-            flex-shrink: 0;
-        }
-
-        @media(max-width:768px){
-            .nav-menu { display:none; }
-            .main-wrapper { grid-template-columns: 1fr; }
-            html, body { overflow-y: auto; height: auto; }
-            .container { height: auto; }
+        /* Remove Quill's default border since your container already handles it */
+        .ql-container.ql-snow {
+            border: none !important;
         }
     </style>
 </head>
 
-<body>
+<body 
+    x-data="{
+        quill: null,
+        showPreviews: false,
+        networks: ['Facebook', 'Instagram', 'Twitter', 'Youtube', 'LinkedIn', 'Tiktok', 'Pinterest', 'Strava', 'Foursquare', 'Tumblr', 'Google', 'RocketReach', 'SignalHire'],
+        startIndex: 0,
+        
+        // Storage for the 13 cleaned columns
+        networkData: {},
+        _rawPastedTable: null,
+        
+        init() {
+            this.quill = new Quill('#quill-editor', {
+                theme: 'snow',
+                placeholder: 'Paste your search string spreadsheet data here...',
+                modules: {
+                    toolbar: false,
+                    clipboard: { matchVisual: false }
+                }
+            });
 
-<canvas id="bg"></canvas>
+            // Initialize empty data map
+            this.networks.forEach(net => this.networkData[net] = '<p>No data found.</p>');
+
+            // THE PASTE SHIELD: Intercept paste to save the raw table structure
+            this.quill.root.addEventListener('paste', (e) => {
+                const rawHTML = e.clipboardData.getData('text/html');
+                if (!rawHTML) return; // If plain text, let Quill handle it normally
+
+                e.preventDefault();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawHTML, 'text/html');
+                const table = doc.querySelector('table');
+
+                if (table) {
+                    this._rawPastedTable = table;
+                    this.quill.setText('\nSpreadsheet data loaded successfully!\n\nDetected a table with multiple columns. Click Clean Up to process and separate the data into the 13 networks.');
+                } else {
+                    // Fallback if it's HTML but not a table
+                    this.quill.clipboard.dangerouslyPasteHTML(0, doc.body.innerHTML);
+                    this._rawPastedTable = null;
+                }
+            }, true);
+        },
+        
+        cleanText() {
+            if (!this._rawPastedTable) {
+                alert('Please paste a spreadsheet with columns first.');
+                return;
+            }
+
+            // 1. Reset our data map completely
+            this.networks.forEach(net => this.networkData[net] = '<p>No data found.</p>');
+
+            const rows = this._rawPastedTable.querySelectorAll('tr');
+            if (rows.length === 0) return;
+
+            // 2. DYNAMIC HEADER DETECTION: Scan the first 5 rows to find the true header row
+            let headerRowIndex = -1;
+            let maxMatches = 0;
+            let columnIndexToNetworkMap = {};
+
+            for (let r = 0; r < Math.min(rows.length, 5); r++) {
+                let currentMatches = 0;
+                let currentMap = {};
+                const headerCells = rows[r].querySelectorAll('td, th');
+                
+                headerCells.forEach((cell, cellIndex) => {
+                    let cellText = cell.textContent.trim().toLowerCase();
+                    
+                    if (cellText.includes('lindkedin')) {
+                        cellText = cellText.replace('lindkedin', 'linkedin');
+                    }
+
+                    // Forgiving match: checks if the cell contains the network name instead of a strict match
+                    const matchedNetwork = this.networks.find(net => cellText.includes(net.toLowerCase()));
+                    
+                    if (matchedNetwork) {
+                        currentMatches++;
+                        currentMap[cellIndex] = matchedNetwork;
+                    }
+                });
+
+                // If this row has the most network name matches, it's our header row
+                if (currentMatches > maxMatches) {
+                    maxMatches = currentMatches;
+                    headerRowIndex = r;
+                    columnIndexToNetworkMap = currentMap;
+                }
+            }
+
+            if (maxMatches === 0) {
+                alert('Could not detect social media header row. Please ensure column headers like Facebook or LinkedIn are included in your selection.');
+                return;
+            }
+
+            // 3. Initialize dynamic temporary buckets for detected networks
+            let buckets = {};
+            this.networks.forEach(net => buckets[net] = []);
+
+            // 4. Extract data rows starting right after the detected header row
+            for (let i = headerRowIndex + 1; i < rows.length; i++) {
+                const cells = rows[i].querySelectorAll('td, th');
+                cells.forEach((cell, cellIndex) => {
+                    const assignedNetwork = columnIndexToNetworkMap[cellIndex];
+                    
+                    // If this column maps to one of our networks, extract it
+                    if (assignedNetwork) {
+                        const cleanedHTML = this.extractAndCleanLinks(cell);
+                        if (cleanedHTML) {
+                            buckets[assignedNetwork].push(cleanedHTML);
+                        }
+                    }
+                });
+            }
+
+            // 5. Package up the data with prefix/suffix rules
+            this.networks.forEach((network) => {
+                const linkCount = buckets[network].length;
+                
+                if (linkCount === 0) {
+                    this.networkData[network] = '<p>No data found.</p>';
+                    return;
+                }
+
+                let prefix = '';
+                let suffix = '';
+
+                // Reduced the suffix to a single &nbsp; block to account for the auto-newline on paste
+                if (linkCount >= 2) {
+                    prefix = '<p>No match found. Please see search queries below.</p><p>&nbsp;</p>';
+                    suffix = '<p>&nbsp;</p>';
+                } else if (linkCount === 1) {
+                    prefix = '<p>No match found. Please see search query below.</p><p>&nbsp;</p>';
+                    suffix = '<p>&nbsp;</p>';
+                }
+
+                this.networkData[network] = prefix + buckets[network].join('') + suffix;
+            });
+
+            // Slide up full-screen preview pane
+            this.showPreviews = true;
+        },
+
+        // CORE CLEANUP LOGIC: Strictly extracts URLs/Links and discards noise/duplicates
+        extractAndCleanLinks(node) {
+            let extractedLinks = [];
+
+            // Helper to process standard plain-text URLs
+            const processTextForUrls = (text) => {
+                const urlRegex = /((?:https?:\/\/|www\.)[^\s<]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s<]*)?)/gi;
+                let match;
+                while ((match = urlRegex.exec(text)) !== null) {
+                    
+                    // THE FIX: Prevent the regex from grabbing the domain out of an email address.
+                    // If the character right before our match is an '@', ignore it.
+                    if (match.index > 0 && text[match.index - 1] === '@') {
+                        continue;
+                    }
+
+                    let cleanUrl = match[0];
+                    let suffix = '';
+                    
+                    // Strip trailing punctuation
+                    if (/[.,;:)]$/.test(cleanUrl)) {
+                        suffix = cleanUrl.slice(-1);
+                        cleanUrl = cleanUrl.slice(0, -1);
+                    }
+                    
+                    let href = cleanUrl;
+                    if (!/^https?:\/\//i.test(href)) {
+                        href = 'https://' + href;
+                    }
+                    extractedLinks.push(`<a href='${href}' target='_blank' rel='noopener noreferrer'>${cleanUrl}</a>`);
+                }
+            };
+
+            // 1. Find all explicit <a> tags inside the cell
+            const aTags = node.querySelectorAll('a');
+            aTags.forEach(a => {
+                let href = a.getAttribute('href') || '';
+                let text = (a.textContent || '').trim();
+                
+                // Clean internal Google Docs/Sheets redirects
+                if (href.startsWith('/document/') || href.startsWith('/spreadsheets/')) {
+                    href = 'https://docs.google.com' + href;
+                } else if (href && !/^(https?|mailto|tel|ftp|#)/i.test(href)) {
+                    href = 'https://' + href;
+                }
+
+                if (href.includes('google.com/url?')) {
+                    try {
+                        const urlObj = new URL(href, 'https://dummy.com'); 
+                        href = urlObj.searchParams.get('q') || urlObj.searchParams.get('url') || href;
+                    } catch {}
+                }
+
+                if (href) {
+                    extractedLinks.push(`<a href='${href}' target='_blank' rel='noopener noreferrer'>${text || href}</a>`);
+                }
+            });
+
+            // 2. Clone the cell and DELETE the <a> tags we just processed
+            // This prevents double-processing links that Google Sheets duplicates as text
+            const clone = node.cloneNode(true);
+            clone.querySelectorAll('a').forEach(a => a.remove());
+
+            // 3. Scan the remaining text in the cell for plain-text URLs
+            const remainingText = (clone.textContent || '').replace(/[\u200B-\u200D\uFEFF]/g, ' ');
+            processTextForUrls(remainingText);
+
+            // 4. If nothing was found, return empty
+            if (extractedLinks.length === 0) return '';
+
+            // 5. Deduplicate perfectly identical HTML strings to block clipboard glitches
+            extractedLinks = [...new Set(extractedLinks)];
+
+            // Wrap each unique link in a paragraph tag
+            return extractedLinks.map(linkHTML => `<p>${linkHTML}</p>`).join('');
+        },
+        
+        clearText() {
+            this.quill.setText('');
+            this._rawPastedTable = null;
+            this.networks.forEach(net => this.networkData[net] = '<p>No data found.</p>');
+        },
+
+        // ADVANCED RICH-TEXT COPY: Uses your preferred Clipboard API method
+        async copyData(network) {
+            const htmlContent = this.networkData[network];
+            if (!htmlContent) return;
+
+            // Extract pure text for the fallback payload
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const textContent = tempDiv.innerText;
+
+            try {
+                // Creates exactly the payload you used in your old code
+                const clipboardItem = new ClipboardItem({
+                    'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                    'text/plain': new Blob([textContent], { type: 'text/plain' })
+                });
+
+                await navigator.clipboard.write([clipboardItem]);
+            } catch (err) {
+                console.warn('ClipboardItem API failed, falling back to execCommand:', err);
+                
+                // Fallback for older browsers or non-HTTPS connections
+                tempDiv.style.position = 'fixed';
+                tempDiv.style.pointerEvents = 'none';
+                tempDiv.style.opacity = '0';
+                document.body.appendChild(tempDiv);
+                
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(tempDiv);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                try {
+                    document.execCommand('copy');
+                } catch (fallbackErr) {
+                    console.error('Fallback copy failed:', fallbackErr);
+                }
+                
+                document.body.removeChild(tempDiv);
+                selection.removeAllRanges();
+            }
+        },
+
+        nextPane() {
+            if (this.startIndex + 5 < this.networks.length) this.startIndex += 5;
+        },
+
+        prevPane() {
+            if (this.startIndex - 5 >= 0) this.startIndex -= 5;
+            else this.startIndex = 0;
+        }
+    }"
+>
 
 <div class="navbar">
     <div class="nav-inner">
-        <div class="nav-left"><a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
+        <div class="nav-left">
+            <a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;">
+                <h1>NS Toolkits v3</h1>
+            </a>
+        </div>
         <div class="nav-menu">
-             <a href="https://nstoolkits.site/veee3/">Home</a>
+            <a href="https://nstoolkits.site/veee3/">Home</a>
             <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
-         <a href="https://nstoolkits.site/veee3/download.html">Download</a>
+            <a href="https://nstoolkits.site/veee3/download.html">Download</a>
             <a href="https://nstoolkits.site/">Version 2</a>
         </div>
     </div>
@@ -223,107 +332,65 @@
 <main class="container">
     <div class="header-section">
         <h2 class="app-title">NS Excellence Extractor</h2>
-        <p class="subtitle">
-            Your search query cleaner. It does everything for you. | <i>A tool may ease the work.</i>
-        </p>
     </div>
 
+    <!-- AlpineJS Click Handlers -->
     <div class="button-container">
-        <button class="buttons" id="cleanBtn">Clean Up</button>
-        <button class="buttons" id="copyBtn">Copy</button>
-        <button class="buttons" id="clearBtn">Clear</button>
+        <button class="buttons" @click="cleanText">Clean Up</button>
+        <button class="buttons" @click="clearText">Clear</button>
     </div>
 
-    <div class="editor-container">
-        <div class="main-wrapper">
-            <section class="input-section">
-                <div class="inputarea" id="text-input" contenteditable="true" placeholder="Paste text here..."></div>
-            </section>
-
-            <section class="output-section">
-                <div class="inputarea" id="output-view" placeholder="Cleaned output will appear here..."></div>
-            </section>
-        </div>
+    <!-- Single Pane Quill Editor -->
+    <div class="editor-container" x-ignore>
+        <div id="quill-editor"></div>
     </div>
 </main>
 
-<footer>
-    &copy; 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
+<footer class="site-footer">
+    &copy; 2026 NS Tool Kits v3 | Made by Morvan Hsu
 </footer>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-<script src="../scripts/excellenceextractorscripts.js"></script>
 
+<!-- FULL SCREEN SLIDING PREVIEW PANE -->
+<div class="preview-screen" :class="{ 'active': showPreviews }">
+    <div class="preview-header">
+        <h2 class="app-title" style="margin:0;">Search String Data</h2>
+        <button class="buttons" @click="showPreviews = false" style="min-width: 100px;">&times; Close</button>
+    </div>
+
+    <div class="carousel full-screen-carousel">
+        <!-- Previous Button (Disabled if at index 0) -->
+        <button class="nav-btn" @click="prevPane" :disabled="startIndex === 0">⬅</button>
+        
+        <!-- Visible Panes Container -->
+        <div class="panes-container full-height">
+            <template x-for="network in networks.slice(startIndex, startIndex + 5)" :key="network">
+                <div class="pane large-column">
+                    
+                    <!-- NEW INTERACTIVE HEADER COPY BUTTON -->
+                    <div class="pane-title copy-btn" 
+                         x-data="{ isHovered: false, isCopied: false }"
+                         @mouseenter="isHovered = true"
+                         @mouseleave="isHovered = false; isCopied = false"
+                         @click="copyData(network); isCopied = true"
+                         :class="{ 'hover-active': isHovered }">
+                        <span x-text="isCopied ? 'Copied!' : (isHovered ? 'Copy' : network)"></span>
+                    </div>
+                    
+                    <!-- Scrollable inner content for massive datasets -->
+                    <div class="pane-content" x-html="networkData[network]"></div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Next Button (Disabled if there are no more panes to show) -->
+        <button class="nav-btn" @click="nextPane" :disabled="startIndex + 5 >= networks.length">➡</button>
+    </div>
+</div>
+
+<!-- QuillJS Script -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
-/** * PROTECTION SCRIPTS 
- */
-document.addEventListener("keydown", function(e) {
-    if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-        e.preventDefault();
-        return false;
-    }
-});
-document.addEventListener("contextmenu", e => e.preventDefault());
-
-/**
- * PARTICLES BACKGROUND
- */
-const canvas = document.getElementById('bg');
-const ctx = canvas.getContext('2d');
-let particles = [];
-
-function initCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-
-class Particle {
-    constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 1.5;
-        this.speedX = Math.random() * 0.4 - 0.2;
-        this.speedY = Math.random() * 0.4 - 0.2;
-    }
-    update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        if (this.x > canvas.width) this.x = 0;
-        if (this.x < 0) this.x = canvas.width;
-        if (this.y > canvas.height) this.y = 0;
-        if (this.y < 0) this.y = canvas.height;
-    }
-    draw() {
-        ctx.fillStyle = 'rgba(246, 201, 14, 0.2)';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-function initParticles() {
-    particles = [];
-    for (let i = 0; i < 80; i++) {
-        particles.push(new Particle());
-    }
-}
-
-function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach(p => { p.update(); p.draw(); });
-    requestAnimationFrame(animate);
-}
-
-window.addEventListener('resize', () => {
-    initCanvas();
-    initParticles();
-});
-
-initCanvas();
-initParticles();
-animate();
-</script>
-    <script>
 document.addEventListener("keydown", function(e) {
   // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
   if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
