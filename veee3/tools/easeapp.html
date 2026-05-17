@@ -73,7 +73,7 @@
             <div class="nav-menu">
              <a href="https://nstoolkits.site/veee3/">Home</a>
             <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
-         <a href="https://nstoolkits.site/veee3/download.html">Download</a>
+            <a href="https://nstoolkits.site/veee3/download.html">Download</a>
             <a href="https://nstoolkits.site/">Version 2</a>
             </div>
         </div>
@@ -119,6 +119,7 @@
             this.networks.forEach(net => {
                 net.checked = false;
                 net.instances = []; 
+                net.activeClone = 0;
             });
             
             this.$nextTick(() => {
@@ -187,7 +188,25 @@
             return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
         };
 
-// Progressive Mode Trackers
+        // Helper to smartly format metric pluralization
+        let formatMetric = (val, label) => {
+            let vStr = (val || '#').toString().trim().toLowerCase();
+            let isSingular = vStr === '1' || vStr === 'one';
+            let lStr = label.toLowerCase();
+            
+            if (lStr === 'following') return `${val || '#'} ${lStr}`;
+            
+            if (isSingular) {
+                if (lStr === 'check-ins') return `${val || '#'} check-in`;
+                if (lStr.endsWith('s')) return `${val || '#'} ${lStr.slice(0, -1)}`;
+                return `${val || '#'} ${lStr}`;
+            } else {
+                if (!lStr.endsWith('s')) return `${val || '#'} ${lStr}s`;
+                return `${val || '#'} ${lStr}`;
+            }
+        };
+
+        // Progressive Mode Trackers
         let progPersonalNets = [];
         let progBusinessNets = [];
         let progMentionNets = [];
@@ -200,6 +219,7 @@
         let tally = {
             personalCount: 0,
             businessCount: 0,
+            googleBusinessCount: 0,
             possibleSocialCount: 0,
             mugshotCount: 0,
             possibleMugshotCount: 0,
@@ -207,7 +227,7 @@
             hasGoogle: false,
             hasPossibleGoogle: false,
             hasGlobalRH: false,
-            hasNetworkRH: false // <-- NEW: Tracks ONLY primary networks
+            hasNetworkRH: false
         };
 
         let allProgTexts = [];
@@ -255,9 +275,21 @@
                     }
 
                     if (net.id === 'goog') {
-                        progGoogle = true;
-                        if (data.matchStatus === 'possible') tally.hasPossibleGoogle = true;
-                        else tally.hasGoogle = true;
+                        if (data.accountType === 'business') {
+                            let rawPse = data.pseNames || '';
+                            let cleanPse = rawPse.replace(/<[^>]*>?/gm, '').trim();
+                            progBusinessNets.push(cleanPse || '(public search engine)');
+                            tally.googleBusinessCount++;
+                        } else if (data.accountType === 'no-page' || data.accountType === 'no-relative') {
+                            let rawPse = data.pseNames || '';
+                            let cleanPse = rawPse.replace(/<[^>]*>?/gm, '').trim();
+                            progMentionNets.push(cleanPse || '(public search engine)');
+                            tally.hasMentions = true;
+                        } else {
+                            progGoogle = true;
+                            if (data.matchStatus === 'possible') tally.hasPossibleGoogle = true;
+                            else tally.hasGoogle = true;
+                        }
                     } else {
                         
                         // Progressive Network Tracking
@@ -448,6 +480,7 @@
                 if (tally.hasMentions) sumParts.push('public posts, photos, and videos');
                 if (tally.businessCount > 0) sumParts.push(`${tally.businessCount} business page${tally.businessCount > 1 ? 's' : ''}`);
                 if (progMugshots > 0) sumParts.push(progMugshots === 1 ? 'a Mugshot' : 'multiple Mugshots');
+                if (tally.googleBusinessCount > 0) sumParts.push(tally.googleBusinessCount === 1 ? 'a business website' : `${tally.googleBusinessCount} business websites`);
                 if (progGoogle) sumParts.push('Google search results');
 
                 b3 += `${joinList(sumParts) || 'no accounts'} were identified for the party. After a thorough investigation, `;
@@ -527,107 +560,184 @@
                 // GOOGLE / PUBLIC SEARCH ENGINES (Grouped Logic)
                 // ----------------------------------------------------
                 if (net.id === 'goog') {
-                    let validInstances = net.instances.filter(data => data.initialized);
-                    if (validInstances.length === 0) return;
+                    let gsrInstances = net.instances.filter(data => data.initialized && data.accountType === 'personal');
+                    let bizInstances = net.instances.filter(data => data.initialized && data.accountType === 'business');
+                    let menInstances = net.instances.filter(data => data.initialized && (data.accountType === 'no-page' || data.accountType === 'no-relative'));
 
-                    let buildGoogleStr = (data) => {
-                        let isMult = data.resultType === 'multiple';
-                        let isPoss = data.matchStatus === 'possible';
-                        
-                        // --- OXFORD COMMA PARSER FOR PSE NAMES ---
-                        let rawPse = data.pseNames || '';
-                        let pseNames = '(public search engine)';
-                        
-                        let rawTextPse = rawPse.replace(/<[^>]*>?/gm, '').trim(); 
-                        
-                        // Turn paragraph boundaries and breaks into a delimiter, then strip remaining HTML
-                        let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
-                        
-                        if (cleanPse) {
-                            let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
-                            if (items.length > 0) {
-                                if (items.length === 1) {
-                                    pseNames = items[0];
-                                } else if (items.length === 2) {
-                                    pseNames = items[0] + ' and ' + items[1];
-                                } else {
-                                    pseNames = items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
+                    if (gsrInstances.length > 0) {
+                        let buildGoogleStr = (data) => {
+                            let isMult = data.resultType === 'multiple';
+                            let isPoss = data.matchStatus === 'possible';
+                            
+                            let rawPse = data.pseNames || '';
+                            let pseNames = '(public search engine)';
+                            let rawTextPse = rawPse.replace(/<[^>]*>?/gm, '').trim(); 
+                            let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
+                            
+                            if (cleanPse) {
+                                let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
+                                if (items.length > 0) {
+                                    if (items.length === 1) pseNames = items[0];
+                                    else if (items.length === 2) pseNames = items[0] + ' and ' + items[1];
+                                    else pseNames = items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
                                 }
                             }
-                        }
-                        // ------------------------------------------
 
-                        let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
-                        
-                        let iTypes = [];
-                        if (data.infoPersonal) iTypes.push('personal');
-                        if (data.infoEmployment) iTypes.push('employment related');
-                        if (data.infoCriminal) iTypes.push('criminal related');
-                        if (data.infoEducation) iTypes.push('education related');
-                        
-                        let infoStr = '';
-                        if (iTypes.length === 0) {
-                            infoStr = '(personal/employment related/criminal related/education related)';
-                        } else if (iTypes.length === 1) {
-                            infoStr = iTypes[0];
-                        } else if (iTypes.length === 2) {
-                            infoStr = iTypes[0] + ' and ' + iTypes[1];
-                        } else {
-                            infoStr = iTypes.slice(0, -1).join(', ') + ', and ' + iTypes[iTypes.length - 1];
-                        }
+                            let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
+                            
+                            let iTypes = [];
+                            if (data.infoPersonal) iTypes.push('personal');
+                            if (data.infoEmployment) iTypes.push('employment related');
+                            if (data.infoCriminal) iTypes.push('criminal related');
+                            if (data.infoEducation) iTypes.push('education related');
+                            
+                            let infoStr = '';
+                            if (iTypes.length === 0) infoStr = '(personal/employment related/criminal related/education related)';
+                            else if (iTypes.length === 1) infoStr = iTypes[0];
+                            else if (iTypes.length === 2) infoStr = iTypes[0] + ' and ' + iTypes[1];
+                            else infoStr = iTypes.slice(0, -1).join(', ') + ', and ' + iTypes[iTypes.length - 1];
 
-                        let p = '';
+                            let p = '';
 
-                        // --- NEW: GOOGLE REVIEWS OVERRIDE ---
-                        if (rawTextPse.toLowerCase() === 'google') {
-                            let possWord = isPoss ? (isMult ? 'Possible public search engine results' : 'A possible public search engine result') : (isMult ? 'Public search engine results' : 'A public search engine result');
-                            let pron1 = isMult ? 'These search results contain' : 'This search result contains';
-                            let pron2 = isMult ? 'them' : 'it';
-
-                            p = `${possWord} found on ${pseNames} ${isMult ? 'were' : 'was'} identified by ${idByStr}. ${pron1} reviews posted by the subject.`;
-
-                            if (data.finding === 'none') {
-                                p += ` No apparent relevant information regarding the case was found on ${pron2} at this time.`;
-                            } else {
-                                let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
-                                p += ` <strong>${rh}</strong>`;
-                            }
-                        }
-                        // --- STANDARD PSE LOGIC ---
-                        else {
-                            if (isPoss) {
-                                let possWord = isMult ? 'Possible public search engine results' : 'A possible public search engine result';
-                                let pron1 = isMult ? 'These search results contain' : 'This search result contains';
-                                let pron2 = isMult ? 'them' : 'it';
-                                
-                                p = `${possWord} on ${pseNames} ${isMult ? 'were' : 'was'} found by ${idByStr}. ${pron1} possible ${infoStr} information about the subject and no apparent relevant information regarding the case was found on ${pron2} at this time.`;
-                            } else {
-                                let resWord = isMult ? 'Public search engine results' : 'A public search engine result';
+                            if (rawTextPse.toLowerCase() === 'google') {
+                                let possWord = isPoss ? (isMult ? 'Possible public search engine results' : 'A possible public search engine result') : (isMult ? 'Public search engine results' : 'A public search engine result');
                                 let pron1 = isMult ? 'These search results contain' : 'This search result contains';
                                 let pron2 = isMult ? 'them' : 'it';
 
-                                p = `${resWord} found on ${pseNames} ${isMult ? 'were' : 'was'} identified by ${idByStr}. ${pron1} ${infoStr} information about the subject`;
+                                p = `${possWord} found on ${pseNames} ${isMult ? 'were' : 'was'} identified by ${idByStr}. ${pron1} reviews posted by the subject.`;
 
                                 if (data.finding === 'none') {
-                                    p += ` and no apparent relevant information regarding the case was found on ${pron2} at this time.`;
+                                    p += ` No apparent relevant information regarding the case was found on ${pron2} at this time.`;
                                 } else {
                                     let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
-                                    p += `. <strong>${rh}</strong>`;
+                                    p += ` <strong>${rh}</strong>`;
                                 }
                             }
-                        }
-                        return p;
-                    };
+                            else {
+                                if (isPoss) {
+                                    let possWord = isMult ? 'Possible public search engine results' : 'A possible public search engine result';
+                                    let pron1 = isMult ? 'These search results contain' : 'This search result contains';
+                                    let pron2 = isMult ? 'them' : 'it';
+                                    
+                                    p = `${possWord} on ${pseNames} ${isMult ? 'were' : 'was'} found by ${idByStr}. ${pron1} possible ${infoStr} information about the subject and no apparent relevant information regarding the case was found on ${pron2} at this time.`;
+                                } else {
+                                    let resWord = isMult ? 'Public search engine results' : 'A public search engine result';
+                                    let pron1 = isMult ? 'These search results contain' : 'This search result contains';
+                                    let pron2 = isMult ? 'them' : 'it';
 
-                    if (validInstances.length === 1) {
-                        regularParagraphs.push(buildGoogleStr(validInstances[0]));
-                    } 
-                    else {
-                        let header = `Public search engine results were identified by ${validInstances.length} sets of identifiers:`;
-                        let clones = validInstances.map(data => buildGoogleStr(data));
-                        let combined = header + '<br><br>' + clones.join('<br><br>');
-                        regularParagraphs.push(combined);
+                                    p = `${resWord} found on ${pseNames} ${isMult ? 'were' : 'was'} identified by ${idByStr}. ${pron1} ${infoStr} information about the subject`;
+
+                                    if (data.finding === 'none') {
+                                        p += ` and no apparent relevant information regarding the case was found on ${pron2} at this time.`;
+                                    } else {
+                                        let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
+                                        p += `. <strong>${rh}</strong>`;
+                                    }
+                                }
+                            }
+                            return p;
+                        };
+
+                        if (gsrInstances.length === 1) {
+                            regularParagraphs.push(buildGoogleStr(gsrInstances[0]));
+                        } 
+                        else {
+                            let header = `Public search engine results were identified by ${gsrInstances.length} sets of identifiers:`;
+                            let clones = gsrInstances.map(data => buildGoogleStr(data));
+                            let combined = header + '<br><br>' + clones.join('<br><br>');
+                            regularParagraphs.push(combined);
+                        }
                     }
+
+                    if (bizInstances.length > 0) {
+                        bizInstances.forEach((data, index) => {
+                            let isPoss = data.matchStatus === 'possible';
+                            let ord = '';
+                            let currentCount = index + 1;
+                            if (currentCount === 2) ord = '2nd ';
+                            else if (currentCount === 3) ord = '3rd ';
+                            else if (currentCount > 3) ord = currentCount + 'th ';
+                            
+                            let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
+                            let rawPse = data.pseNames || '';
+                            let pseNames = '(public search engine)';
+                            let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
+                            if (cleanPse) {
+                                let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
+                                if (items.length > 0) {
+                                    if (items.length === 1) pseNames = items[0];
+                                    else if (items.length === 2) pseNames = items[0] + ' and ' + items[1];
+                                    else pseNames = items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
+                                }
+                            }
+
+                            let findingsStr = '';
+                            if (data.finding === 'none') {
+                                findingsStr = `No apparent relevant information regarding the case was found on it at this time.`;
+                            } else {
+                                let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
+                                findingsStr = `<strong>${rh}</strong>`;
+                            }
+
+                            let bp = '';
+                            if (isPoss) {
+                                bp = `A ${ord}possible business Website on ${pseNames} was found by ${idByStr}. ${findingsStr}`;
+                            } else {
+                                bp = `A ${ord}business Website on ${pseNames} was identified by ${idByStr}. This website contains information about the business. ${findingsStr}`;
+                            }
+                            businessParagraphs.push(bp);
+                        });
+                    }
+
+                    if (menInstances.length > 0) {
+                        menInstances.forEach((data, index) => {
+                            let isPoss = data.matchStatus === 'possible';
+                            let ord = '';
+                            let currentCount = index + 1;
+                            if (currentCount === 2) ord = '2nd ';
+                            else if (currentCount === 3) ord = '3rd ';
+                            else if (currentCount > 3) ord = currentCount + 'th ';
+
+                            let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
+                            let rawPse = data.pseNames || '';
+                            let pseNames = '(public search engine)';
+                            let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
+                            if (cleanPse) {
+                                let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
+                                if (items.length > 0) {
+                                    if (items.length === 1) pseNames = items[0];
+                                    else if (items.length === 2) pseNames = items[0] + ' and ' + items[1];
+                                    else pseNames = items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
+                                }
+                            }
+
+                            let findingsStr = '';
+                            if (data.finding === 'none') {
+                                findingsStr = `No apparent relevant information regarding the case was found on it/them at this time.`;
+                            } else {
+                                let rh = (data.mediaType || '').trim() ? data.mediaType.trim() : '(Relevant information was found.)';
+                                findingsStr = `<strong>${rh}</strong>`;
+                            }
+
+                            let possWord = isPoss ? 'possible ' : '';
+                            let getArt = (n) => /^[AEIOU8X]/i.test(n.toString()) ? 'An' : 'A';
+                            let fullNetName = ord + possWord + pseNames;
+
+                            let p = `The subject did not appear to have ${getArt(fullNetName).toLowerCase()} ${fullNetName} account; however, `;
+
+                            if (data.accountType === 'no-page') {
+                                let media = data.mentionMedia || 'public post/s';
+                                p += `${proSubj} was identified on (a) ${media}. `;
+                            } else {
+                                let conn = data.mentionConnection || 'relative’s';
+                                p += `photos of the subject were found on ${proPoss} ${conn} account. `;
+                            }
+
+                            p += `This/These was/were identified by ${idByStr}. ${findingsStr}`;
+                            regularParagraphs.push(p);
+                        });
+                    }
+
                     return; 
                 }
 
@@ -712,7 +822,7 @@
                         if (net.config && net.config.metrics) {
                             net.config.metrics.forEach(m => {
                                 if (data.metrics[m.k] && data.metrics[m.k].on) {
-                                    activeMetrics.push(`${data.metrics[m.k].val || '#'} ${m.l.toLowerCase()}`);
+                                    activeMetrics.push(formatMetric(data.metrics[m.k].val, m.l));
                                 }
                             });
                         } else if (net.id === 'other') {
@@ -729,7 +839,7 @@
                                         if(m.k === 'connectedTo') activeMetrics.push(`${v} people ${proSubj}’s connected to`);
                                         if(m.k === 'connectedBy') activeMetrics.push(`${v} people connected to ${isMale?'him':'her'}`);
                                     } else {
-                                        activeMetrics.push(`${v} ${m.l}`);
+                                        activeMetrics.push(formatMetric(v, m.l));
                                     }
                                 }
                             });
@@ -802,8 +912,7 @@
                     if (net.config && net.config.metrics) {
                         net.config.metrics.forEach(m => {
                             if (data.metrics[m.k] && data.metrics[m.k].on) {
-                                let v = data.metrics[m.k].val || '#';
-                                activeMetrics.push(`${v} ${m.l.toLowerCase()}`);
+                                activeMetrics.push(formatMetric(data.metrics[m.k].val, m.l));
                             }
                         });
                     } else if (net.id === 'other') {
@@ -820,7 +929,7 @@
                                     if(m.k === 'connectedTo') activeMetrics.push(`${v} people ${proSubj}’s connected to`);
                                     if(m.k === 'connectedBy') activeMetrics.push(`${v} people connected to ${isMale?'him':'her'}`);
                                 } else {
-                                    activeMetrics.push(`${v} ${m.l}`);
+                                    activeMetrics.push(formatMetric(v, m.l));
                                 }
                             }
                         });
@@ -986,7 +1095,11 @@
             let possMugWord = tally.possibleMugshotCount === 1 ? 'a possible Mugshot' : `${tally.possibleMugshotCount} possible Mugshots`;
             closingComponents.push(possMugWord);
         }
-        // -------------------------
+
+        if (tally.googleBusinessCount > 0) {
+            let bizWebWord = tally.googleBusinessCount === 1 ? 'a business website' : `${tally.googleBusinessCount} business websites`;
+            closingComponents.push(bizWebWord);
+        }
 
         if (tally.hasGoogle || tally.hasPossibleGoogle) {
             if (tally.hasGoogle && tally.hasPossibleGoogle) closingComponents.push(`public search engine results (including possible public search results)`);
@@ -1002,7 +1115,7 @@
             else listStr = closingComponents.slice(0, -1).join(', ') + ', and ' + closingComponents[closingComponents.length - 1];
         }
 
-        let totalItemsCount = tally.personalCount + tally.businessCount + tally.possibleSocialCount + tally.mugshotCount + tally.possibleMugshotCount + (tally.hasMentions ? 2 : 0) + (tally.hasGoogle || tally.hasPossibleGoogle ? 2 : 0);
+        let totalItemsCount = tally.personalCount + tally.businessCount + tally.possibleSocialCount + tally.mugshotCount + tally.possibleMugshotCount + tally.googleBusinessCount + (tally.hasMentions ? 2 : 0) + (tally.hasGoogle || tally.hasPossibleGoogle ? 2 : 0);
         let verb = totalItemsCount === 1 ? 'was' : 'were';
 
         // --- FINAL BULLET ASSEMBLY ---
@@ -1060,7 +1173,7 @@
 
     networks: [
         { id: 'fb', name: 'Facebook', checked: false, color: '#1877F2', instances: [{}], config: { 
-            metrics: [{k:'posts', l:'Posts'}, {k:'friends', l:'Friends'}, {k:'following', l:'Following'}, {k:'photos', l:'Photos'}, {k:'videos', l:'Videos'}, {k:'likes', l:'Likes'}], 
+            metrics: [{k:'posts', l:'Posts'}, {k:'friends', l:'Friends'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}, {k:'photos', l:'Photos'}, {k:'videos', l:'Reels'}, {k:'checkins', l:'Check-Ins'}, {k:'likes', l:'Likes'}], 
             locPrev: true, locCurr: true, workEd: true, joined: false, activity: true 
         }},
         { id: 'ig', name: 'Instagram', checked: false, color: '#E1306C', instances: [{}], config: { 
@@ -1122,12 +1235,13 @@
                                     <input type="checkbox" 
                                            x-model="net.checked" 
                                            :disabled="net.instances.length > 1" 
-                                           class="network-hidden-checkbox">
+                                           class="network-hidden-checkbox"
+                                           @change="if($el.checked) { activeSection = net.id; net.activeClone = 0; $nextTick(() => { let el = document.getElementById('details-' + net.id); if(el) el.scrollIntoView({behavior: 'smooth', block: 'start'}); }) }">
                                     <span class="network-toggle" 
                                           :style="net.checked ? 'background-color: ' + net.color : ''"></span>
                                     <span x-text="net.name" class="network-name" style="color: #e0e0e0;"></span>
                                 </label>
-                                <button type="button" class="add-more-btn" @click="net.instances.push({}); $nextTick(() => document.getElementById('details-' + net.id).open = true)" x-show="net.checked" x-transition>+</button>
+                                <button type="button" class="add-more-btn" @click="net.instances.push({}); activeSection = net.id; net.activeClone = net.instances.length - 1; $nextTick(() => { let el = document.getElementById('clone-' + net.id + '-' + net.activeClone); if(el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); } })" x-show="net.checked" x-transition>+</button>
                             </div>
 
                             <details :id="'details-' + net.id" x-show="net.checked && net.instances.length > 1" class="clone-details" x-transition>
@@ -1135,7 +1249,9 @@
                                 <div class="sub-rows-container">
                                     <template x-for="(instance, index) in net.instances" :key="index">
                                         <div class="clone-row" x-show="index > 0">
-                                            <span class="clone-label"><span x-text="net.name"></span> <span x-text="index + 1"></span></span>
+                                            <span class="clone-label" style="cursor: pointer;" @click="activeSection = net.id; net.activeClone = index; $nextTick(() => { let el = document.getElementById('clone-' + net.id + '-' + index); if(el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); } })">
+                                                <span x-text="net.name"></span> <span x-text="index + 1"></span>
+                                            </span>
                                             <button type="button" class="remove-clone-btn" @click="net.instances.splice(index, 1)">−</button>
                                         </div>
                                     </template>
@@ -1360,8 +1476,8 @@
                 
                 <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
                     <template x-for="(instance, index) in net.instances" :key="index">
-                        <details class="styled-details network-clone" style="margin-bottom: 10px;" :open="index === 0">
-                            <summary>
+                        <details class="styled-details network-clone" style="margin-bottom: 10px;" :id="'clone-' + net.id + '-' + index" :open="net.activeClone === index">
+                            <summary @click.prevent="net.activeClone = net.activeClone === index ? null : index">
                                 <span x-text="net.name"></span> <span x-text="index + 1"></span>
                             </summary>
 
@@ -1373,7 +1489,7 @@
                                     data.mentionConnection = 'relative’s'; 
                                 
                                     data.idBy = '';
-                                    data.metrics = { posts: {val:'', on:false}, friends: {val:'', on:false}, followers: {val:'', on:false}, following: {val:'', on:false}, photos: {val:'', on:false}, videos: {val:'', on:false}, likes: {val:'', on:false}, pins: {val:'', on:false}, subscribers: {val:'', on:false}, connections: {val:'', on:false} };
+                                    data.metrics = { posts: {val:'', on:false}, friends: {val:'', on:false}, followers: {val:'', on:false}, following: {val:'', on:false}, photos: {val:'', on:false}, videos: {val:'', on:false}, checkins: {val:'', on:false}, likes: {val:'', on:false}, pins: {val:'', on:false}, subscribers: {val:'', on:false}, connections: {val:'', on:false} };
                                     data.loc = { prev: {val:'', on:false}, curr: {val:'', on:false} };
                                     data.workEd = { nature: {val:'', on:false}, emp: {val:'', on:false}, school: {val:'', on:false} };
                                     data.joined = '';
@@ -1598,8 +1714,8 @@
             
             <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
                 <template x-for="(instance, index) in networks.find(n => n.id === 'other').instances" :key="index">
-                    <details class="styled-details network-clone" style="margin-bottom: 10px; background: #222222;" :open="index === 0">
-                        <summary style="background-color: #121212; font-size: 0.95rem; border-radius: 6px 6px 0 0;">
+                    <details class="styled-details network-clone" style="margin-bottom: 10px; background: #222222;" :id="'clone-other-' + index" :open="networks.find(n => n.id === 'other').activeClone === index">
+                        <summary style="background-color: #121212; font-size: 0.95rem; border-radius: 6px 6px 0 0;" @click.prevent="let n = networks.find(n => n.id === 'other'); n.activeClone = n.activeClone === index ? null : index">
                             Other Account <span x-text="index + 1"></span>
                         </summary>
                         
@@ -1609,19 +1725,22 @@
                                 data.networkName = '';    
                                 data.matchStatus = 'matched';
                                 data.idBy = '';
-                                
-                                /* Added connections for Zoominfo */
+
                                 data.metrics = { posts: {val:'', on:false}, followers: {val:'', on:false}, following: {val:'', on:false}, listings: {val:'', on:false}, connectedTo: {val:'', on:false}, connectedBy: {val:'', on:false}, connections: {val:'', on:false} };
-                                
+
                                 data.loc = ''; 
                                 data.school = ''; data.classYear = '';
                                 data.countyState = ''; data.arrestDate = ''; data.charge = '';
-                                
-                                /* Added workEd for Zoominfo */
+
                                 data.workEd = { nature: {val:'', on:false}, emp: {val:'', on:false}, school: {val:'', on:false} };
-                                
+
                                 data.activity = 'active'; data.actDate = ''; data.actAction = '';
                                 data.finding = 'relevant'; data.mediaType = '';
+
+                                data.accountType = 'personal';
+                                data.mentionMedia = 'public post/s';
+                                data.mentionConnection = 'relative’s';
+
                                 data.progFindings = [{ type: 'none', text: '' }];
                                 data.initialized = true;
                             }
@@ -1697,6 +1816,34 @@
                                                  ">
                                             </div>
                                         </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Account Presence</legend>
+                                    <div class="checkbox-group" style="flex-wrap: wrap; gap: 15px; margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-acc-' + index" value="personal" x-model="data.accountType"><span class="checkmark"></span> Personal</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-acc-' + index" value="business" x-model="data.accountType"><span class="checkmark"></span> Business</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-acc-' + index" value="no-page" x-model="data.accountType"><span class="checkmark"></span> No Acc (Page/Post)</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-acc-' + index" value="no-relative" x-model="data.accountType"><span class="checkmark"></span> No Acc (Relative)</label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-page'" x-transition>
+                                    <legend>Identified On</legend>
+                                    <div class="checkbox-group" style="margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-media-' + index" value="public post/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Post/s</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-media-' + index" value="public photo/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Photo/s</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-media-' + index" value="public video/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Video/s</label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-relative'" x-transition>
+                                    <legend>Found On Account Of</legend>
+                                    <div class="checkbox-group" style="margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-conn-' + index" value="relative’s" x-model="data.mentionConnection"><span class="checkmark"></span> Relative</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-conn-' + index" value="associate’s" x-model="data.mentionConnection"><span class="checkmark"></span> Associate</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'other-conn-' + index" value="family member’s" x-model="data.mentionConnection"><span class="checkmark"></span> Family Member</label>
+                                    </div>
                                 </fieldset>
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce', 'myspace', 'zoominfo'].includes(data.subType)">
@@ -1851,8 +1998,8 @@
             
             <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
                 <template x-for="(instance, index) in networks.find(n => n.id === 'goog').instances" :key="index">
-                    <details class="styled-details network-clone" style="margin-bottom: 10px;" :open="index === 0">
-                        <summary style="background-color: #121212; font-size: 0.95rem; border-radius: 6px 6px 0 0;">
+                    <details class="styled-details network-clone" style="margin-bottom: 10px;" :id="'clone-goog-' + index" :open="networks.find(n => n.id === 'goog').activeClone === index">
+                        <summary style="background-color: #121212; font-size: 0.95rem; border-radius: 6px 6px 0 0;" @click.prevent="let n = networks.find(n => n.id === 'goog'); n.activeClone = n.activeClone === index ? null : index">
                             Search Result <span x-text="index + 1"></span>
                         </summary>
                         
@@ -1862,15 +2009,19 @@
                                 data.pseNames = '';
                                 data.matchStatus = 'matched';
                                 data.idBy = '';
-                                
-                                /* FIXED: Using flat booleans ensures 100% perfect reactivity */
+
                                 data.infoPersonal = false;
                                 data.infoEmployment = false;
                                 data.infoCriminal = false;
                                 data.infoEducation = false;
-                                
+
                                 data.finding = 'relevant'; 
                                 data.mediaType = '';
+
+                                data.accountType = 'personal';
+                                data.mentionMedia = 'public post/s';
+                                data.mentionConnection = 'relative’s';
+
                                 data.progFindings = [{ type: 'none', text: '' }];
                                 data.initialized = true;
                             }
@@ -1989,6 +2140,34 @@
                                                  ">
                                             </div>
                                         </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
+                                    <legend>Account Presence</legend>
+                                    <div class="checkbox-group" style="flex-wrap: wrap; gap: 15px; margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-acc-' + index" value="personal" x-model="data.accountType"><span class="checkmark"></span> Personal</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-acc-' + index" value="business" x-model="data.accountType"><span class="checkmark"></span> Business</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-acc-' + index" value="no-page" x-model="data.accountType"><span class="checkmark"></span> No Acc (Page/Post)</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-acc-' + index" value="no-relative" x-model="data.accountType"><span class="checkmark"></span> No Acc (Relative)</label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-page'" x-transition>
+                                    <legend>Identified On</legend>
+                                    <div class="checkbox-group" style="margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-media-' + index" value="public post/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Post/s</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-media-' + index" value="public photo/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Photo/s</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-media-' + index" value="public video/s" x-model="data.mentionMedia"><span class="checkmark"></span> Public Video/s</label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.accountType === 'no-relative'" x-transition>
+                                    <legend>Found On Account Of</legend>
+                                    <div class="checkbox-group" style="margin-top: 0;">
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-conn-' + index" value="relative’s" x-model="data.mentionConnection"><span class="checkmark"></span> Relative</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-conn-' + index" value="associate’s" x-model="data.mentionConnection"><span class="checkmark"></span> Associate</label>
+                                        <label class="custom-checkbox"><input type="radio" :name="'goog-conn-' + index" value="family member’s" x-model="data.mentionConnection"><span class="checkmark"></span> Family Member</label>
+                                    </div>
                                 </fieldset>
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
