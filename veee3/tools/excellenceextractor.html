@@ -162,10 +162,10 @@
                 // Reduced the suffix to a single &nbsp; block to account for the auto-newline on paste
                 if (linkCount >= 2) {
                     prefix = '<p>No match found. Please see search queries below.</p><p>&nbsp;</p>';
-                    suffix = '<p>&nbsp;</p>';
+                    suffix = '<p>&nbsp;</p><p>&nbsp;</p>';
                 } else if (linkCount === 1) {
                     prefix = '<p>No match found. Please see search query below.</p><p>&nbsp;</p>';
-                    suffix = '<p>&nbsp;</p>';
+                    suffix = '<p>&nbsp;</p><p>&nbsp;</p>';
                 }
 
                 this.networkData[network] = prefix + buckets[network].join('') + suffix;
