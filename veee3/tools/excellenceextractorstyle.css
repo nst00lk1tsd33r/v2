@@ -325,6 +325,10 @@ html, body {
     opacity: 0.5;
 }
 
+.pane-content a {
+    color: #ffffff;
+}
+
 /* MOBILE RESPONSIVE COLUMNS */
 @media(max-width: 1200px) {
     .pane:nth-child(5) { display: none; }
