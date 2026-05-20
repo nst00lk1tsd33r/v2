@@ -1153,25 +1153,37 @@ body {
 
 <script>
     (function() {
-        // 1. Initialize with your specific keys
         const pn = new PubNub({
             publishKey: "pub-c-5264be2e-0da2-4fb0-aace-04a1fb1b8afc",
             subscribeKey: "sub-c-74177579-fd3a-4144-b9c7-b9d738e6f422",
-            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
-            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
+            userId: "v_" + Math.random().toString(36).substr(2, 9),
+            heartbeatInterval: 10
         });
 
-        // 2. IDENTIFY THE PAGE
-        // Change the channel name below for EACH page based on the mapping table
         const pageChannel = "v3_main"; 
 
-        // 3. Connect and signal "Presence"
+        // 1. Subscribe
         pn.subscribe({ 
             channels: [pageChannel], 
             withPresence: true 
         });
 
-        // 4. Clean up connection when the tab is closed
+        // 2. PUBLISH (This is what triggers the counter in Channel Monitor)
+        pn.publish({
+            channel: pageChannel,
+            message: {
+                event: "user_joined",
+                timestamp: new Date().getTime(),
+                user_id: pn.getUserId()
+            }
+        }, (status, response) => {
+            if (status.error) {
+                console.log("Publish failed!", status);
+            } else {
+                console.log("Message sent! You should now see this in the monitor.");
+            }
+        });
+
         window.addEventListener('beforeunload', function() {
             pn.unsubscribe({ channels: [pageChannel] });
         });
