@@ -29,8 +29,7 @@
             flex-wrap: wrap;
             background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
         }
-        
-        /* Main Container */
+
         .container { 
             width: 100%; 
             max-width: 450px; 
@@ -44,7 +43,6 @@
             overflow: hidden;
         }
 
-        /* Log Panel */
         .log-container { 
             width: 100%; 
             max-width: 380px; 
@@ -57,8 +55,7 @@
             height: 620px; 
             backdrop-filter: blur(10px);
         }
-        
-        /* Headers */
+
         .header { 
             display: flex; 
             justify-content: space-between; 
@@ -67,7 +64,7 @@
             padding-bottom: 18px; 
             margin-bottom: 20px; 
         }
-        
+
         .header-title { 
             color: var(--gold); 
             text-transform: uppercase; 
@@ -76,7 +73,6 @@
             font-size: 14px; 
         }
 
-        /* Status Dot */
         .dot { 
             width: 10px; 
             height: 10px; 
@@ -91,7 +87,6 @@
             animation: none; 
         }
 
-        /* Page Rows */
         .page-row { 
             display: flex; 
             justify-content: space-between; 
@@ -103,7 +98,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05); 
             transition: all 0.3s ease;
         }
-        
+
         .page-row:hover {
             border-color: rgba(212, 175, 55, 0.4);
             background: rgba(212, 175, 55, 0.03);
@@ -117,7 +112,7 @@
             color: #ffffff; 
             margin-bottom: 4px; 
         }
-        
+
         .info .path { 
             font-size: 10px; 
             color: #555; 
@@ -125,7 +120,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Count Number */
         .count { 
             color: var(--gold); 
             font-size: 26px; 
@@ -133,7 +127,6 @@
             text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
         }
 
-        /* Logs */
         #activity-log { 
             font-size: 11px; 
             color: #aaa; 
@@ -143,21 +136,20 @@
             padding-right: 10px; 
             line-height: 1.6;
         }
-        
+
         .log-entry { 
             padding: 8px 0; 
             border-bottom: 1px solid #1a1a1a; 
             animation: fadeIn 0.4s ease-out;
         }
-        
+
         .log-entry.join { color: var(--green); font-weight: 500; }
         .log-entry.leave { color: #bbbbbb; opacity: 0.7; }
         .log-entry.error { color: var(--red); font-weight: bold; }
-        
-        /* Scrollbar */
+
         #activity-log::-webkit-scrollbar { width: 4px; }
         #activity-log::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        
+
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
     </style>
@@ -180,7 +172,7 @@
 <script>
     const ADMIN_ID = "monitor_admin_view";
     const logEl = document.getElementById('activity-log');
-    
+
     function addLog(msg, type = 'info') {
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
@@ -220,43 +212,28 @@
             </div>`;
     });
 
-function updateDisplay(channel, count) {
-    const el = document.getElementById(`count_${channel}`);
-    if (el) {
-        // If count is 1 or more, subtract 1 to account for the Monitor itself
-        // (Assuming you always have the monitor open)
-        let actualUsers = Math.max(0, count - 1); 
-        el.innerText = actualUsers;
+    function updateDisplay(channel, count) {
+        const el = document.getElementById(`count_${channel}`);
+        if (el) el.innerText = Math.max(0, count);
     }
-}
 
-    // LISTENER FOR LIVE EVENTS
     pubnub.addListener({
         status: (s) => {
             if (s.error) addLog(`Network Error: ${s.errorData?.message || 'Unknown'}`, 'error');
             if (s.category === 'PNConnectedCategory') addLog("Connected to live network.", "join");
         },
         presence: (p) => {
-            if (p.uuid === ADMIN_ID) return; // Ignore dashboard
-            
+            if (p.uuid === ADMIN_ID) return;
             const toolName = tools.find(t => t.id === p.channel)?.name || p.channel;
-            
             if (p.action === 'join') addLog(`+ ${toolName} (User joined)`, 'join');
             if (p.action === 'leave' || p.action === 'timeout') addLog(`- ${toolName} (User left)`, 'leave');
-            
-            let safeCount = p.occupancy;
-            if (p.occupancy === 1 && p.action === 'leave') safeCount = 0; 
-            
-            updateDisplay(p.channel, safeCount);
+            updateDisplay(p.channel, p.occupancy);
         }
     });
 
     const allChannels = tools.map(t => t.id);
-    
-    // Subscribe to listen to traffic
     pubnub.subscribe({ channels: allChannels, withPresence: true });
 
-    // Initial Sync
     setTimeout(() => {
         pubnub.hereNow({ channels: allChannels }, (status, response) => {
             if (status.error) {
@@ -265,7 +242,6 @@ function updateDisplay(channel, count) {
             }
             if (response && response.channels) {
                 Object.keys(response.channels).forEach(ch => {
-                    // Assume if it's 1, it's just the admin panel. If > 1, show actual users.
                     let count = response.channels[ch].occupancy;
                     if (count === 1) count = 0; else if (count > 1) count -= 1;
                     updateDisplay(ch, count);
@@ -274,7 +250,6 @@ function updateDisplay(channel, count) {
             }
         });
     }, 1500);
-
 </script>
 </body>
 </html>
