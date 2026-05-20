@@ -220,10 +220,15 @@
             </div>`;
     });
 
-    function updateDisplay(channel, count) {
-        const el = document.getElementById(`count_${channel}`);
-        if (el) el.innerText = Math.max(0, count);
+function updateDisplay(channel, count) {
+    const el = document.getElementById(`count_${channel}`);
+    if (el) {
+        // If count is 1 or more, subtract 1 to account for the Monitor itself
+        // (Assuming you always have the monitor open)
+        let actualUsers = Math.max(0, count - 1); 
+        el.innerText = actualUsers;
     }
+}
 
     // LISTENER FOR LIVE EVENTS
     pubnub.addListener({
