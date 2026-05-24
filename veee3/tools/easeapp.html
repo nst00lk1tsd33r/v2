@@ -194,7 +194,10 @@
             let isSingular = vStr === '1' || vStr === 'one';
             let lStr = label.toLowerCase();
             
-            if (lStr === 'following') return `${val || '#'} ${lStr}`;
+            // Allow 'following' to be pluralized to 'followings' if more than 1
+            if (lStr === 'following') {
+                return isSingular ? `${val || '#'} following` : `${val || '#'} followings`;
+            }
             
             if (isSingular) {
                 if (lStr === 'check-ins') return `${val || '#'} check-in`;
@@ -638,14 +641,26 @@
                             return p;
                         };
 
-                        if (gsrInstances.length === 1) {
-                            regularParagraphs.push(buildGoogleStr(gsrInstances[0]));
+                        // Separate matched vs possible Google search results
+                        let matchedGsr = gsrInstances.filter(data => data.matchStatus !== 'possible');
+                        let possibleGsr = gsrInstances.filter(data => data.matchStatus === 'possible');
+
+                        // 1. Process Matched Results (takes priority)
+                        if (matchedGsr.length === 1) {
+                            regularParagraphs.push(buildGoogleStr(matchedGsr[0]));
                         } 
-                        else {
-                            let header = `Public search engine results were identified by ${gsrInstances.length} sets of identifiers:`;
-                            let clones = gsrInstances.map(data => buildGoogleStr(data));
+                        else if (matchedGsr.length > 1) {
+                            let header = `Public search engine results were identified by ${matchedGsr.length} sets of identifiers:`;
+                            let clones = matchedGsr.map(data => buildGoogleStr(data));
                             let combined = header + '<br><br>' + clones.join('<br><br>');
                             regularParagraphs.push(combined);
+                        }
+
+                        // 2. Process Possible Results (pushed below matched)
+                        if (possibleGsr.length > 0) {
+                            possibleGsr.forEach(data => {
+                                regularParagraphs.push(buildGoogleStr(data));
+                            });
                         }
                     }
 
@@ -1193,7 +1208,7 @@
             locPrev: false, locCurr: true, workEd: true, joined: false, activity: false 
         }},
         { id: 'tk', name: 'TikTok', checked: false, color: '#000000', instances: [{}], config: { 
-            metrics: [{k:'posts', l:'Posts'}, {k:'followers', l:'Followers'}, {k:'following', l:'Following'}], 
+            metrics: [{k:'posts', l:'Posts'}, {k:'following', l:'Following'}, {k:'followers', l:'Followers'}, {k:'likes', l:'Likes'}], 
             locPrev: false, locCurr: false, workEd: false, joined: false, activity: true 
         }},
         { id: 'pin', name: 'Pinterest', checked: false, color: '#E60023', instances: [{}], config: { 
@@ -2408,7 +2423,7 @@
 
     </div>
         <footer class="site-footer">
-            © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
+            © 2026 NS Tool Kits v3 | Made by Morvan Hsu
         </footer>
 
  <script>
