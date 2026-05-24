@@ -128,8 +128,14 @@
         if (this.feats.sch) pf.push(buildAso(`school attended (${this.sub.sch.name || 'school'})`, this.sub.sch));
         
         if (this.feats.phn) {
-            const num = this.sub.phn.num.replace(/[() ]/g, '');
-            pf.push(buildAso(`phone number (${num ? `+1-${num}` : '+1-000-000-000'})`, this.sub.phn));
+            let num = this.sub.phn.num.replace(/\D/g, '');
+            if (num.length === 11 && num.startsWith('1')) {
+                num = num.substring(1);
+            }
+            const formattedNum = num.length >= 10 
+                ? `+1-${num.slice(0, 3)}-${num.slice(3, 6)}-${num.slice(6, 10)}` 
+                : (num ? `+1-${num}` : '+1-000-000-0000');
+            pf.push(buildAso(`phone number (${formattedNum})`, this.sub.phn));
         }
 
         if (this.feats.mail) {
@@ -416,7 +422,7 @@
             <div class="nav-menu">
             <a href="https://nstoolkits.site/veee3/">Home</a>
             <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
-            <a href="https://nstoolkits.site/veee3/download.html">Download</a>
+            <a href="https://nstoolkits.site/veee3/download.html">Metascraper</a>
             <a href="https://nstoolkits.site/">Version 2</a>
             </div>
         </div>
@@ -640,7 +646,7 @@
                         <strong>Email Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="usrmai" x-model="sub.mail.usr"><label for="usrmai">Username</label></div>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenmai" x-model="sub.mail.seen"><label for="seenmai">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Email Address" x-model="sub.mail.addr">
+                        <input type="text" class="drawer-input" placeholder="Email Address" x-model="sub.mail.addr" @input="sub.mail.addr = $event.target.value.toLowerCase()">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.mail.link" x-show="sub.mail.seen || sub.mail.usr">
                         <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.mail.title" x-show="sub.mail.seen || sub.mail.usr">
                     </div>
