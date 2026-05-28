@@ -448,7 +448,12 @@
                         return nameString;
                     });
 
-                    b2 += ` and ${count} were identified: ${joinList(nameArray)}. These accounts were thoroughly investigated and `;
+                    // --- THE PLURALIZATION FIX ---
+                    let verbId = count === 1 ? 'was' : 'were';
+                    let accountNoun = count === 1 ? 'This account was' : 'These accounts were';
+                    let pronoun = count === 1 ? 'it' : 'them';
+
+                    b2 += ` and ${count} ${verbId} identified: ${joinList(nameArray)}. ${accountNoun} thoroughly investigated and `;
                     
                     if (relProgTexts.length > 0) {
                         let stitched = relProgTexts[0];
@@ -462,7 +467,7 @@
                     } else if (this.relData.progFindings && this.relData.progFindings.some(pf => pf.type === 'relevant')) {
                         b2 += `<strong>(state relevant info found on relatives)</strong>`;
                     } else {
-                        b2 += `no apparent relevant information regarding the case was found on them at this time.`;
+                        b2 += `no apparent relevant information regarding the case was found on ${pronoun} at this time.`;
                     }
                 } else {
                     b2 += `, but none were positively identified at this time.`;
