@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NS Toolkits v3 | Link Batch Opener</title>
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b0b0b;
+            --card: rgba(255,255,255,0.05);
+            --accent: #f6c90e; 
+            --text: #fff;
+            --border: rgba(246, 201, 14, 0.15);
+            --danger: #ff4757;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            user-select: none; /* Matching your security scripts */
+        }
+
+        canvas#particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+
+        .nav-menu {
+            display: flex;
+            gap: 28px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-menu a {
+            color: #e6e6e6;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .nav-menu a:hover { color: var(--accent); opacity: 1; }
+
+        /* CONTAINER */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1 0 auto;
+            box-sizing: border-box;
+        }
+
+        .content-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 30px;
+            width: 100%;
+        }
+
+        /* MAIN SECTION */
+        .main-section {
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 35px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .header-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .main-section h2 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .counter-badge {
+            background: rgba(246, 201, 14, 0.05);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s ease;
+        }
+
+        .counter-badge.active {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px rgba(246, 201, 14, 0.3);
+        }
+
+        textarea {
+            width: 100%;
+            height: 480px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            font-family: 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(14px);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            height: fit-content;
+        }
+
+        .info-card {
+            font-size: 13px;
+            opacity: 0.8;
+            line-height: 1.6;
+            padding: 15px;
+            background: rgba(246, 201, 14, 0.03);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px 12px 12px 4px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            border: none;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+
+        .btn-open {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-open:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(246, 201, 14, 0.4);
+        }
+
+        .btn-clear {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .btn-clear:hover {
+            background: var(--danger);
+            border-color: transparent;
+        }
+
+        footer {
+            width: 100%;
+            padding: 20px 0;
+            opacity: .5;
+            text-align: center;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            margin-top: auto;
+        }
+
+        @media (max-width: 900px) {
+            .content-layout { grid-template-columns: 1fr; }
+            textarea { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particles"></canvas>
+
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-left">
+                <a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;">
+                    <h1>NS Toolkits v3</h1>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="https://nstoolkits.site/veee3/">Home</a>
+                <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
+                <a href="https://nstoolkits.site/veee3/download.html">Download</a>
+                <a href="https://nstoolkits.site/">Version 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content-layout">
+            <div class="main-section">
+                <div class="header-meta">
+                    <div>
+                        <h2>Link Batch Opener</h2>
+                        <p style="opacity: 0.6; margin: 4px 0 0 0; font-size: 13px;">Automatically extracts and validates URL structures from your text.</p>
+                    </div>
+                    <div id="urlCounter" class="counter-badge">0 Links</div>
+                </div>
+                
+                <textarea id="urlInput" placeholder="Paste text containing links here...&#10;The tool will extract only the URLs.&#10;&#10;example.com&#10;https://mysite.org" oninput="updateCounter()"></textarea>
+            </div>
+
+            <div class="sidebar">
+                <div class="info-card">
+                    <strong style="color: var(--accent);">Anti-Block Tip:</strong> 
+                    Browsers block bulk tabs. Click the <strong>Pop-up icon</strong> in your address bar and select "Always allow" to enable batch opening.
+                </div>
+                
+                <div class="btn-group">
+                    <button class="action-btn btn-open" onclick="openLinks()">Open All Links</button>
+                    <button class="action-btn btn-clear" onclick="clearInput()">Clear List</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
+
+    <script>
+        // Intelligent URL extraction regex
+        const urlRegex = /((https?:\/\/)|(www\.))?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/[^\s]*)?/g;
+
+        function getValidUrls() {
+            const text = document.getElementById('urlInput').value;
+            const matches = text.match(urlRegex) || [];
+            // Remove duplicates and trim
+            return [...new Set(matches.map(u => u.trim()))];
+        }
+
+        function updateCounter() {
+            const urls = getValidUrls();
+            const counter = document.getElementById('urlCounter');
+            counter.textContent = `${urls.length} Link${urls.length !== 1 ? 's' : ''} Found`;
+            
+            if (urls.length > 0) {
+                counter.classList.add('active');
+            } else {
+                counter.classList.remove('active');
+            }
+        }
+
+        function openLinks() {
+            const urls = getValidUrls();
+
+            if (urls.length === 0) {
+                alert("No valid URL links detected in the workspace.");
+                return;
+            }
+
+            urls.forEach(url => {
+                let formattedUrl = url;
+                // Add protocol if missing for browser to recognize as external link
+                if (!/^https?:\/\//i.test(url)) {
+                    formattedUrl = 'https://' + url;
+                }
+                window.open(formattedUrl, '_blank');
+            });
+
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.7 },
+                colors: ['#f6c90e', '#ffffff']
+            });
+        }
+
+        function clearInput() {
+            document.getElementById('urlInput').value = '';
+            updateCounter();
+        }
+
+        // Security Scripts (Inherited from original)
+        document.addEventListener("keydown", function(e) {
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === "C") {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener("contextmenu", e => e.preventDefault());
+    </script>
+</body>
+</html>
