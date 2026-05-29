@@ -43,6 +43,162 @@
         custom: ['', '', '', '', '']
     },
 
+    // --- NEW PRESET VARIABLES ---
+    presets: JSON.parse(localStorage.getItem('nsTemplatePresets')) || {},
+    activePreset: '',
+    showPresetControls: false,
+
+    // --- HISTORY VARIABLES ---
+    showHistory: false,
+    history: JSON.parse(localStorage.getItem('nsTemplateHistory')) || [],
+
+    // --- HISTORY FUNCTIONS ---
+    saveToHistory(content) {
+        if (!content || content.trim() === '') return;
+
+        // Force browser to normalize the HTML so strings match exactly
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const normalizedContent = tempDiv.innerHTML;
+
+        // Prevent duplicate consecutive saves
+        if (this.history.length > 0) {
+            const lastEntryDiv = document.createElement('div');
+            lastEntryDiv.innerHTML = this.history[0].content;
+            if (lastEntryDiv.innerHTML === normalizedContent) return;
+        }
+        
+        const entry = {
+            id: Date.now(),
+            content: normalizedContent, // Save the normalized version
+            date: new Date().toLocaleString()
+        };
+        this.history.unshift(entry); // Add to the top
+        if (this.history.length > 50) this.history.pop(); // Keep only last 50
+        localStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
+    },
+
+    deleteFromHistory(id) {
+        this.history = this.history.filter(h => h.id !== id);
+        localStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
+    },
+
+    clearHistory() {
+        if(confirm('Are you sure you want to clear all history?')) {
+            this.history = [];
+            localStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
+        }
+    },
+
+    copyFromHistory(content, btnEvent) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        document.body.appendChild(tempDiv);
+        
+        const htmlBlob = new Blob([content], { type: 'text/html' });
+        const textBlob = new Blob([tempDiv.innerText], { type: 'text/plain' });
+        const clipboardItem = new ClipboardItem({
+            'text/html': htmlBlob,
+            'text/plain': textBlob
+        });
+        
+        navigator.clipboard.write([clipboardItem]).then(() => {
+            let btn = btnEvent.currentTarget;
+            let originalText = btn.innerHTML;
+            btn.innerHTML = '✓ Copied';
+            btn.style.color = '#27ae60';
+            btn.style.borderColor = '#27ae60';
+            setTimeout(() => { 
+                btn.innerHTML = originalText; 
+                btn.style.color = 'var(--accent)'; 
+                btn.style.borderColor = 'rgba(246, 201, 14, 0.3)';
+            }, 2000);
+        });
+        document.body.removeChild(tempDiv);
+    },
+
+    // --- NEW PRESET FUNCTIONS ---
+    savePreset() {
+        if (this.feats.custom || this.activePreset) {
+            alert('Cannot create a preset while the Custom identifier or an existing preset is active. Please start from a fresh selection.');
+            return;
+        }
+
+        // Check if there are actually identifiers selected
+        let hasSelection = Object.entries(this.feats).some(([k,v]) => v && k !== 'custom');
+        if (!hasSelection) {
+            alert('Please select some identifiers first before saving a preset.');
+            return;
+        }
+
+        let name = prompt('Enter a name for this preset:');
+        if (!name) return;
+        
+        if (this.presets[name]) {
+            if(!confirm(`A preset named '${name}' already exists. Overwrite?`)) return;
+        }
+
+        // Extract ONLY boolean values (combinations), ignore text/links
+        let stateToSave = { feats: {}, sub: {} };
+        
+        for (let key in this.feats) {
+            if (key !== 'custom') stateToSave.feats[key] = !!this.feats[key];
+        }
+        
+        for (let key in this.sub) {
+            if (Array.isArray(this.sub[key])) continue; // Skip the custom array
+            stateToSave.sub[key] = {};
+            for (let subKey in this.sub[key]) {
+                if (typeof this.sub[key][subKey] === 'boolean') {
+                    stateToSave.sub[key][subKey] = !!this.sub[key][subKey];
+                }
+            }
+        }
+
+        this.presets[name] = stateToSave;
+        localStorage.setItem('nsTemplatePresets', JSON.stringify(this.presets));
+        alert(`Preset '${name}' saved!`);
+    },
+
+    deletePreset() {
+        if (!this.activePreset) return;
+        if (confirm(`Are you sure you want to delete the preset: '${this.activePreset}'?`)) {
+            delete this.presets[this.activePreset];
+            localStorage.setItem('nsTemplatePresets', JSON.stringify(this.presets));
+            this.activePreset = '';
+            this.applyPreset(''); // Clears the board
+        }
+    },
+
+    applyPreset(name) {
+        // 1. Reset all current booleans to false
+        for (let key in this.feats) {
+            if (key !== 'custom') this.feats[key] = false;
+        }
+        for (let key in this.sub) {
+            if (Array.isArray(this.sub[key])) continue;
+            for (let subKey in this.sub[key]) {
+                if (typeof this.sub[key][subKey] === 'boolean') {
+                    this.sub[key][subKey] = false;
+                }
+            }
+        }
+
+        // 2. If clearing preset, stop here
+        if (!name || !this.presets[name]) return;
+
+        // 3. Apply the saved boolean combinations
+        let p = this.presets[name];
+        for (let key in p.feats) {
+            this.feats[key] = p.feats[key];
+        }
+        for (let key in p.sub) {
+            for (let subKey in p.sub[key]) {
+                this.sub[key][subKey] = p.sub[key][subKey];
+            }
+        }
+    },
+
     scrollToDrawer(id) {
         setTimeout(() => {
             const el = document.getElementById(id);
@@ -409,6 +565,40 @@
             if (val && !/^https?:\/\//i.test(val)) {
                 t.value = 'https://' + val;
                 t.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+    }
+"
+@paste.window="
+    let t = $event.target;
+    if (t.tagName === 'INPUT' && (t.placeholder || '').toLowerCase().includes('link')) {
+        let pasted = ($event.clipboardData || window.clipboardData).getData('text').trim();
+        let match = pasted.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
+        
+        if (match) {
+            let domain = match[1].split('.')[0].toLowerCase();
+            let siteName = domain.charAt(0).toUpperCase() + domain.slice(1);
+            
+            // Special Cases
+            if (domain === 'linkedin') siteName = 'LinkedIn';
+            else if (domain === 'youtube') siteName = 'YouTube';
+            else if (domain === 'tiktok') siteName = 'TikTok';
+            else if (domain === 'x' || domain === 'twitter') siteName = 'X (Twitter)';
+
+            // Keywords to identify the correct adjacent input field
+            const targets = ['name', 'title', 'platform', 'database'];
+            const isTarget = (el) => el && el.tagName === 'INPUT' && targets.some(kw => (el.placeholder || '').toLowerCase().includes(kw));
+            
+            // Check next sibling first, then previous sibling (to handle layout variations like 'Same' & 'Conn' drawers)
+            let targetInput = isTarget(t.nextElementSibling) ? t.nextElementSibling : (isTarget(t.previousElementSibling) ? t.previousElementSibling : null);
+
+            if (targetInput) {
+                setTimeout(() => {
+                    if (!targetInput.value) { // Only populate if empty
+                        targetInput.value = siteName;
+                        targetInput.dispatchEvent(new Event('input', { bubbles: true })); // Tell Alpine to update x-model
+                    }
+                }, 50);
             }
         }
     }
@@ -1013,9 +1203,48 @@
                             <div class="custom-toggle"><input type="checkbox" id="visualmatch2" x-model="feats.loc2" @change="if(feats.loc2) scrollToDrawer('drawer-loc2')"><label for="visualmatch2">Exact Location</label></div>
                         </div>
 
-                        <h3 class="section-heading">Custom</h3>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px; width: 100%;">
+    
+                            <h3 style="margin: 0; color: #fff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8;">
+                                Custom
+                            </h3>
+
+                            <button @click="showPresetControls = !showPresetControls" 
+                                    class="preset-gear-btn"
+                                    :class="{ 'active': showPresetControls }"
+                                    title="Toggle Preset Controls">⚙️</button>
+
+                            <div x-show="showPresetControls" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 -translate-x-5"
+                                 x-transition:enter-end="opacity-100 translate-x-0"
+                                 class="preset-controls-wrapper">
+                                <button @click="savePreset()" class="preset-action-btn save">Save</button>
+                                <button @click="deletePreset()" class="preset-action-btn delete" :disabled="!activePreset">Delete</button>
+                            </div>
+                        
+                            <div style="flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent); margin-left: 5px;"></div>
+                        </div>
+
                         <div class="identifier-grid">
-                            <div class="custom-toggle"><input type="checkbox" id="custom" x-model="feats.custom" @change="if(feats.custom) scrollToDrawer('drawer-custom')"><label for="custom">Enable Custom</label></div>
+                            <div class="custom-toggle">
+                                <input type="checkbox" id="custom" x-model="feats.custom" @change="if(feats.custom) { activePreset = ''; scrollToDrawer('drawer-custom'); }">
+                                <label for="custom">Enable Custom</label>
+                            </div>
+
+                            <template x-for="(data, name) in presets" :key="name">
+                                <div class="custom-toggle">
+                                    <input type="radio" :id="'preset_' + name.replace(/\s+/g, '')" name="preset_selection" :value="name" x-model="activePreset" @change="feats.custom = false; applyPreset(name)">
+                                    <label :for="'preset_' + name.replace(/\s+/g, '')">
+                                        <span x-text="name" style="color: var(--accent);"></span>
+                                    </label>
+                                </div>
+                            </template>
+                        
+                            <div class="custom-toggle" x-show="activePreset !== ''">
+                                 <input type="radio" id="preset_none" name="preset_selection" value="" x-model="activePreset" @change="applyPreset('')">
+                                 <label for="preset_none" style="color: #e74c3c; border-color: rgba(231, 76, 60, 0.3);">Reset</label>
+                            </div>
                         </div>
 
                     </div>
@@ -1023,7 +1252,9 @@
                     <div class="slider-controls">
                         <button class="slider-btn" @click="step--">⬅ Previous</button>
                         <button class="slider-btn primary" @click="
-                            document.getElementById('final-output').innerHTML = reportEngine;
+                            let generatedHTML = reportEngine;
+                            document.getElementById('final-output').innerHTML = generatedHTML;
+                            saveToHistory(generatedHTML);
                             step++;
                         ">Generate Template</button>
                     </div>
@@ -1058,7 +1289,7 @@
 
                         <button class="slider-btn primary" @click="
                             const outputDiv = document.getElementById('final-output');
-                            
+                            saveToHistory(outputDiv.innerHTML);
                             const htmlBlob = new Blob([outputDiv.innerHTML], { type: 'text/html' });
                             const textBlob = new Blob([outputDiv.innerText], { type: 'text/plain' });
                             const clipboardItem = new ClipboardItem({
@@ -1107,6 +1338,8 @@
                         pubType = '';
                         urls = [{ link: '' }];
                         ordNum = '';
+                        activePreset = '';
+                        showPresetControls = false;
                         
                         feats = { 
                             alias: false, business: false, fname: false, mname: false, lname: false, 
@@ -1157,6 +1390,92 @@
         <div class="progress-block" @click="if(matchType && accountType) step = 4" title="Step 4: Output">
             <div class="progress-fill" :class="{'filled': step >= 4, 'current': step === 4}"></div>
         </div>
+    </div>
+
+    <button 
+        @click="showHistory = true"
+        style="position: fixed; bottom: 25px; right: 25px; width: 55px; height: 55px; border-radius: 50%; background: rgba(15, 15, 15, 0.9); border: 2px solid var(--accent); color: var(--accent); font-size: 24px; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(246, 201, 14, 0.2); z-index: 100; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
+        onmouseover="this.style.transform='scale(1.1)'; this.style.background='var(--accent)'; this.style.color='#111';"
+        onmouseout="this.style.transform='scale(1)'; this.style.background='rgba(15, 15, 15, 0.9)'; this.style.color='var(--accent)';"
+        title="View Template History">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </button>
+
+    <div x-show="showHistory" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999; pointer-events: none; display: flex; justify-content: flex-end;">
+        
+        <div x-show="showHistory" 
+             @click="showHistory = false"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); pointer-events: auto;">
+        </div>
+
+        <div x-show="showHistory" style="position: fixed; inset: 0; z-index: 99999; pointer-events: none;">
+        
+        <div x-show="showHistory" 
+             @click="showHistory = false"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); pointer-events: auto;">
+        </div>
+
+        <div x-show="showHistory"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+             style="position: absolute; top: 0; right: 0; width: 380px; max-width: 90%; height: 100vh; background: rgba(15, 15, 15, 0.98); border-left: 1px solid rgba(246, 201, 14, 0.3); box-shadow: -10px 0 40px rgba(0,0,0,0.9); display: flex; flex-direction: column; pointer-events: auto;">
+             
+             <div style="padding: 20px 25px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4);">
+                 <h2 style="margin: 0; color: var(--accent); font-size: 16px; text-transform: uppercase; letter-spacing: 2px;">Session History</h2>
+                 <div style="display: flex; gap: 12px; align-items: center;">
+                     <button @click="clearHistory()" x-show="history.length > 0" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; text-transform: uppercase; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">Clear All</button>
+                     <button @click="showHistory = false" style="background: transparent; color: #888; border: none; font-size: 24px; line-height: 1; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">×</button>
+                 </div>
+             </div>
+
+             <div style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;" class="sidebar-scroll">
+                 
+                 <template x-if="history.length === 0">
+                     <div style="text-align: center; color: rgba(255,255,255,0.3); margin-top: 50px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
+                         No templates saved yet.
+                     </div>
+                 </template>
+
+                 <template x-for="(item, index) in history" :key="item.id">
+                     <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px; transition: border-color 0.2s;" onmouseover="this.style.borderColor='rgba(246, 201, 14, 0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+                         
+                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 10px;">
+                             <span style="font-size: 11px; color: #aaa;" x-text="item.date"></span>
+                             <div style="display: flex; gap: 8px;">
+                                 <button @click="copyFromHistory(item.content, $event)" 
+                                         style="background: rgba(246, 201, 14, 0.1); color: var(--accent); border: 1px solid rgba(246, 201, 14, 0.3); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;" 
+                                         onmouseover="this.style.background='rgba(246, 201, 14, 0.2)'" 
+                                         onmouseout="this.style.background='rgba(246, 201, 14, 0.1)'">Copy</button>
+                                         
+                                 <button @click="deleteFromHistory(item.id)" 
+                                         style="background: rgba(255,255,255,0.05); color: #888; border: none; width: 26px; height: 26px; border-radius: 6px; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;" 
+                                         onmouseover="this.style.background='rgba(231, 76, 60, 0.1)'; this.style.color='#e74c3c';" 
+                                         onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#888';">✖</button>
+                             </div>
+                         </div>
+
+                         <div style="font-size: 13px; color: #ddd; line-height: 1.5; max-height: 180px; overflow-y: auto; overflow-x: hidden; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; word-break: break-word; border: 1px inset rgba(255,255,255,0.05);" x-html="item.content" class="sidebar-scroll"></div>
+                     </div>
+                 </template>
+             </div>
+        </div>
+    </div>
     </div>
 
     <footer>
