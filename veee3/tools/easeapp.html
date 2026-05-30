@@ -406,7 +406,7 @@
                                     if (netName.toLowerCase() === 'youtube') netName = 'YouTube';
                                     if (netName.toLowerCase() === 'tiktok') netName = 'TikTok';
                                 } catch(e) {}
-                                nameString = `<a href='${url}' style='color: #0563c1; text-decoration: underline;'>${cleanName}</a> (${netName})`;
+                                nameString = `<a href='${url}' target='_blank' rel='noopener noreferrer' style='color: #0563c1; text-decoration: underline;'>${cleanName}</a> (${netName})`;
                             }
                         }
                         return nameString;
@@ -498,7 +498,7 @@
                         let match = rawLink.match(/href=[\x22']([^\x22']+)[\x22']/);
                         let url = match ? match[1] : rawLink;
                         if (!url.startsWith('http')) url = 'https://' + url;
-                        return `<a href='${url}' style='color: #0563c1; text-decoration: underline;'>${cleanName}</a>`;
+                        return `<a href='${url}' target='_blank' rel='noopener noreferrer' style='color: #0563c1; text-decoration: underline;'>${cleanName}</a>`;
                     }
                     return cleanName;
                 });
@@ -2157,6 +2157,14 @@
             © 2026 NS Tool Kits v3 | Made by Morvan Hsu
         </footer>
 <script>
+
+    DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+        if (node.tagName && node.tagName.toLowerCase() === 'a') {
+            node.setAttribute('target', '_blank');
+            node.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         const MAX_LENGTH = 250;
 
@@ -2190,7 +2198,7 @@
             }
         }, true); 
 
-        // 2. Paste Interceptor (Smart URL Extractor, Truncation & Symbol Ban)
+// 2. Paste Interceptor (Smart URL Extractor, Truncation & Symbol Ban)
         document.addEventListener('paste', (e) => {
             let target = e.target;
             
@@ -2210,19 +2218,29 @@
                 let htmlData = clipboard.getData('text/html');
 
                 // --- SMART SLACK/RICH-TEXT URL EXTRACTOR ---
-                // If they pasted a rich link into the hyperlink field, extract the actual URL instead of the display name
                 if (isLinkInput && htmlData) {
                     let div = document.createElement('div');
-                    // Use DOMPurify securely to grab just the anchor tag
                     div.innerHTML = DOMPurify.sanitize(htmlData, { ALLOWED_TAGS: ['a'], ALLOWED_ATTR: ['href'] });
                     let anchor = div.querySelector('a');
-                    
                     if (anchor && anchor.getAttribute('href')) {
-                        pasteData = anchor.getAttribute('href'); // Overwrite the display text with the actual URL
+                        pasteData = anchor.getAttribute('href'); 
+                    }
+                }
+
+                // --- NEW: QUILL RICH LINK PASTE HANDLING ---
+                // If pasting into Quill and the clipboard contains an HTML link
+                if (isQuill && htmlData && htmlData.includes('<a')) {
+                    // Sanitize the HTML, only allowing the link to survive
+                    let cleanHtml = DOMPurify.sanitize(htmlData, { ALLOWED_TAGS: ['a'], ALLOWED_ATTR: ['href'] });
+                    if (cleanHtml) {
+                        // Insert as HTML so Quill keeps it as a clickable link
+                        // (The DOMPurify hook from Step 1 will auto-add noopener/noreferrer here!)
+                        document.execCommand('insertHTML', false, cleanHtml);
+                        return; // Exit early to bypass the plain-text truncation
                     }
                 }
                 
-                // Strip banned symbols immediately
+                // Strip banned symbols immediately for standard text
                 pasteData = pasteData.replace(/[<>]/g, '');
 
                 // Calculate space available
@@ -2234,7 +2252,7 @@
                     pasteData = pasteData.substring(0, spaceLeft);
                 }
 
-                // Insert natively as plain text to trigger Alpine.js / Quill updates cleanly
+                // Insert natively as plain text
                 document.execCommand('insertText', false, pasteData);
             }
         }, true);
@@ -2252,7 +2270,7 @@
         });
     });
     </script>
-    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <script>
     (function() {
         // 1. Initialize with your specific keys
