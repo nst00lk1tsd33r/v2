@@ -84,59 +84,35 @@ body {
     width: 100%;
 }
 
-/* Sidebars & Main Content Areas */
-.networks, .notes {
-    flex: 0 0 200px;
-    padding: 20px;
-}
-
 /* Sidebar - Left (Networks) */
 .networks {
-    flex: 0 0 200px; 
+    flex: 0 0 200px;
+    padding: 20px;
     background-color: transparent; 
     border-right: 1px solid var(--border); 
 }
 
 /* Sidebar - Middle-Left (Fill Up Form) */
 .fill-up-form {
-    flex: 0 0 450px;  
-    min-width: 450px; 
-    background-color: rgba(0,0,0,0.2); /* Slight darkening for depth */
+    flex: 0 0 500px;  /* Increased from 450px for better real estate */
+    min-width: 500px; 
+    background-color: rgba(0,0,0,0.2); 
     padding: 20px;
     border-right: 1px solid var(--border);
 }
 
 .fill-up-form h3 {
     margin-bottom: 15px;
-    font-size: 1.1rem;
-    color: #fff;
-    opacity: 0.9;
     padding-bottom: 5px;
     display: inline-block;
 }
 
-/* Sidebar - Right (Notes) */
-.notes {
-    flex: 0 0 350px; 
-    background-color: transparent; 
-    padding: 20px;
-    border-left: 1px solid var(--border);
-}
-
-.notes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
 /* Main Content (Center) */
 .builder {
-    flex: 1; 
+    flex: 1; /* Automatically absorbs all remaining space */
     background-color: transparent;
     padding: 20px;
     min-width: 150px; 
-    /* NEW: Sticky Positioning */
     position: sticky;
     top: 0;
     align-self: flex-start;
@@ -156,7 +132,7 @@ body {
     border-radius: 4px;
 }
 .builder::-webkit-scrollbar-thumb:hover {
-    background: rgba(246, 201, 14, 0.5); /* Yellow accent */
+    background: rgba(246, 201, 14, 0.5); 
 }
 
 /* Responsive adjustment for Mobile */
@@ -164,75 +140,10 @@ body {
     .holy-grail-body {
         flex-direction: column;
     }
-    .networks, .notes {
+    .networks {
         flex: 0 0 auto;
         width: 100%;
     }
-}
-
-/* =========================
-   STICKY NOTES
-========================= */
-#notes-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.sticker {
-    background-color: rgba(0, 0, 0, 0.5); /* Glassmorphism background */
-    padding: 15px;
-    border-radius: 6px;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
-    position: relative;
-    min-height: 80px;
-    border-left: 4px solid var(--accent); /* Yellow accent */
-    border-top: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    transition: all 0.2s ease;
-}
-
-.sticker:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(246, 201, 14, 0.1);
-}
-
-.sticker-body {
-    width: 100%;
-    min-height: 60px;
-    border: none;
-    background: transparent;
-    font-size: 14px;
-    color: #fff;
-    line-height: 1.4;
-    outline: none;
-    padding-right: 20px;
-    overflow-y: auto;
-    word-wrap: break-word;
-}
-
-.sticker-body:empty:before {
-    content: attr(data-placeholder);
-    color: rgba(255, 255, 255, 0.3);
-    cursor: text;
-    pointer-events: none;
-}
-
-.remove-sticker {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    font-size: 16px;
-    transition: 0.2s;
-}
-
-.remove-sticker:hover {
-    color: #e74c3c;
 }
 
 /* =========================
@@ -271,7 +182,7 @@ body {
     font-weight: bold;
     color: var(--accent);
     font-size: 0.9rem;
-    text-transform: uppercase;
+    text-transform: capitalize;
     letter-spacing: 1px;
 }
 
@@ -350,10 +261,12 @@ body {
     pointer-events: auto;
 }
 
-.custom-text-input:focus {
+.custom-text-input:focus,
+.custom-text-input:focus-within {
     border-color: var(--accent) !important;
     background: rgba(246, 201, 14, 0.05) !important;
     box-shadow: 0 0 12px rgba(246, 201, 14, 0.15);
+    outline: none !important;
 }
 
 .custom-text-input::placeholder {
@@ -570,7 +483,7 @@ body {
     color: var(--accent);
     cursor: pointer;
     font-weight: bold;
-    text-transform: uppercase;
+    text-transform: capitalize;
     letter-spacing: 0.5px;
     list-style: none;
     outline: none;
@@ -825,10 +738,18 @@ input[type="checkbox"]:disabled {
     font-style: normal;
     left: 8px;
 }
+
 .custom-text-input .ql-editor {
     color: #e0e0e0;
     padding: 8px;
     min-height: 40px;
+    outline: none !important;
+}
+
+/* Kills the native browser blue outline when typing */
+.custom-text-input .ql-editor:focus {
+    outline: none !important;
+    border: none !important;
 }
 
 .clone-label {
