@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ease App</title>
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.quilljs.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://cdn.quilljs.com;
+        img-src 'self' data: https://i.imgur.com;
+        font-src 'self' data:;
+        connect-src 'self';
+    ">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
     <link rel="stylesheet" href="easeappstyle.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const icons = Quill.import('ui/icons');
-        icons['undo'] = '<svg viewBox="0 0 18 18"><polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"/><path class="ql-stroke" d="M8.09,13.91A4.6,4.6,0,0,0,9,14,5,5,0,1,0,4,9"/></svg>';
-        icons['redo'] = '<svg viewBox="0 0 18 18"><polygon class="ql-fill ql-stroke" points="12 10 14 12 16 10 12 10"/><path class="ql-stroke" d="M9.91,13.91A4.6,4.6,0,0,1,9,14a5,5,0,1,1,5-5"/></svg>';
-    });
-    </script>
     <style>
         .custom-ql-container {
             border-radius: 6px !important;
@@ -64,6 +66,14 @@
             font-style: normal; 
             left: 8px !important;
         }
+
+        .custom-ql-container .ql-tooltip,
+        .custom-ql-container .ql-clipboard {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
     </style>
 </head>
 <body>
@@ -81,9 +91,6 @@
 
 <div class="holy-grail-body" x-data="{ 
     isNull: false,
-    isEditing: false,
-    isManuallyOverridden: false,
-    manualReportHTML: '',
     activeSection: 'nullset',
     reportType: 'plus',
     subjectGender: 'male',
@@ -104,8 +111,6 @@
         if (confirm('Are you sure you want to discard all report data? Your sticky notes will be saved.')) {
             // 1. Reset Global Variables
             this.isNull = false;
-            this.isManuallyOverridden = false;
-            this.manualReportHTML = '';
             this.reportType = 'plus';
             this.subjectGender = 'male';
             this.accountType = 'personal';
@@ -124,53 +129,12 @@
             
             this.$nextTick(() => {
                 this.networks.forEach(net => {
-                    net.instances = [{}]; 
+                    net.instances = [{ _uid: Date.now() + Math.random() }]; 
                 });
             });
             
             // 4. Return to top of accordion
             this.activeSection = 'nullset';
-        }
-    },
-
-    toggleEdit() {
-        if (!this.isEditing) {
-            if (!this.isManuallyOverridden) {
-                if (confirm('The fill-up form and networks panel will be disabled. Proceed?')) {
-                    this.manualReportHTML = this.reportText;
-                    this.isEditing = true;
-                }
-            } else {
-                // If already overridden, just re-open the editor
-                this.isEditing = true;
-            }
-        } else {
-            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                this.isEditing = false;
-            }
-        }
-    },
-
-    saveEdits() {
-        this.isManuallyOverridden = true;
-        this.isEditing = false;
-    },
-
-    unlockForm() {
-        if (confirm('This will permanently delete your manual edits and restore the auto-generated text. Proceed?')) {
-            this.isManuallyOverridden = false;
-            this.manualReportHTML = '';
-        }
-    },
-
-    applyStyle(command) {
-        if (command === 'createLink') {
-            let url = prompt('Enter the link URL (e.g., https://example.com):');
-            if (url) {
-                document.execCommand(command, false, url);
-            }
-        } else {
-            document.execCommand(command, false, null);
         }
     },
     
@@ -453,7 +417,8 @@
                     let accountNoun = count === 1 ? 'This account was' : 'These accounts were';
                     let pronoun = count === 1 ? 'it' : 'them';
 
-                    b2 += ` and ${count} ${verbId} identified: ${joinList(nameArray)}. ${accountNoun} thoroughly investigated and `;
+                    // Stop the base string before the investigation sentence
+                    b2 += ` and ${count} ${verbId} identified: ${joinList(nameArray)}. `;
                     
                     if (relProgTexts.length > 0) {
                         let stitched = relProgTexts[0];
@@ -463,11 +428,14 @@
                             let trans = transWords[(i - 1) % transWords.length];
                             stitched += ` ${trans} ${relProgTexts[i]}`;
                         }
-                        b2 += `<strong>${stitched}</strong>`;
+                        // Wrap the investigation sentence and the stitched text in bold
+                        b2 += `<strong>${accountNoun} thoroughly investigated and ${stitched}</strong>`;
                     } else if (this.relData.progFindings && this.relData.progFindings.some(pf => pf.type === 'relevant')) {
-                        b2 += `<strong>(state relevant info found on relatives)</strong>`;
+                        // Wrap the fallback placeholder in bold
+                        b2 += `<strong>${accountNoun} thoroughly investigated and (state relevant info found on relatives)</strong>`;
                     } else {
-                        b2 += `no apparent relevant information regarding the case was found on ${pronoun} at this time.`;
+                        // Append normally if no relevant information is found
+                        b2 += `${accountNoun} thoroughly investigated and no apparent relevant information regarding the case was found on ${pronoun} at this time.`;
                     }
                 } else {
                     b2 += `, but none were positively identified at this time.`;
@@ -494,12 +462,13 @@
                 b3 += `${joinList(sumParts) || 'no accounts'} were identified for the party. After a thorough investigation, `;
 
                 if (tally.hasGlobalRH) {
-                    b3 += `<strong>(state what was found/not found)</strong>.`;
+                    b3 += `(state what was found/not found).`;
                 } else {
                     b3 += `no apparent relevant information regarding the party’s accident on [Date] was found at this time, nor were any social media posts pertaining to ${proPoss} injuries, treatment, or activities.`;
                 }
             }
-            paragraphs.push(b3);
+            // Wrap the entire final progressive bullet in <strong> tags
+            paragraphs.push(`<strong>${b3}</strong>`);
 
         } else {
             // ==========================================
@@ -543,13 +512,16 @@
                 let accountNoun = count === 1 ? 'This account was' : 'These accounts were';
                 let pronoun = count === 1 ? 'it' : 'them';
 
-                let relString = `Searches for the subject's ${scopeStr} were also performed and ${count} ${verbId} identified: ${namesJoined}. ${accountNoun} thoroughly investigated and `;
+                // We stop the base string right after the names are joined
+                let relString = `Searches for the subject's ${scopeStr} were also performed and ${count} ${verbId} identified: ${namesJoined}. `;
 
                 if (this.relData.finding === 'none') {
-                    relString += `no apparent relevant information regarding the case was found on ${pronoun} at this time.`;
+                    // Append normally if there are no findings
+                    relString += `${accountNoun} thoroughly investigated and no apparent relevant information regarding the case was found on ${pronoun} at this time.`;
                 } else {
                     let rh = (this.relData.rhText || '').trim() ? this.relData.rhText.trim() : '(relevant information was found.)';
-                    relString += `<strong>${rh}</strong>`;
+                    // Wrap the entire findings statement inside the <strong> tag
+                    relString += `<strong>${accountNoun} thoroughly investigated and ${rh}</strong>`;
                 }
                 paragraphs.push(relString);
             }
@@ -1204,7 +1176,7 @@
             metrics: [{k:'posts', l:'Posts'}, {k:'following', l:'Following'}, {k:'followers', l:'Followers'}, {k:'photos', l:'Photos'}], 
             locPrev: false, locCurr: true, workEd: false, joined: true, activity: true 
         }},
-        { id: 'yt', name: 'Youtube', checked: false, color: '#FF0000', instances: [{}], config: { 
+        { id: 'yt', name: 'YouTube', checked: false, color: '#FF0000', instances: [{}], config: { 
             metrics: [{k:'videos', l:'Videos'}, {k:'subscribers', l:'Subscribers'}], 
             locPrev: false, locCurr: false, workEd: false, joined: true, activity: true 
         }},
@@ -1243,8 +1215,8 @@
     ]
 }">
         
-        <nav class="networks" :class="(isEditing || isManuallyOverridden) ? 'dimmed-row' : ''">
-            <h3 style="color: #e0e0e0; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Networks</h3>
+        <nav class="networks">
+            <h3 style="color: #e0e0e0; opacity: 0.9; margin-bottom: 15px; text-transform: capitalize; letter-spacing: 1px; font-size: 14px;">Networks</h3>
             <div class="network-grid">
                 <template x-for="(net, nIndex) in networks" :key="net.id">
                     <div class="network-group" :class="(isNull && net.id !== 'goog' && net.id !== 'other') ? 'dimmed-row' : ''">
@@ -1261,13 +1233,13 @@
                                           :style="net.checked ? 'background-color: ' + net.color : ''"></span>
                                     <span x-text="net.name" class="network-name" style="color: #e0e0e0;"></span>
                                 </label>
-                                <button type="button" class="add-more-btn" @click="net.instances.push({}); activeSection = net.id; net.activeClone = net.instances.length - 1; $nextTick(() => { let el = document.getElementById('clone-' + net.id + '-' + net.activeClone); if(el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); } })" x-show="net.checked" x-transition>+</button>
+                                <button type="button" class="add-more-btn" @click="net.instances.push({ _uid: Date.now() + Math.random() }); activeSection = net.id; net.activeClone = net.instances.length - 1; $nextTick(() => { let el = document.getElementById('clone-' + net.id + '-' + net.activeClone); if(el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); } })" x-show="net.checked" x-transition>+</button>
                             </div>
 
                             <details :id="'details-' + net.id" x-show="net.checked && net.instances.length > 1" class="clone-details" x-transition>
                                 <summary class="clone-summary">Networks (<span x-text="net.instances.length - 1"></span>)</summary>
                                 <div class="sub-rows-container">
-                                    <template x-for="(instance, index) in net.instances" :key="index">
+                                    <template x-for="(instance, index) in net.instances" :key="instance._uid || index">
                                         <div class="clone-row" x-show="index > 0">
                                             <span class="clone-label" style="cursor: pointer;" @click="activeSection = net.id; net.activeClone = index; $nextTick(() => { let el = document.getElementById('clone-' + net.id + '-' + index); if(el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); } })">
                                                 <span x-text="net.name"></span> <span x-text="index + 1"></span>
@@ -1284,8 +1256,8 @@
             </div>
         </nav>
 
-    <section class="fill-up-form" :class="(isEditing || isManuallyOverridden) ? 'dimmed-row' : ''">
-        <h3 style="color: #e0e0e0; opacity: 0.9; margin-bottom: 15px; padding-bottom: 5px; display: inline-block; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Fill Up Form</h3>
+    <section class="fill-up-form">
+        <h3 style="color: #e0e0e0; opacity: 0.9; margin-bottom: 15px; padding-bottom: 5px; display: inline-block; text-transform: capitalize; letter-spacing: 1px; font-size: 14px;">Fill Up Form</h3>
 
         <details class="styled-details" :open="activeSection === 'nullset'">
             <summary @click.prevent="activeSection = activeSection === 'nullset' ? '' : 'nullset'">Report Type</summary>
@@ -1375,39 +1347,8 @@
                         <div id="names-container" class="input-stack" style="margin-top: 0;">
                             <template x-for="(row, index) in relData.rows" :key="index">
                                 <div class="input-row">
-                                    <input type="text" class="custom-text-input" placeholder="Enter Name" x-model="row.name">
-                                    <div class="custom-text-input" 
-                                         contenteditable="true" 
-                                         data-placeholder="Hyperlink"
-                                         style="min-height: 40px; display: block; overflow-y: auto;"
-                                         x-init="$el.innerHTML = row.link"
-                                         @input="row.link = $el.innerHTML"
-                                        @paste.prevent="
-                                        let p = $event.clipboardData || window.clipboardData;
-                                        let h = p.getData('text/html');
-                                        if(!h) { 
-                                            document.execCommand('insertText', false, p.getData('text/plain')); 
-                                        } else { 
-                                            // 1. Strip all attributes (like class, style, id) from tags to prevent color bleed
-                                            // and keep only the <a> and its href
-                                            let div = document.createElement('div');
-                                            div.innerHTML = h.replace(/<\/?(?!(a|A)\b)[^>]*>/gi, '');
-                                            let links = div.getElementsByTagName('a');
-                                            for (let i = 0; i < links.length; i++) {
-                                                let href = links[i].getAttribute('href');
-                                                links[i].removeAttribute('style');
-                                                // Ensure the link stays blue only inside the tag
-                                                links[i].style.color = '#0563c1';
-                                                links[i].style.textDecoration = 'underline';
-                                            }
-                                        
-                                            document.execCommand('insertHTML', false, div.innerHTML);
-                                        
-                                            document.execCommand('insertHTML', false, '\u200B');
-                                            document.execCommand('removeFormat', false, null);
-                                        }
-                                    "></div>
-                                </div>
+                                    <input type="text" class="custom-text-input" maxlength="250" placeholder="Enter Name" x-model="row.name">
+                                    <input type="text" class="custom-text-input" maxlength="250" data-type="hyperlink" placeholder="Paste URL / Hyperlink" x-model="row.link">
                             </template>
                         </div>
                         <div class="action-area">
@@ -1434,7 +1375,7 @@
                             </label>
                         </div>
                         <div class="input-row" x-show="relData.finding === 'relevant'">
-                            <input type="text" class="custom-text-input" placeholder="Details (e.g. 2 photos were found...)" x-model="relData.rhText">
+                            <input type="text" class="custom-text-input" maxlength="250" placeholder="Details (e.g. 2 photos were found...)" x-model="relData.rhText">
                         </div>
                     </fieldset>
 
@@ -1458,7 +1399,7 @@
                                     </div>
                                     
                                     <div class="input-row" style="margin-bottom: 10px;">
-                                        <textarea class="custom-text-input" 
+                                        <textarea class="custom-text-input" maxlength="250" 
                                                   style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
                                                   placeholder="Enter findings or text details here..." 
                                                   x-model="prog.text"></textarea>
@@ -1495,7 +1436,7 @@
                 <summary @click.prevent="activeSection = activeSection === net.id ? '' : net.id" x-text="net.name + ' Data'"></summary>
                 
                 <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
-                    <template x-for="(instance, index) in net.instances" :key="index">
+                    <template x-for="(instance, index) in net.instances" :key="instance._uid || index">
                         <details class="styled-details network-clone" style="margin-bottom: 10px;" :id="'clone-' + net.id + '-' + index" :open="net.activeClone === index">
                             <summary @click.prevent="net.activeClone = net.activeClone === index ? null : index">
                                 <span x-text="net.name"></span> <span x-text="index + 1"></span>
@@ -1561,62 +1502,29 @@
 
                                     <!-- AP MODE CONTAINER -->
                                     <div x-show="reportType === 'plus'" x-transition>
-                                        <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
-                                            <legend>Identified By</legend>
-                                        <div class="checkbox-group" style="margin-top: 0;">
-                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="relative’s" x-model="data.mentionConnection"><span class="checkmark"></span> Relative</label>
-                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="associate’s" x-model="data.mentionConnection"><span class="checkmark"></span> Associate</label>
-                                            <label class="custom-checkbox"><input type="radio" :name="net.id + '-conn-' + index" value="family member’s" x-model="data.mentionConnection"><span class="checkmark"></span> Family Member</label>
-                                        </div>
-                                    </fieldset>
-
+                                        
                                     <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
                                         <legend>Identified By</legend>
-                                        <div class="custom-text-input custom-ql-container" style="display: flex; flex-direction: column; padding: 0; overflow: visible !important;">
-
-                                            <div>
-                                                <button class="ql-link" title="Insert Link"></button>
-                                                <button class="ql-undo" title="Undo">
-                                                    <svg viewBox="0 0 18 18">
-                                                        <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
-                                                        <path class="ql-stroke" d="M8.09,13.91A4.6,4.6,0,0,0,9,14,5,5,0,1,0,4,9"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="ql-redo" title="Redo">
-                                                    <svg viewBox="0 0 18 18">
-                                                        <polygon class="ql-fill ql-stroke" points="12 10 14 12 16 10 12 10"></polygon>
-                                                        <path class="ql-stroke" d="M9.91,13.91A4.6,4.6,0,0,1,9,14a5,5,0,1,1,5-5"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        
-                                            <div style="flex: 1;"
-                                                 x-init="
-                                                    let quill = new Quill($el, {
-                                                        theme: 'snow',
-                                                        formats: ['link'],
-                                                        bounds: document.body,
-                                                        modules: {
-                                                            history: { delay: 500, maxStack: 100, userOnly: true },
-                                                            toolbar: {
-                                                                container: $el.previousElementSibling,
-                                                                handlers: {
-                                                                    'undo': function() { this.quill.history.undo(); },
-                                                                    'redo': function() { this.quill.history.redo(); }
-                                                                }
-                                                            },
-                                                            keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
-                                                        },
-                                                        placeholder: 'Identified By (e.g. Visual Match, URL)'
-                                                    });
-
-                                                    quill.root.innerHTML = data.idBy; // Change to row.link for the Relatives section
-
-                                                    quill.on('text-change', () => {
-                                                        data.idBy = quill.root.innerHTML.replace(/<\/?p[^>]*>/g, ' ').replace(/<br\s*\/?>/g, '').trim(); 
-                                                    });
-                                                 ">
-                                            </div>
+                                        <div class="custom-text-input custom-ql-container" style="padding: 0;"
+                                             x-init="
+                                                let quill = new Quill($el, {
+                                                    theme: 'snow',
+                                                    formats: ['link'],
+                                                    bounds: document.body,
+                                                    modules: {
+                                                        history: { delay: 500, maxStack: 100, userOnly: true },
+                                                        toolbar: false,
+                                                        keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
+                                                    },
+                                                    placeholder: 'Identified By (e.g. Visual Match, URL)'
+                                                });
+                                            
+                                                quill.root.innerHTML = data.idBy;
+                                            
+                                                quill.on('text-change', () => {
+                                                    data.idBy = quill.root.innerHTML.replace(/<\/?p[^>]*>/g, ' ').replace(/<br\s*\/?>/g, '').trim(); 
+                                                });
+                                             ">
                                         </div>
                                     </fieldset>
                                 
@@ -1627,7 +1535,7 @@
                                                 <template x-for="metric in net.config.metrics" :key="metric.k">
                                                     <div class="form-group">
                                                         <label class="custom-checkbox" :title="'Include ' + metric.l + '?'"><input type="checkbox" x-model="data.metrics[metric.k].on"><span class="checkmark"></span></label>
-                                                        <input type="text" class="custom-text-input" :placeholder="'# ' + metric.l" x-model="data.metrics[metric.k].val" @input="data.metrics[metric.k].val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics[metric.k].on">
+                                                        <input type="text" class="custom-text-input" maxlength="250" :placeholder="'# ' + metric.l" x-model="data.metrics[metric.k].val" @input="data.metrics[metric.k].val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics[metric.k].on">
                                                     </div>
                                                 </template>
                                             </div>
@@ -1636,11 +1544,11 @@
                                         <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="net.config.locPrev || net.config.locCurr || net.config.workEd || net.config.joined">
                                             <legend>Demographics</legend>
                                             <div class="input-stack" style="gap: 10px;">
-                                                <div class="input-row" x-show="net.config.joined"><input type="text" class="custom-text-input" placeholder="Joined (e.g. Month & Year)" x-model="data.joined"></div>
-                                                <div class="input-row" x-show="net.config.locPrev"><label class="custom-checkbox" title="Include Previous City?"><input type="checkbox" x-model="data.loc.prev.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="From (City, State)" x-model="data.loc.prev.val" :disabled="!data.loc.prev.on"></div>
-                                                <div class="input-row" x-show="net.config.locCurr"><label class="custom-checkbox" title="Include Current City?"><input type="checkbox" x-model="data.loc.curr.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="Lives in (City, State)" x-model="data.loc.curr.val" :disabled="!data.loc.curr.on"></div>
-                                                <div class="input-row" x-show="net.config.workEd"><label class="custom-checkbox" title="Include Employment?"><input type="checkbox" x-model="data.workEd.emp.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="Nature of Work" x-model="data.workEd.nature.val" :disabled="!data.workEd.emp.on" style="flex: 1;"><input type="text" class="custom-text-input" placeholder="Employer" x-model="data.workEd.emp.val" :disabled="!data.workEd.emp.on" style="flex: 1.5;"></div>
-                                                <div class="input-row" x-show="net.config.workEd"><label class="custom-checkbox" title="Include School?"><input type="checkbox" x-model="data.workEd.school.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="Studied at (School)" x-model="data.workEd.school.val" :disabled="!data.workEd.school.on"></div>
+                                                <div class="input-row" x-show="net.config.joined"><input type="text" class="custom-text-input" maxlength="250" placeholder="Joined (e.g. Month & Year)" x-model="data.joined"></div>
+                                                <div class="input-row" x-show="net.config.locPrev"><label class="custom-checkbox" title="Include Previous City?"><input type="checkbox" x-model="data.loc.prev.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="From (City, State)" x-model="data.loc.prev.val" :disabled="!data.loc.prev.on"></div>
+                                                <div class="input-row" x-show="net.config.locCurr"><label class="custom-checkbox" title="Include Current City?"><input type="checkbox" x-model="data.loc.curr.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="Lives in (City, State)" x-model="data.loc.curr.val" :disabled="!data.loc.curr.on"></div>
+                                                <div class="input-row" x-show="net.config.workEd"><label class="custom-checkbox" title="Include Employment?"><input type="checkbox" x-model="data.workEd.emp.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="Nature of Work" x-model="data.workEd.nature.val" :disabled="!data.workEd.emp.on" style="flex: 1;"><input type="text" class="custom-text-input" maxlength="250" placeholder="Employer" x-model="data.workEd.emp.val" :disabled="!data.workEd.emp.on" style="flex: 1.5;"></div>
+                                                <div class="input-row" x-show="net.config.workEd"><label class="custom-checkbox" title="Include School?"><input type="checkbox" x-model="data.workEd.school.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="Studied at (School)" x-model="data.workEd.school.val" :disabled="!data.workEd.school.on"></div>
                                             </div>
                                         </fieldset>
                                         
@@ -1652,8 +1560,8 @@
                                                 <label class="custom-checkbox" x-show="net.id !== 'yt' && net.id !== 'pin'"><input type="radio" :name="net.id + '-status-' + index" x-model="data.activity" value="private"><span class="checkmark"></span> Private</label>
                                             </div>
                                             <div class="input-row" x-show="data.activity === 'active'">
-                                                <input type="text" class="custom-text-input" :placeholder="net.id === 'pin' ? 'Year (e.g. 2023)' : 'Date (Month Day, Year)'" x-model="data.actDate">
-                                                <input type="text" class="custom-text-input" :placeholder="net.id === 'yt' ? 'Action (e.g., posted a video)' : 'Action (e.g., shared a photo)'" x-model="data.actDetails">
+                                                <input type="text" class="custom-text-input" maxlength="250" :placeholder="net.id === 'pin' ? 'Year (e.g. 2023)' : 'Date (Month Day, Year)'" x-model="data.actDate">
+                                                <input type="text" class="custom-text-input" maxlength="250" :placeholder="net.id === 'yt' ? 'Action (e.g., posted a video)' : 'Action (e.g., shared a photo)'" x-model="data.actDetails">
                                             </div>
                                         </fieldset>
                                     </div>
@@ -1665,7 +1573,7 @@
                                             <label class="custom-checkbox"><input type="radio" :name="net.id + '-findings-' + index" x-model="data.finding" value="none"><span class="checkmark"></span> No Relevant Info</label>
                                         </div>
                                         <div class="input-row" x-show="data.finding === 'relevant'">
-                                            <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
+                                            <input type="text" class="custom-text-input" maxlength="250" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
                                         </div>
                                     </fieldset>
 
@@ -1692,7 +1600,7 @@
                                                     </div>
                                                 
                                                     <div class="input-row" style="margin-bottom: 10px;">
-                                                        <textarea class="custom-text-input" 
+                                                        <textarea class="custom-text-input" maxlength="250" 
                                                                   style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
                                                                   placeholder="Enter findings or text details here..." 
                                                                   x-model="prog.text"></textarea>
@@ -1733,7 +1641,7 @@
             <summary @click.prevent="activeSection = activeSection === 'other' ? '' : 'other'">Other Social Medias</summary>
             
             <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
-                <template x-for="(instance, index) in networks.find(n => n.id === 'other').instances" :key="index">
+                <template x-for="(instance, index) in networks.find(n => n.id === 'other').instances" :key="instance._uid || index">
                     <details class="styled-details network-clone" style="margin-bottom: 10px; background: #222222;" :id="'clone-other-' + index" :open="networks.find(n => n.id === 'other').activeClone === index">
                         <summary style="background-color: #121212; font-size: 0.95rem; border-radius: 6px 6px 0 0;" @click.prevent="let n = networks.find(n => n.id === 'other'); n.activeClone = n.activeClone === index ? null : index">
                             Other Account <span x-text="index + 1"></span>
@@ -1781,7 +1689,7 @@
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce'].includes(data.subType)" x-transition>
                                     <legend>Network Name</legend>
-                                    <input type="text" class="custom-text-input" placeholder="e.g. Vimeo, Etsy, Yelp" x-model="data.networkName">
+                                    <input type="text" class="custom-text-input" maxlength="250" placeholder="e.g. Vimeo, Etsy, Yelp" x-model="data.networkName">
                                 </fieldset>
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;">
@@ -1790,51 +1698,26 @@
                                         <label class="custom-checkbox"><input type="radio" :name="'other-match-'+index" x-model="data.matchStatus" value="matched"><span class="checkmark"></span> Matched</label>
                                         <label class="custom-checkbox"><input type="radio" :name="'other-match-'+index" x-model="data.matchStatus" value="possible"><span class="checkmark"></span> Possible</label>
                                     </div>
-                                        <div class="custom-text-input custom-ql-container" style="display: flex; flex-direction: column; padding: 0; overflow: visible !important;">
-
-                                            <div>
-                                                <button class="ql-link" title="Insert Link"></button>
-                                                <button class="ql-undo" title="Undo">
-                                                    <svg viewBox="0 0 18 18">
-                                                        <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
-                                                        <path class="ql-stroke" d="M8.09,13.91A4.6,4.6,0,0,0,9,14,5,5,0,1,0,4,9"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="ql-redo" title="Redo">
-                                                    <svg viewBox="0 0 18 18">
-                                                        <polygon class="ql-fill ql-stroke" points="12 10 14 12 16 10 12 10"></polygon>
-                                                        <path class="ql-stroke" d="M9.91,13.91A4.6,4.6,0,0,1,9,14a5,5,0,1,1,5-5"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        
-                                            <div style="flex: 1;"
-                                                 x-init="
-                                                    let quill = new Quill($el, {
-                                                        theme: 'snow',
-                                                        formats: ['link'],
-                                                        bounds: document.body,
-                                                        modules: {
-                                                            history: { delay: 500, maxStack: 100, userOnly: true },
-                                                            toolbar: {
-                                                                container: $el.previousElementSibling,
-                                                                handlers: {
-                                                                    'undo': function() { this.quill.history.undo(); },
-                                                                    'redo': function() { this.quill.history.redo(); }
-                                                                }
-                                                            },
-                                                            keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
-                                                        },
-                                                        placeholder: 'Identified By (e.g. Visual Match, URL)'
-                                                    });
-
-                                                    quill.root.innerHTML = data.idBy; // Change to row.link for the Relatives section
-
-                                                    quill.on('text-change', () => {
-                                                        data.idBy = quill.root.innerHTML.replace(/<\/?p[^>]*>/g, ' ').replace(/<br\s*\/?>/g, '').trim(); 
-                                                    });
-                                                 ">
-                                            </div>
+                                        <div class="custom-text-input custom-ql-container" style="padding: 0;"
+                                             x-init="
+                                                let quill = new Quill($el, {
+                                                    theme: 'snow',
+                                                    formats: ['link'],
+                                                    bounds: document.body,
+                                                    modules: {
+                                                        history: { delay: 500, maxStack: 100, userOnly: true },
+                                                        toolbar: false,
+                                                        keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
+                                                    },
+                                                    placeholder: 'Identified By (e.g. Visual Match, URL)'
+                                                });
+                                            
+                                                quill.root.innerHTML = data.idBy;
+                                            
+                                                quill.on('text-change', () => {
+                                                    data.idBy = quill.root.innerHTML.replace(/<\/?p[^>]*>/g, ' ').replace(/<br\s*\/?>/g, '').trim(); 
+                                                });
+                                             ">
                                         </div>
                                 </fieldset>
 
@@ -1871,28 +1754,28 @@
                                     <div class="form-grid">
                                         <template x-if="data.subType === 'general'">
                                             <div style="display: contents;">
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Posts?"><input type="checkbox" x-model="data.metrics.posts.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Posts" x-model="data.metrics.posts.val" @input="data.metrics.posts.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.posts.on"></div>
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Followers" x-model="data.metrics.followers.val" @input="data.metrics.followers.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.followers.on"></div>
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Following?"><input type="checkbox" x-model="data.metrics.following.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Following" x-model="data.metrics.following.val" @input="data.metrics.following.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.following.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Posts?"><input type="checkbox" x-model="data.metrics.posts.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Posts" x-model="data.metrics.posts.val" @input="data.metrics.posts.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.posts.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Followers" x-model="data.metrics.followers.val" @input="data.metrics.followers.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.followers.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Following?"><input type="checkbox" x-model="data.metrics.following.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Following" x-model="data.metrics.following.val" @input="data.metrics.following.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.following.on"></div>
                                             </div>
                                         </template>
                                         <template x-if="data.subType === 'ecommerce'">
                                             <div style="display: contents;">
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Listings?"><input type="checkbox" x-model="data.metrics.listings.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Listings" x-model="data.metrics.listings.val" @input="data.metrics.listings.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.listings.on"></div>
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Followers" x-model="data.metrics.followers.val" @input="data.metrics.followers.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.followers.on"></div>
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Following?"><input type="checkbox" x-model="data.metrics.following.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Following" x-model="data.metrics.following.val" @input="data.metrics.following.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.following.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Listings?"><input type="checkbox" x-model="data.metrics.listings.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Listings" x-model="data.metrics.listings.val" @input="data.metrics.listings.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.listings.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Followers" x-model="data.metrics.followers.val" @input="data.metrics.followers.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.followers.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Following?"><input type="checkbox" x-model="data.metrics.following.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Following" x-model="data.metrics.following.val" @input="data.metrics.following.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.following.on"></div>
                                             </div>
                                         </template>
                                         <template x-if="data.subType === 'myspace'">
                                             <div style="display: contents;">
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Connected To?"><input type="checkbox" x-model="data.metrics.connectedTo.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Connected To" x-model="data.metrics.connectedTo.val" @input="data.metrics.connectedTo.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.connectedTo.on"></div>
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Connected By?"><input type="checkbox" x-model="data.metrics.connectedBy.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Connected By" x-model="data.metrics.connectedBy.val" @input="data.metrics.connectedBy.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.connectedBy.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Connected To?"><input type="checkbox" x-model="data.metrics.connectedTo.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Connected To" x-model="data.metrics.connectedTo.val" @input="data.metrics.connectedTo.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.connectedTo.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Connected By?"><input type="checkbox" x-model="data.metrics.connectedBy.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Connected By" x-model="data.metrics.connectedBy.val" @input="data.metrics.connectedBy.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.connectedBy.on"></div>
                                             </div>
                                         </template>
                                         <template x-if="data.subType === 'zoominfo'">
                                             <div style="display: contents;">
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Connections?"><input type="checkbox" x-model="data.metrics.connections.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Connections" x-model="data.metrics.connections.val" @input="data.metrics.connections.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.connections.on"></div>
-                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" placeholder="# Followers" x-model="data.metrics.followers.val" @input="data.metrics.followers.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.followers.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Connections?"><input type="checkbox" x-model="data.metrics.connections.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Connections" x-model="data.metrics.connections.val" @input="data.metrics.connections.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.connections.on"></div>
+                                                <div class="form-group"><label class="custom-checkbox" title="Include Followers?"><input type="checkbox" x-model="data.metrics.followers.on"><span class="checkmark"></span></label><input type="text" class="custom-text-input" maxlength="250" placeholder="# Followers" x-model="data.metrics.followers.val" @input="data.metrics.followers.val = $event.target.value.replace(/-/g, '')" :disabled="!data.metrics.followers.on"></div>
                                             </div>
                                         </template>
                                     </div>
@@ -1900,7 +1783,7 @@
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="['general', 'ecommerce', 'myspace', 'zoominfo'].includes(data.subType)">
                                     <legend>Location</legend>
-                                    <input type="text" class="custom-text-input" placeholder="Listed Location (City, State)" x-model="data.loc">
+                                    <input type="text" class="custom-text-input" maxlength="250" placeholder="Listed Location (City, State)" x-model="data.loc">
                                 </fieldset>
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.subType === 'zoominfo'">
@@ -1908,12 +1791,12 @@
                                     <div class="input-stack" style="gap: 10px;">
                                         <div class="input-row">
                                             <label class="custom-checkbox" title="Include Employment?"><input type="checkbox" x-model="data.workEd.emp.on"><span class="checkmark"></span></label>
-                                            <input type="text" class="custom-text-input" placeholder="Nature of Work" x-model="data.workEd.nature.val" :disabled="!data.workEd.emp.on" style="flex: 1;">
-                                            <input type="text" class="custom-text-input" placeholder="Employer" x-model="data.workEd.emp.val" :disabled="!data.workEd.emp.on" style="flex: 1.5;">
+                                            <input type="text" class="custom-text-input" maxlength="250" placeholder="Nature of Work" x-model="data.workEd.nature.val" :disabled="!data.workEd.emp.on" style="flex: 1;">
+                                            <input type="text" class="custom-text-input" maxlength="250" placeholder="Employer" x-model="data.workEd.emp.val" :disabled="!data.workEd.emp.on" style="flex: 1.5;">
                                         </div>
                                         <div class="input-row">
                                             <label class="custom-checkbox" title="Include School?"><input type="checkbox" x-model="data.workEd.school.on"><span class="checkmark"></span></label>
-                                            <input type="text" class="custom-text-input" placeholder="Studied at (School)" x-model="data.workEd.school.val" :disabled="!data.workEd.school.on">
+                                            <input type="text" class="custom-text-input" maxlength="250" placeholder="Studied at (School)" x-model="data.workEd.school.val" :disabled="!data.workEd.school.on">
                                         </div>
                                     </div>
                                 </fieldset>
@@ -1921,17 +1804,17 @@
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.subType === 'classmates'">
                                     <legend>Education Details</legend>
                                     <div class="input-stack" style="gap: 10px;">
-                                        <input type="text" class="custom-text-input" placeholder="School Name" x-model="data.school">
-                                        <input type="text" class="custom-text-input" placeholder="Class of (Year)" x-model="data.classYear">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="School Name" x-model="data.school">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Class of (Year)" x-model="data.classYear">
                                     </div>
                                 </fieldset>
 
                                 <fieldset class="custom-fieldset" style="margin-bottom: 15px;" x-show="data.subType === 'mugshot'">
                                     <legend>Arrest Details</legend>
                                     <div class="input-stack" style="gap: 10px;">
-                                        <input type="text" class="custom-text-input" placeholder="County & State (e.g. Hillsborough County, Florida)" x-model="data.countyState">
-                                        <input type="text" class="custom-text-input" placeholder="Date (e.g. 11/05/2002)" x-model="data.arrestDate">
-                                        <input type="text" class="custom-text-input" placeholder="Charge Description" x-model="data.charge">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="County & State (e.g. Hillsborough County, Florida)" x-model="data.countyState">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Date (e.g. 11/05/2002)" x-model="data.arrestDate">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Charge Description" x-model="data.charge">
                                     </div>
                                 </fieldset>
 
@@ -1942,8 +1825,8 @@
                                         <label class="custom-checkbox"><input type="radio" :name="'other-status-'+index" x-model="data.activity" value="inactive"><span class="checkmark"></span> Inactive</label>
                                     </div>
                                     <div class="input-row" x-show="data.activity === 'active'">
-                                        <input type="text" class="custom-text-input" placeholder="Date (Month Day, Year)" x-model="data.actDate">
-                                        <input type="text" class="custom-text-input" placeholder="Action (e.g. shared a post)" x-model="data.actAction" x-show="data.subType === 'general'">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Date (Month Day, Year)" x-model="data.actDate">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Action (e.g. shared a post)" x-model="data.actAction" x-show="data.subType === 'general'">
                                     </div>
                                 </fieldset>
 
@@ -1954,7 +1837,7 @@
                                         <label class="custom-checkbox"><input type="radio" :name="'other-find-'+index" x-model="data.finding" value="none"><span class="checkmark"></span> No Relevant Info</label>
                                     </div>
                                     <div class="input-row" x-show="data.finding === 'relevant'">
-                                        <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
                                     </div>
                                 </fieldset>
                                 
@@ -1978,7 +1861,7 @@
                                                 </div>
                                                 
                                                 <div class="input-row" style="margin-bottom: 10px;">
-                                                    <textarea class="custom-text-input" 
+                                                    <textarea class="custom-text-input" maxlength="250" 
                                                               style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
                                                               placeholder="Enter findings or text details here..." 
                                                               x-model="prog.text"></textarea>
@@ -2017,7 +1900,7 @@
             <summary @click.prevent="activeSection = activeSection === 'goog' ? '' : 'goog'">Google / PSE Data</summary>
             
             <div class="details-content" style="padding-top: 5px; padding-bottom: 5px;">
-                <template x-for="(instance, index) in networks.find(n => n.id === 'goog').instances" :key="index">
+                <template x-for="(instance, index) in networks.find(n => n.id === 'goog').instances" :key="instance._uid || index">
                     <details class="styled-details network-clone" style="margin-bottom: 10px;" :id="'clone-goog-' + index" :open="networks.find(n => n.id === 'goog').activeClone === index">
                         <summary style="background-color: #121212; font-size: 0.95rem; border-radius: 6px 6px 0 0;" @click.prevent="let n = networks.find(n => n.id === 'goog'); n.activeClone = n.activeClone === index ? null : index">
                             Search Result <span x-text="index + 1"></span>
@@ -2060,51 +1943,26 @@
                                             <span class="checkmark"></span> 2+ Results
                                         </label>
                                     </div>
-                                    <div class="custom-text-input custom-ql-container" style="display: flex; flex-direction: column; padding: 0; overflow: visible !important;">
-
-                                        <div>
-                                            <button class="ql-link" title="Insert Link"></button>
-                                            <button class="ql-undo" title="Undo">
-                                                <svg viewBox="0 0 18 18">
-                                                    <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
-                                                    <path class="ql-stroke" d="M8.09,13.91A4.6,4.6,0,0,0,9,14,5,5,0,1,0,4,9"></path>
-                                                </svg>
-                                            </button>
-                                            <button class="ql-redo" title="Redo">
-                                                <svg viewBox="0 0 18 18">
-                                                    <polygon class="ql-fill ql-stroke" points="12 10 14 12 16 10 12 10"></polygon>
-                                                    <path class="ql-stroke" d="M9.91,13.91A4.6,4.6,0,0,1,9,14a5,5,0,1,1,5-5"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    
-                                        <div style="flex: 1;"
-                                             x-init="
-                                                let quill = new Quill($el, {
-                                                    theme: 'snow',
-                                                    formats: ['link'],
-                                                    bounds: document.body,
-                                                    modules: {
-                                                        history: { delay: 500, maxStack: 100, userOnly: true },
-                                                        toolbar: {
-                                                            container: $el.previousElementSibling,
-                                                            handlers: {
-                                                                'undo': function() { this.quill.history.undo(); },
-                                                                'redo': function() { this.quill.history.redo(); }
-                                                            }
-                                                        },
-                                                        keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
-                                                    },
-                                                    placeholder: 'Search Engine(s) (e.g. Mylife, Radaris)'
-                                                });
-                                            
-                                                quill.root.innerHTML = data.pseNames;
-                                            
-                                                quill.on('text-change', () => {
-                                                    data.pseNames = quill.root.innerHTML; 
-                                                });
-                                             ">
-                                        </div>
+                                    <div class="custom-text-input custom-ql-container" style="padding: 0;"
+                                         x-init="
+                                            let quill = new Quill($el, {
+                                                theme: 'snow',
+                                                formats: ['link'],
+                                                bounds: document.body,
+                                                modules: {
+                                                    history: { delay: 500, maxStack: 100, userOnly: true },
+                                                    toolbar: false,
+                                                    keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
+                                                },
+                                                placeholder: 'Search Engine(s) (e.g. Mylife, Radaris)'
+                                            });
+                                        
+                                            quill.root.innerHTML = data.pseNames;
+                                        
+                                            quill.on('text-change', () => {
+                                                data.pseNames = quill.root.innerHTML; 
+                                            });
+                                         ">
                                     </div>
                                 </fieldset>
 
@@ -2114,51 +1972,26 @@
                                         <label class="custom-checkbox"><input type="radio" :name="'goog-match-'+index" x-model="data.matchStatus" value="matched"><span class="checkmark"></span> Matched</label>
                                         <label class="custom-checkbox"><input type="radio" :name="'goog-match-'+index" x-model="data.matchStatus" value="possible"><span class="checkmark"></span> Possible</label>
                                     </div>
-                                        <div class="custom-text-input custom-ql-container" style="display: flex; flex-direction: column; padding: 0; overflow: visible !important;">
-
-                                            <div>
-                                                <button class="ql-link" title="Insert Link"></button>
-                                                <button class="ql-undo" title="Undo">
-                                                    <svg viewBox="0 0 18 18">
-                                                        <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
-                                                        <path class="ql-stroke" d="M8.09,13.91A4.6,4.6,0,0,0,9,14,5,5,0,1,0,4,9"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="ql-redo" title="Redo">
-                                                    <svg viewBox="0 0 18 18">
-                                                        <polygon class="ql-fill ql-stroke" points="12 10 14 12 16 10 12 10"></polygon>
-                                                        <path class="ql-stroke" d="M9.91,13.91A4.6,4.6,0,0,1,9,14a5,5,0,1,1,5-5"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        
-                                            <div style="flex: 1;"
-                                                 x-init="
-                                                    let quill = new Quill($el, {
-                                                        theme: 'snow',
-                                                        formats: ['link'],
-                                                        bounds: document.body,
-                                                        modules: {
-                                                            history: { delay: 500, maxStack: 100, userOnly: true },
-                                                            toolbar: {
-                                                                container: $el.previousElementSibling,
-                                                                handlers: {
-                                                                    'undo': function() { this.quill.history.undo(); },
-                                                                    'redo': function() { this.quill.history.redo(); }
-                                                                }
-                                                            },
-                                                            keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
-                                                        },
-                                                        placeholder: 'Identified By (e.g. Visual Match, URL)'
-                                                    });
-
-                                                    quill.root.innerHTML = data.idBy; // Change to row.link for the Relatives section
-
-                                                    quill.on('text-change', () => {
-                                                        data.idBy = quill.root.innerHTML.replace(/<\/?p[^>]*>/g, ' ').replace(/<br\s*\/?>/g, '').trim(); 
-                                                    });
-                                                 ">
-                                            </div>
+                                        <div class="custom-text-input custom-ql-container" style="padding: 0;"
+                                             x-init="
+                                                let quill = new Quill($el, {
+                                                    theme: 'snow',
+                                                    formats: ['link'],
+                                                    bounds: document.body,
+                                                    modules: {
+                                                        history: { delay: 500, maxStack: 100, userOnly: true },
+                                                        toolbar: false,
+                                                        keyboard: { bindings: { enter: { key: 13, handler: () => false } } }
+                                                    },
+                                                    placeholder: 'Identified By (e.g. Visual Match, URL)'
+                                                });
+                                            
+                                                quill.root.innerHTML = data.idBy;
+                                            
+                                                quill.on('text-change', () => {
+                                                    data.idBy = quill.root.innerHTML.replace(/<\/?p[^>]*>/g, ' ').replace(/<br\s*\/?>/g, '').trim(); 
+                                                });
+                                             ">
                                         </div>
                                 </fieldset>
 
@@ -2207,7 +2040,7 @@
                                         <label class="custom-checkbox"><input type="radio" :name="'goog-find-'+index" x-model="data.finding" value="none"><span class="checkmark"></span> No Relevant Info</label>
                                     </div>
                                     <div class="input-row" x-show="data.finding === 'relevant'">
-                                        <input type="text" class="custom-text-input" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
+                                        <input type="text" class="custom-text-input" maxlength="250" placeholder="Type of media & RH details (e.g. 2 photos relating to...)" x-model="data.mediaType">
                                     </div>
                                 </fieldset>
 
@@ -2231,7 +2064,7 @@
                                                 </div>
                                                 
                                                 <div class="input-row" style="margin-bottom: 10px;">
-                                                    <textarea class="custom-text-input" 
+                                                    <textarea class="custom-text-input" maxlength="250" 
                                                               style="width: 100%; min-height: 80px; resize: vertical; padding: 10px;" 
                                                               placeholder="Enter findings or text details here..." 
                                                               x-model="prog.text"></textarea>
@@ -2266,50 +2099,14 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333333; padding-bottom: 10px; flex-wrap: wrap; gap: 15px;">
                 
                 <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                    <h2 style="color: #e0e0e0;; font-size: 1.4rem; margin: 0;">Generated Report</h2>
+                    <h2 style="color: #e0e0e0; opacity: 0.9; margin: 0; text-transform: capitalize; letter-spacing: 1px; font-size: 14px;">Generated Report</h2>
                     
                 </div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <!-- EDIT BUTTON -->
-                <button type="button" 
-                        x-show="!isEditing"
-                        @click="toggleEdit()"
-                        class="add-btn" 
-                        style="border: 2px solid #f39c12; color: #f39c12; width: 130px; justify-content: center;">
-                    Edit Report
-                </button>
-
-                <!-- SAVE EDITS BUTTON (NEW) -->
-                <button type="button" 
-                        x-show="isEditing"
-                        @click="saveEdits()"
-                        class="add-btn" 
-                        style="border: 2px solid #2ecc71; color: #2ecc71; width: 130px; justify-content: center;" x-cloak>
-                    Save Edits
-                </button>
-
-                <!-- CANCEL EDIT BUTTON -->
-                <button type="button" 
-                        x-show="isEditing"
-                        @click="toggleEdit()"
-                        class="add-btn" 
-                        style="border: 2px solid #95a5a6; color: #95a5a6; width: 130px; justify-content: center;" x-cloak>
-                    Cancel Edit
-                </button>
-
-                <!-- UNLOCK FORM BUTTON (NEW) -->
-                <button type="button" 
-                        x-show="!isEditing && isManuallyOverridden"
-                        @click="unlockForm()"
-                        class="add-btn" 
-                        style="border: 2px solid #e67e22; color: #e67e22; width: 130px; justify-content: center;" x-cloak>
-                    Unlock Form
-                </button>
 
                 <button type="button" 
                         @click="resetForm()"
-                        :disabled="isEditing"
                         class="add-btn" 
                         style="border: 2px solid #e74c3c; color: #e74c3c; width: 130px; justify-content: center;">
                     Discard All
@@ -2319,7 +2116,7 @@
                         class="add-btn" 
                         style="border: 2px solid #3498db; color: #3498db; width: 130px; justify-content: center;"
                         @click="
-                            const outputHtml = isManuallyOverridden ? manualReportHTML : reportText;
+                            const outputHtml = DOMPurify.sanitize(reportText);
                             const tempDiv = document.createElement('div');
                             tempDiv.innerHTML = outputHtml;
                             
@@ -2349,98 +2146,113 @@
                 </div>
             </div>
 
-        <div x-show="!isEditing" 
-             x-html="isManuallyOverridden ? manualReportHTML : reportText" 
+        <div x-html="DOMPurify.sanitize(reportText)" 
              style="font-size: 15px; color: #e0e0e0; background: rgba(0, 0, 0, 0.4); padding: 25px; border-radius: 8px; border: 1px solid rgba(246, 201, 14, 0.15); min-height: 300px; transition: all 0.3s ease;">
         </div>
 
-        <div x-show="isEditing" x-cloak style="background: rgba(255, 255, 255, 0.9); color: #000; border-radius: 8px; margin-top: 15px; overflow: hidden; border: 2px dashed #f6c90e;">
-            <div x-ref="quillReportEditor"
-                 x-init="
-                    let quill = new Quill($refs.quillReportEditor, { 
-                        theme: 'snow', 
-                        modules: { toolbar: [['bold', 'italic', 'underline'], ['link', 'clean']] } 
-                    });
-                    
-                    /* Watch for the user clicking 'Edit Report' */
-                    $watch('isEditing', val => { 
-                        if(val) { 
-                            /* Safely inject the generated text into Quill's engine */
-                            quill.clipboard.dangerouslyPasteHTML(manualReportHTML);
-                        } 
-                    });
-                    
-                    /* Only save text if the source is an actual 'user' typing/modifying */
-                    quill.on('text-change', (delta, oldDelta, source) => { 
-                        if (source === 'user') {
-                            manualReportHTML = quill.root.innerHTML; 
-                        }
-                    });
-                 "
-                 style="min-height: 250px; font-size: 15px; padding: 10px;">
-            </div>
-        </div>
-
         </main>
-
-        <aside class="notes" x-data="{ 
-                notes: [{ id: Date.now(), text: '' }],
-                get hasContent() {
-                    return this.notes.some(n => n.text.replace(/<[^>]*>?/gm, '').trim() !== '');
-                },
-                clearAll() {
-                    if (confirm('Are you sure you want to clear all notes?')) {
-                        this.notes = [{ id: Date.now(), text: '' }];
-                    }
-                }
-            }"
-            @beforeunload.window="if (hasContent) { $event.preventDefault(); $event.returnValue = 'You have unsaved notes!'; }"
-        >
-            <div class="notes-header">
-            <h3 style="color: #e0e0e0; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Sticky Notes</h3>
-                <div class="notes-actions" style="display: flex; gap: 8px;">
-                    <button type="button" class="clear-all-btn" @click="clearAll()" title="Clear All Notes" x-show="hasContent || notes.length > 1" x-transition>🗑️</button>
-                    <button type="button" id="add-note-btn" class="add-more-btn" @click="notes.push({ id: Date.now(), text: '' })">+</button>
-                </div>
-            </div>
-            
-            <div id="notes-container">
-                <template x-for="(note, index) in notes" :key="note.id">
-                    <div class="sticker">
-                        <div class="sticker-body custom-ql-container" style="background: transparent; color: #000; padding: 0; overflow: visible !important;"
-                             x-init="
-                                let quill = new Quill($el, {
-                                    theme: 'snow',
-                                    modules: { toolbar: false },
-                                    placeholder: 'Click to paste or type...'
-                                });
-                                quill.root.innerHTML = note.text;
-                                quill.on('text-change', () => {
-                                    note.text = quill.root.innerHTML;
-                                });
-                             ">
-                        </div>
-                        <button class="remove-sticker" @click="notes.length > 1 ? notes.splice(index, 1) : notes = [{ id: Date.now(), text: '' }]" title="Delete Note">×</button>
-                    </div>
-                </template>
-            </div>
-        </aside>
 
     </div>
         <footer class="site-footer">
             © 2026 NS Tool Kits v3 | Made by Morvan Hsu
         </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const MAX_LENGTH = 250;
 
- <script>
-    // Security and Context Menu Prevention
-    document.addEventListener("contextmenu", e => e.preventDefault());
-    document.addEventListener("keydown", function(e) {
-        if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-            e.preventDefault();
-        }
+        // 1. Keydown Interceptor (Blocks <, >, and enforces limit)
+        document.addEventListener('keydown', (e) => {
+            let target = e.target;
+            
+            let isNative = target.matches('input[type="text"], textarea');
+            let isQuill = target.closest('.ql-editor');
+            let isContentEditable = target.closest('[contenteditable="true"]');
+            let isSticker = target.closest('.sticker');
+
+            if (isNative || isQuill || isContentEditable) {
+                
+                // ALWAYS block < and > globally
+                if (e.key === '<' || e.key === '>') {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return;
+                }
+
+                if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+
+                if (!isSticker) {
+                    let currentLength = isNative ? target.value.length : (isQuill ? isQuill.textContent.replace(/\n$/, '').length : target.textContent.length);
+                    if (currentLength >= MAX_LENGTH) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation(); 
+                    }
+                }
+            }
+        }, true); 
+
+        // 2. Paste Interceptor (Smart URL Extractor, Truncation & Symbol Ban)
+        document.addEventListener('paste', (e) => {
+            let target = e.target;
+            
+            let isNative = target.matches('input[type="text"], textarea');
+            let isQuill = target.closest('.ql-editor');
+            let isContentEditable = target.closest('[contenteditable="true"]');
+            
+            let isSticker = target.closest('.sticker');
+            let isLinkInput = target.matches('[data-type="hyperlink"]');
+
+            if (isNative || isQuill || isContentEditable) {
+                e.preventDefault();
+                e.stopImmediatePropagation(); 
+
+                let clipboard = e.clipboardData || window.clipboardData;
+                let pasteData = clipboard.getData('text/plain');
+                let htmlData = clipboard.getData('text/html');
+
+                // --- SMART SLACK/RICH-TEXT URL EXTRACTOR ---
+                // If they pasted a rich link into the hyperlink field, extract the actual URL instead of the display name
+                if (isLinkInput && htmlData) {
+                    let div = document.createElement('div');
+                    // Use DOMPurify securely to grab just the anchor tag
+                    div.innerHTML = DOMPurify.sanitize(htmlData, { ALLOWED_TAGS: ['a'], ALLOWED_ATTR: ['href'] });
+                    let anchor = div.querySelector('a');
+                    
+                    if (anchor && anchor.getAttribute('href')) {
+                        pasteData = anchor.getAttribute('href'); // Overwrite the display text with the actual URL
+                    }
+                }
+                
+                // Strip banned symbols immediately
+                pasteData = pasteData.replace(/[<>]/g, '');
+
+                // Calculate space available
+                let currentLength = isNative ? target.value.length : (isQuill ? isQuill.textContent.replace(/\n$/, '').length : target.textContent.length);
+                let spaceLeft = MAX_LENGTH - currentLength;
+
+                if (!isSticker) {
+                    if (spaceLeft <= 0) return; 
+                    pasteData = pasteData.substring(0, spaceLeft);
+                }
+
+                // Insert natively as plain text to trigger Alpine.js / Quill updates cleanly
+                document.execCommand('insertText', false, pasteData);
+            }
+        }, true);
+
+        // 3. Fallback Cleanup (Catches drag-and-drop on native inputs)
+        document.addEventListener('input', (e) => {
+            const target = e.target;
+            if (target.matches('input[type="text"], textarea')) {
+                let val = target.value;
+                if (/[<>]/.test(val) || val.length > MAX_LENGTH) {
+                    target.value = val.replace(/[<>]/g, '').substring(0, MAX_LENGTH);
+                    target.dispatchEvent(new Event('input', { bubbles: true })); 
+                }
+            }
+        });
     });
-</script>
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+    </script>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <script>
     (function() {
         // 1. Initialize with your specific keys
