@@ -4,13 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Template Writer</title>
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self'; 
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; 
+    style-src 'self' 'unsafe-inline'; 
+    img-src 'self' https://i.imgur.com;
+    connect-src 'self';
+">
     <link rel="stylesheet" href="templatewriterstyle.css">
     <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body x-data="{ 
-    step: 1, 
+    step: 1,
+    toolMode: 'analyst',
+    hasGenerated: false,
     showToast: false,
     showQuickPreview: false,
     showQuickUrl: false,
@@ -18,6 +28,7 @@
     matchType: '', 
     accountType: '',
     pubType: '',
+    bsName: '',
     urls: [{ link: '' }],
     pubSets: [{ type: '', urls: [{ link: '' }] }],
     ordNum: '',
@@ -43,14 +54,13 @@
         custom: ['', '', '', '', '']
     },
 
-    // --- NEW PRESET VARIABLES ---
     presets: JSON.parse(localStorage.getItem('nsTemplatePresets')) || {},
     activePreset: '',
     showPresetControls: false,
 
     // --- HISTORY VARIABLES ---
     showHistory: false,
-    history: JSON.parse(localStorage.getItem('nsTemplateHistory')) || [],
+    history: JSON.parse(sessionStorage.getItem('nsTemplateHistory')) || [],
 
     // --- HISTORY FUNCTIONS ---
     saveToHistory(content) {
@@ -75,19 +85,17 @@
         };
         this.history.unshift(entry); // Add to the top
         if (this.history.length > 50) this.history.pop(); // Keep only last 50
-        localStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
+        sessionStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
     },
 
     deleteFromHistory(id) {
         this.history = this.history.filter(h => h.id !== id);
-        localStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
+        sessionStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
     },
 
     clearHistory() {
-        if(confirm('Are you sure you want to clear all history?')) {
-            this.history = [];
-            localStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
-        }
+    this.history = [];
+    sessionStorage.setItem('nsTemplateHistory', JSON.stringify(this.history));
     },
 
     copyFromHistory(content, btnEvent) {
@@ -131,8 +139,21 @@
             return;
         }
 
-        let name = prompt('Enter a name for this preset:');
-        if (!name) return;
+        let rawName = prompt('Enter a name for this preset (Max 10 characters):');
+        if (!rawName) return;
+
+        // 1. Sanitize the text (strip HTML)
+        // 2. Trim whitespace
+        // 3. FORCE it to 10 characters max
+        let cleanName = DOMPurify.sanitize(rawName, { ALLOWED_TAGS: [] }).trim().substring(0, 10);
+
+        // Validate: Ensure the name isn't empty after sanitization
+        if (!cleanName) {
+            alert('Invalid preset name.');
+            return;
+        }
+
+        let name = cleanName;
         
         if (this.presets[name]) {
             if(!confirm(`A preset named '${name}' already exists. Overwrite?`)) return;
@@ -157,7 +178,9 @@
 
         this.presets[name] = stateToSave;
         localStorage.setItem('nsTemplatePresets', JSON.stringify(this.presets));
-        alert(`Preset '${name}' saved!`);
+        
+        // Let them know what it was saved as, in case it was truncated
+        alert(`Preset saved as '${name}'!`);
     },
 
     deletePreset() {
@@ -199,7 +222,7 @@
         }
     },
 
-    scrollToDrawer(id) {
+scrollToDrawer(id) {
         setTimeout(() => {
             const el = document.getElementById(id);
             if (el) {
@@ -210,7 +233,25 @@
         }, 100);
     },
 
+    get shouldSkipStep2() {
+        if (this.toolMode === 'progressive') {
+            // NEW: Added 'pub' to the allowed list
+            return !(this.accountType === 'gsr' || this.accountType === 'bs' || this.accountType === 'pub');
+        }
+        return false; 
+    },
+
     get reportEngine() {
+        const formatPlatformName = (domainStr) => {
+            if (!domainStr) return '';
+            let d = domainStr.toLowerCase();
+            if (d === 'linkedin') return 'LinkedIn';
+            if (d === 'youtube') return 'YouTube';
+            if (d === 'tiktok') return 'TikTok';
+            if (d === 'x' || d === 'twitter') return 'X (Twitter)';
+            return d.charAt(0).toUpperCase() + d.slice(1);
+        };
+
         let pf = [];
         
         const getAso = () => {
@@ -220,7 +261,7 @@
 
         const buildAso = (base, subObj) => {
             if (!subObj.seen) return base;
-            if (subObj.link && subObj.title) return `${base} ${getAso()} the # identified <a href='${subObj.link}' target='_blank'>${subObj.title}</a> account`;
+            if (subObj.link && subObj.title) return `${base} ${getAso()} the # identified <a href='${subObj.link}' target='_blank' rel='noopener noreferrer'>${subObj.title}</a> account`;
             return `${base} ${getAso()}`;
         };
 
@@ -257,9 +298,9 @@
             const d = this.sub.dob;
             if (d.seen && d.title && d.acc) pf.push('combination error');
             else if (d.seen) {
-                if (d.acc) pf.push(d.link ? `date of birth ${getAso()} <a href='${d.link}' target='_blank'>${d.acc}</a>` : `date of birth ${getAso()} ${d.acc}`);
-                else if (d.title && d.link) pf.push(`date of birth ${getAso()} this <a href='${d.link}' target='_blank'>${d.title}</a>`);
-                else if (d.link) pf.push(`<a href='${d.link}' target='_blank'>date of birth</a>`);
+                if (d.acc) pf.push(d.link ? `date of birth ${getAso()} <a href='${d.link}' target='_blank' rel='noopener noreferrer'>${d.acc}</a>` : `date of birth ${getAso()} ${d.acc}`);
+                else if (d.title && d.link) pf.push(`date of birth ${getAso()} this <a href='${d.link}' target='_blank' rel='noopener noreferrer'>${d.title}</a>`);
+                else if (d.link) pf.push(`<a href='${d.link}' target='_blank' rel='noopener noreferrer'>date of birth</a>`);
                 else pf.push('date of birth');
             } else pf.push('date of birth');
         }
@@ -274,10 +315,10 @@
         if (this.feats.loc) {
             const l = this.sub.loc;
             let val = l.prev ? 'previous location' : 'location';
-            if (l.rel) val += ` based on a relative (${l.relLnk ? `<a href='${l.relLnk}' target='_blank'>${l.relNm||'relative'}</a>` : (l.relNm||'relative')})`;
+            if (l.rel) val += ` based on a relative (${l.relLnk ? `<a href='${l.relLnk}' target='_blank' rel='noopener noreferrer'>${l.relNm||'relative'}</a>` : (l.relNm||'relative')})`;
             if (l.cli) val += ' provided by the client';
-            if (l.seen && l.link && l.title) pf.push(`${val} ${getAso()} this <a href='${l.link}' target='_blank'>${l.title}</a>`);
-            else if (l.link) pf.push(`<a href='${l.link}' target='_blank'>${val}</a>`);
+            if (l.seen && l.link && l.title) pf.push(`${val} ${getAso()} this <a href='${l.link}' target='_blank' rel='noopener noreferrer'>${l.title}</a>`);
+            else if (l.link) pf.push(`<a href='${l.link}' target='_blank' rel='noopener noreferrer'>${val}</a>`);
             else pf.push(val);
         }
 
@@ -299,7 +340,7 @@
             const disp = m.addr || 'email address';
             let base = m.usr ? `username (${disp.split('@')[0] || 'username'}) ${getAso()} the email address (${disp})` : `email address (${disp})`;
             if (m.seen || m.usr) {
-                pf.push((m.link && m.title) ? `${base} ${getAso()} the # identified <a href='${m.link}' target='_blank'>${m.title}</a> account` : base);
+                pf.push((m.link && m.title) ? `${base} ${getAso()} the # identified <a href='${m.link}' target='_blank' rel='noopener noreferrer'>${m.title}</a> account` : base);
             } else pf.push(base);
         }
 
@@ -310,7 +351,7 @@
             const r = this.sub.rel;
             let base = `relative (${r.name || 'relative name'})`;
             if (r.seen) {
-                if (r.link && r.title) pf.push(`${base} ${getAso()} <a href='${r.link}' target='_blank'>${r.title}</a>`);
+                if (r.link && r.title) pf.push(`${base} ${getAso()} <a href='${r.link}' target='_blank' rel='noopener noreferrer'>${r.title}</a>`);
                 else if (r.title) pf.push(`${base} ${getAso()} ${r.title}`);
                 else pf.push(`${base} ${getAso()}`);
             } else pf.push(base);
@@ -320,9 +361,9 @@
             const v = this.sub.vm;
             if (v.seen) {
                 if (v.title && v.link) {
-                    pf.push(`visual match ${getAso()} the # identified <a href='${v.link}' target='_blank'>${v.title}</a> account`);
+                    pf.push(`visual match ${getAso()} the # identified <a href='${v.link}' target='_blank' rel='noopener noreferrer'>${v.title}</a> account`);
                 } else if (v.link) {
-                    pf.push(`visual match ${getAso()} the # identified <a href='${v.link}' target='_blank'>account</a>`); 
+                    pf.push(`visual match ${getAso()} the # identified <a href='${v.link}' target='_blank' rel='noopener noreferrer'>account</a>`); 
                 } else if (v.title) {
                     pf.push(`visual match ${getAso()} the # identified ${v.title} account`);
                 } else {
@@ -335,20 +376,20 @@
 
         if (this.feats.user) {
             const u = this.sub.user;
-            pf.push((u.txt && u.link && u.title) ? `same username (${u.txt}) ${getAso()} the # identified <a href='${u.link}' target='_blank'>${u.title}</a> account` : `same username (username)`);
+            pf.push((u.txt && u.link && u.title) ? `same username (${u.txt}) ${getAso()} the # identified <a href='${u.link}' target='_blank' rel='noopener noreferrer'>${u.title}</a> account` : `same username (username)`);
         }
 
         if (this.feats.linked) {
             const lk = this.sub.linked;
-            pf.push(lk.link && lk.title ? `linked to the # identified <a href='${lk.link}' target='_blank'>${lk.title}</a> account` : (lk.title ? `linked to the # identified ${lk.title} account` : `linked to an identified account`));
+            pf.push(lk.link && lk.title ? `linked to the # identified <a href='${lk.link}' target='_blank' rel='noopener noreferrer'>${lk.title}</a> account` : (lk.title ? `linked to the # identified ${lk.title} account` : `linked to an identified account`));
         }
 
         if (this.feats.conn) {
             const c = this.sub.conn;
-            const net = (c.net && c.netL) ? `<a href='${c.netL}' target='_blank'>${c.net}</a>` : c.net;
-            const id = (c.id && c.link1) ? `<a href='${c.link1}' target='_blank'>${c.id}</a>` : c.id;
-            const nm = (c.name && c.link2) ? `<a href='${c.link2}' target='_blank'>${c.name}</a>` : c.name;
-            const acc = (c.title && c.accLink) ? `<a href='${c.accLink}' target='_blank'>${c.title}</a>` : c.title;
+            const net = (c.net && c.netL) ? `<a href='${c.netL}' target='_blank' rel='noopener noreferrer'>${c.net}</a>` : c.net;
+            const id = (c.id && c.link1) ? `<a href='${c.link1}' target='_blank' rel='noopener noreferrer'>${c.id}</a>` : c.id;
+            const nm = (c.name && c.link2) ? `<a href='${c.link2}' target='_blank' rel='noopener noreferrer'>${c.name}</a>` : c.name;
+            const acc = (c.title && c.accLink) ? `<a href='${c.accLink}' target='_blank' rel='noopener noreferrer'>${c.title}</a>` : c.title;
             
             if (c.own) {
                 let rel = c.friend ? 'friends with' : c.following ? 'following' : c.follower ? 'followed by' : c.connected ? 'connected to' : '';
@@ -365,14 +406,14 @@
 
         if (this.feats.same) {
             const s = this.sub.same;
-            const w = s.link1 ? `<a href='${s.link1}' target='_blank'>${s.obj||'[MISSING]'}</a>` : (s.obj||'[MISSING]');
-            const n = s.link2 ? `<a href='${s.link2}' target='_blank'>${s.net||'[MISSING]'}</a>` : (s.net||'[MISSING]');
+            const w = s.link1 ? `<a href='${s.link1}' target='_blank' rel='noopener noreferrer'>${s.obj||'[MISSING]'}</a>` : (s.obj||'[MISSING]');
+            const n = s.link2 ? `<a href='${s.link2}' target='_blank' rel='noopener noreferrer'>${s.net||'[MISSING]'}</a>` : (s.net||'[MISSING]');
             pf.push(`same ${w} ${getAso()} the # identified ${n} account`);
         }
 
         if (this.feats.loc2) {
             const l2 = this.sub.loc2;
-            pf.push(l2.link && l2.title ? `exact location ${getAso()} the # identified <a href='${l2.link}' target='_blank'>${l2.title}</a> account` : `exact location`);
+            pf.push(l2.link && l2.title ? `exact location ${getAso()} the # identified <a href='${l2.link}' target='_blank' rel='noopener noreferrer'>${l2.title}</a> account` : `exact location`);
         }
 
         if (this.feats.custom) {
@@ -403,31 +444,64 @@
                 if (activeUrls.length > 0) {
                     let u = activeUrls[0].link.trim();
                     let href = u.startsWith('http') ? u : 'https://' + u;
-                    word = `<a href='${href}' target='_blank'>${word}</a>`;
+                    word = `<a href='${href}' target='_blank' rel='noopener noreferrer'>${word}</a>`;
                     
                     let domain = u.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0].split('.')[0];
-                    if (domain) platformName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                    if (domain) platformName = formatPlatformName(domain);
                 }
                 accStr = `on a public ${platformName} ${word}. No personal match found.`;
                 
             } else if (isMultiple) {
                 let platformName = 'socmed';
                 
+                // Determine the platform name from the first active URL
                 let firstActiveSet = this.pubSets.find(s => s.urls.some(u => u.link.trim() !== ''));
                 if (firstActiveSet) {
                     let u = firstActiveSet.urls.find(u => u.link.trim() !== '').link.trim();
                     let domain = u.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0].split('.')[0];
-                    if (domain) platformName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                    if (domain) platformName = formatPlatformName(domain);
                 }
                 
-                let baseWord = 'posts'; 
-                if (this.pubSets.length === 1 || this.pubSets.every(s => s.type === this.pubSets[0].type)) {
-                    baseWord = this.pubSets[0].type; 
+                // Build grammar parts for the combinations
+                let parts = [];
+                this.pubSets.forEach(pSet => {
+                    if (!pSet.type) return;
+                    
+                    // Count filled URLs, fallback to array length if none filled
+                    let count = pSet.urls.filter(u => u.link.trim() !== '').length;
+                    if (count === 0) count = pSet.urls.length; 
+                    
+                    if (count === 1) {
+                        parts.push(`a ${pSet.type.slice(0, -1)}`);
+                    } else {
+                        parts.push(`${pSet.type}`);
+                    }
+                });
+                
+                let partsCount = parts.length;
+                let combinedStr = '';
+                
+                // Apply Oxford comma and proper joining
+                if (partsCount === 1) {
+                    combinedStr = parts[0]; 
+                } else if (partsCount === 2) {
+                    combinedStr = parts.join(' and '); 
+                } else if (partsCount > 2) {
+                    let last = parts.pop();
+                    combinedStr = parts.join(', ') + ', and ' + last; 
                 }
-                accStr = `on public ${platformName} ${baseWord}. No personal match found.`;
+                
+                // Final string formatting based on combinations
+                if (partsCount === 0) {
+                    accStr = `on public ${platformName} posts. No personal match found.`;
+                } else if (combinedStr.startsWith('a ')) {
+                    accStr = `on a public ${platformName} ${combinedStr.slice(2)}. No personal match found.`;
+                } else {
+                    accStr = `on public ${platformName} ${combinedStr}. No personal match found.`;
+                }
                 
             } else {
-                accStr = 'on (a) public socmed post/s/photo/s/video/s. No personal match found.';
+                accStr = 'on (a) public post/photo/video/article/review/listing. No personal match found.';
             }
         }
         else if (this.accountType === 'gfm') accStr = 'GoFundMe Page';
@@ -436,7 +510,7 @@
         else if (this.accountType === 'fanpage') accStr = 'Fan Page';
         else if (this.accountType === 'standard') accStr = 'Account';
 
-        let prefStr = '';
+let prefStr = '';
         if (this.accountType === 'pub') {
             prefStr = `Identified ${accStr}`;
         } else if (this.accountType === 'gsr') {
@@ -445,32 +519,50 @@
             prefStr = (this.matchType === 'possible' ? 'Possible ' : 'Identified ') + accStr;
         }
 
-        let html = '';
-        
-
         const activeUrls = this.urls.filter(u => u.link.trim() !== '');
         const joinedUrlsText = activeUrls.map(u => u.link.trim()).join(', ');
 
+        let html = '';
 
+        // --- HEADER GENERATION LOGIC ---
         if (this.accountType !== 'gsr') {
-            if (this.accountType === 'pub') {
-                let urlPrint = joinedUrlsText;
-                let isSingular = !!this.pubType;
-                let isMultiple = this.pubSets.length > 0 && this.pubSets[0].type;
-                const activeUrls = this.urls.filter(u => u.link.trim() !== '');
-                
-                if (isSingular && activeUrls.length > 0) {
-                    urlPrint = activeUrls.slice(1).map(u => u.link.trim()).join(', ');
-                } else if (isMultiple) {
-                    urlPrint = '';
+            const isProgressive = this.toolMode === 'progressive';
+            
+            // Rules for printing headers:
+            // 1. Analyst Mode: Everything prints.
+            // 2. Progressive Mode: ONLY Business Pages and Public Appearances print.
+            const shouldPrintHeader = !isProgressive || this.accountType === 'bs' || this.accountType === 'pub';
+
+            if (shouldPrintHeader) {
+                if (this.accountType === 'bs' && isProgressive) {
+                    // Business Page specific formatting (Progressive Only)
+                    let u = activeUrls.length > 0 ? activeUrls[0].link.trim() : '';
+                    let href = u ? (u.startsWith('http') ? u : 'https://' + u) : '';
+                    let printName = this.bsName.trim() || 'Business Page';
+                    let formattedBs = href ? `<a href='${href}' target='_blank' rel='noopener noreferrer'>${printName}</a>` : printName;
+                    
+                    html += `<p><strong>${prefStr}:</strong> ${formattedBs}</p>\n<p>&nbsp;</p>\n`;
+                    
+                } else if (this.accountType === 'pub') {
+                    // Public Appearance standard formatting (Both Modes)
+                    let urlPrint = joinedUrlsText;
+                    let isSingular = !!this.pubType;
+                    let isMultiple = this.pubSets.length > 0 && this.pubSets[0].type;
+                    
+                    if (isSingular && activeUrls.length > 0) {
+                        urlPrint = activeUrls.slice(1).map(u => u.link.trim()).join(', ');
+                    } else if (isMultiple) {
+                        urlPrint = '';
+                    }
+                    
+                    html += `<p>${prefStr}${urlPrint ? ` ${urlPrint}` : ''}</p>\n<p>&nbsp;</p>\n`;
+                    
+                } else {
+                    // Standard formatting for all other types (Analyst Only)
+                    html += `<p><strong>${prefStr}:</strong>${joinedUrlsText ? ` ${joinedUrlsText}` : ''}</p>\n<p>&nbsp;</p>\n`;
                 }
-                
-                html += `<p>${prefStr}${urlPrint ? ` ${urlPrint}` : ''}</p>\n<p>&nbsp;</p>\n`;
-            } else {
-                html += `<p><strong>${prefStr}:</strong>${joinedUrlsText ? ` ${joinedUrlsText}` : ''}</p>\n<p>&nbsp;</p>\n`;
             }
         }
-
 
         if (pf.length > 0 || this.matchType) {
             let mPhrase = this.matchType === 'possible' ? 'Possible match' : 'Match';
@@ -490,7 +582,7 @@
                 let domain = urlStr.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '');
                 domain = domain.split('/')[0].split('.')[0];
 
-                let siteName = domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : 'Link';
+                let siteName = domain ? formatPlatformName(domain) : 'Link';
                 
                 domainCounts[siteName] = (domainCounts[siteName] || 0) + 1;
                 
@@ -499,7 +591,7 @@
                     displayName += ` (${domainCounts[siteName]})`;
                 }
                 
-                html += `<p><a href='${href}' target='_blank'>${displayName}</a></p>\n`;
+                html += `<p><a href='${href}' target='_blank' rel='noopener noreferrer'>${displayName}</a></p>\n`;
             });
         }
 
@@ -517,40 +609,30 @@
                     activePubUrls.forEach((u, index) => {
                         let urlStr = u.link.trim();
                         let href = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
-                        html += `<p><a href='${href}' target='_blank'>${capWord} ${index + 1}</a></p>\n`;
+                        html += `<p><a href='${href}' target='_blank' rel='noopener noreferrer'>${capWord} ${index + 1}</a></p>\n`;
                     });
                 }
             });
         }
 
-        if (this.accountType === 'pub' && ['posts', 'photos', 'videos'].includes(this.pubType)) {
-            const activePubUrls = this.pubUrls.filter(u => u.link.trim() !== '');
-            if (activePubUrls.length > 0) {
-                html += `<p>&nbsp;</p>\n`;
-                let capWord = this.pubType.slice(0, -1);
-                capWord = capWord.charAt(0).toUpperCase() + capWord.slice(1);
-                
-                activePubUrls.forEach((u, index) => {
-                    let urlStr = u.link.trim();
-                    let href = urlStr.startsWith('http') ? urlStr : 'https://' + urlStr;
-                    html += `<p><a href='${href}' target='_blank'>${capWord} ${index + 1}</a></p>\n`;
-                });
-            }
-        }
 
-        const getOrdinal = (n) => {
-            let v = parseInt(n);
-            if (!v || isNaN(v)) return '';
-            let mod100 = v % 100;
-            let suffix = (mod100 >= 10 && mod100 <= 20) ? 'th' : ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'][v % 10];
-            return v + suffix + ' ';
-        };
+    const getOrdinal = (n) => {
+        let v = parseInt(n);
+        
+        if (!n || isNaN(v) || v < 1) return '';
+        
+        if (v > 99) v = 99;
+    
+        let mod100 = v % 100;
+        let suffix = (mod100 >= 11 && mod100 <= 13) ? 'th' : ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'][v % 10];
+        return v + suffix + ' ';
+    };
 
         let ordText = getOrdinal(this.ordNum); 
         
         html = html.replace(/the # identified/g, `the ${ordText}identified`);
 
-        return html;
+        return DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'rel'] });
     }
 }"
 @keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 1500); }"
@@ -566,6 +648,17 @@
                 t.value = 'https://' + val;
                 t.dispatchEvent(new Event('input', { bubbles: true }));
             }
+        }
+    }
+"
+@input.window="
+    let t = $event.target;
+    if (t.tagName === 'INPUT' && (t.type === 'text' || !t.type)) {
+        if (/[<>]/.test(t.value)) {
+            // Strip out the brackets instantly
+            t.value = t.value.replace(/[<>]/g, '');
+            // Force Alpine to sync the cleaned value to x-model
+            t.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }
 "
@@ -617,7 +710,7 @@
             </div>
         </div>
 
-        <div style="position: absolute; top: 100%; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; z-index: 90; pointer-events: none;">
+        <div style="position: absolute; top: 100%; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; z-index: 90; pointer-events: none;" x-effect="if(shouldSkipStep2) showQuickUrl = false">
             
             <div style="width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; pointer-events: auto;" @click.outside="showQuickUrl = false">
                 
@@ -626,7 +719,7 @@
                      style="width: 100%; background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(246, 201, 14, 0.2); border-top: none; border-radius: 0 0 16px 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(246, 201, 14, 0.05); padding: 25px;">
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">
-                        <h3 style="margin: 0; color: var(--accent); font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px;">Global Link Manager</h3>
+                        <h3 style="margin: 0; color: var(--accent); font-size: 14px; text-transform: capitalize; letter-spacing: 1.5px;">Global Link Manager</h3>
                         <span style="font-size: 11px; color: #aaa; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px;">Changes sync across all steps</span>
                     </div>
 
@@ -636,7 +729,7 @@
                                 
                                 <div style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 4px; width: 26px; height: 26px; color: #777; font-size: 11px; font-weight: bold;" x-text="index + 1"></div>
 
-                                <input type="text" x-model="u.link" placeholder="https://..." 
+                                <input type="text" x-model="u.link" placeholder="https://..." maxlength="3000" 
                                        class="drawer-input" style="flex: 1; max-width: none; height: 35px; font-size: 14px; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0;">
                                 
                                 <button @click="u.link = u.link.includes('www.') ? u.link.replace('www.', '') : (u.link.includes('://') ? u.link.replace('://', '://www.') : 'www.' + u.link)"
@@ -654,20 +747,32 @@
                             </div>
                         </template>
                         
-                        <button @click="urls.push({link: ''})" 
+                        <div x-show="accountType === 'bs' && toolMode === 'progressive'" 
+                             x-transition
+                             style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); border-left: 3px solid var(--accent);">
+                            
+                            <div style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 4px; width: 26px; height: 26px; color: var(--accent); font-size: 11px; font-weight: bold;">Bs</div>
+                            
+                            <input type="text" x-model="bsName" placeholder="Business/Company Entity" maxlength="250" 
+                                   class="drawer-input" style="flex: 1; max-width: none; height: 35px; font-size: 14px; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0;">
+                        </div>
+                        
+                        <button x-show="accountType === 'gsr'" 
+                                @click="urls.push({link: ''})"
                                 style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.15); color: #ccc; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s; width: 100%; font-weight: bold; margin-top: 5px;"
                                 onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'; this.style.background='rgba(246, 201, 14, 0.05)';"
                                 onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.color='#ccc'; this.style.background='rgba(255,255,255,0.02)';">
-                            + ADD ANOTHER URL
+                            + Add Another URL
                         </button>
                     </div>
                 </div>
 
                 <button @click="showQuickUrl = !showQuickUrl" 
                         style="background: rgba(20,20,20,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(246, 201, 14, 0.2); border-top: none; padding: 6px 20px; border-radius: 0 0 12px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s; margin-top: -1px;"
+                        :style="{ opacity: shouldSkipStep2 ? '0.3' : '1', pointerEvents: shouldSkipStep2 ? 'none' : 'auto' }"
                         onmouseover="this.style.background='rgba(30,30,30,0.95)'; this.style.padding='6px 25px';"
                         onmouseout="this.style.background='rgba(20,20,20,0.85)'; this.style.padding='6px 20px';">
-                    <span style="color: var(--accent); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">URL Manager</span>
+                    <span style="color: var(--accent); font-size: 10px; font-weight: 800; text-transform: capitalize; letter-spacing: 1.5px;">URL Manager</span>
                     <span x-text="showQuickUrl ? '▲' : '▼'" style="font-size: 9px; color: #fff;"></span>
                 </button>
 
@@ -710,7 +815,7 @@
                   style="pointer-events: auto; background: rgba(15, 15, 15, 0.95); border: 1px solid rgba(246, 201, 14, 0.4); width: 90%; max-width: 850px; max-height: 90vh; overflow-y: auto; padding: 40px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(246, 201, 14, 0.05); color: #fff;">
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 25px;">
-                    <h2 style="margin: 0; color: var(--accent); font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">Live Preview</h2>
+                    <h2 style="margin: 0; color: var(--accent); font-size: 20px; text-transform: capitalize; letter-spacing: 1px;">Live Preview</h2>
                     <span style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px; font-size: 12px; color: #ccc;">Release <b>CTRL</b> to close</span>
                 </div>
                 
@@ -728,26 +833,26 @@
          x-transition:leave-end="opacity-0 -translate-x-10"
          style="position: fixed; top: 100px; left: 20px; bottom: 100px; width: 340px; background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(246, 201, 14, 0.2); border-radius: 16px; padding: 20px 10px 20px 20px; z-index: 80; box-shadow: 0 10px 40px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;">
         
-        <h3 style="margin: 0 10px 15px 0; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; flex-shrink: 0;">Modifiers & Details</h3>
+        <h3 style="margin: 0 10px 15px 0; color: var(--accent); font-size: 13px; text-transform: capitalize; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; flex-shrink: 0;">Modifiers & Details</h3>
         
         <div class="sidebar-scroll">
             
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 10px 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
             <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Identified Account #</span>
+                <span style="font-size: 11px; color: #aaa; text-transform: capitalize; letter-spacing: 1px;">Identified Account #</span>
                 <span style="font-size: 9px; color: #666;">(Leave blank for default)</span>
             </div>
             <input type="number" 
-                   class="drawer-input no-spinners" 
-                   placeholder="#" 
-                   x-model="ordNum" 
-                   min="1" 
-                   max="999"
-                   oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);"
-                   style="width: 60px; min-width: 60px; height: 35px; text-align: center; font-weight: bold; flex: none; margin: 0;">
+               class="drawer-input no-spinners" 
+               placeholder="1-99" 
+               x-model="ordNum" 
+               min="1" 
+               max="99"
+               oninput="if(this.value.length > 2) this.value = this.value.slice(0,2); if(parseInt(this.value) > 99) this.value = 99; if(this.value === '0') this.value = '';"
+               style="width: 60px; min-width: 60px; height: 35px; text-align: center; font-weight: bold; flex: none; margin: 0;">
         </div>
 
-            <div x-show="!Object.values(feats).some(v => v)" style="display: flex; align-items: center; justify-content: center; height: 120px; border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px; color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; text-align: center; padding: 20px; margin-bottom: 15px;">
+            <div x-show="!Object.values(feats).some(v => v)" style="display: flex; align-items: center; justify-content: center; height: 120px; border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px; color: rgba(255,255,255,0.4); font-size: 11px; text-transform: capitalize; letter-spacing: 1px; text-align: center; padding: 20px; margin-bottom: 15px;">
                 Select identifiers to reveal options
             </div>
 
@@ -758,17 +863,17 @@
                         <strong>Name Modifiers</strong>
                         <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap;">
                             <div x-show="feats.fname" class="name-mod-group">
-                                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">First Name</span>
+                                <span style="font-size: 11px; color: #aaa; text-transform: capitalize;">First Name</span>
                                 <div class="custom-toggle"><input type="checkbox" id="afname" x-model="sub.names.afname"><label for="afname">Alias</label></div>
                                 <div class="custom-toggle"><input type="checkbox" id="ifname" x-model="sub.names.ifname"><label for="ifname">Initial</label></div>
                             </div>
                             <div x-show="feats.mname" class="name-mod-group">
-                                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Middle Name</span>
+                                <span style="font-size: 11px; color: #aaa; text-transform: capitalize;">Middle Name</span>
                                 <div class="custom-toggle"><input type="checkbox" id="amname" x-model="sub.names.amname"><label for="amname">Alias</label></div>
                                 <div class="custom-toggle"><input type="checkbox" id="imname" x-model="sub.names.imname"><label for="imname">Initial</label></div>
                             </div>
                             <div x-show="feats.lname" class="name-mod-group">
-                                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Last Name</span>
+                                <span style="font-size: 11px; color: #aaa; text-transform: capitalize;">Last Name</span>
                                 <div class="custom-toggle"><input type="checkbox" id="alname" x-model="sub.names.alname"><label for="alname">Alias</label></div>
                                 <div class="custom-toggle"><input type="checkbox" id="ilname" x-model="sub.names.ilname"><label for="ilname">Initial</label></div>
                             </div>
@@ -780,9 +885,9 @@
                     <div id="drawer-dob" class="details-drawer" x-transition>
                         <strong>Date of Birth Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seendob" x-model="sub.dob.seen"><label for="seendob">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.dob.link">
-                        <input type="text" class="drawer-input" placeholder="Custom Title" x-model="sub.dob.title">
-                        <input type="text" class="drawer-input" placeholder="Database Name" x-model="sub.dob.acc">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.dob.link">
+                        <input type="text" class="drawer-input" placeholder="Custom Title" maxlength="250" x-model="sub.dob.title">
+                        <input type="text" class="drawer-input" placeholder="Database Name" maxlength="250" x-model="sub.dob.acc">
                     </div>
                 </template>
 
@@ -791,7 +896,7 @@
                         <strong>Age Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="basedage" x-model="sub.age.edu"><label for="basedage">Education Base</label></div>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenage" x-model="sub.age.seen"><label for="seenage">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Custom Title" x-model="sub.age.title" x-show="sub.age.seen">
+                        <input type="text" class="drawer-input" placeholder="Custom Title" maxlength="250" x-model="sub.age.title" x-show="sub.age.seen">
                     </div>
                 </template>
 
@@ -804,10 +909,10 @@
                             <div class="custom-toggle"><input type="checkbox" id="basedcli" x-model="sub.loc.cli"><label for="basedcli">Via Client</label></div>
                             <div class="custom-toggle"><input type="checkbox" id="seenloc" x-model="sub.loc.seen"><label for="seenloc">As Seen On</label></div>
                         </div>
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.loc.link">
-                        <input type="text" class="drawer-input" placeholder="Custom Title" x-model="sub.loc.title">
-                        <input type="text" class="drawer-input" placeholder="Relative Link" x-model="sub.loc.relLnk" x-show="sub.loc.rel">
-                        <input type="text" class="drawer-input" placeholder="Relative Name" x-model="sub.loc.relNm" x-show="sub.loc.rel">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.loc.link">
+                        <input type="text" class="drawer-input" placeholder="Custom Title" maxlength="250" x-model="sub.loc.title">
+                        <input type="text" class="drawer-input" placeholder="Relative Link" maxlength="3000" x-model="sub.loc.relLnk" x-show="sub.loc.rel">
+                        <input type="text" class="drawer-input" placeholder="Relative Name" maxlength="250" x-model="sub.loc.relNm" x-show="sub.loc.rel">
                     </div>
                 </template>
 
@@ -815,9 +920,9 @@
                     <div id="drawer-sch" class="details-drawer" x-transition>
                         <strong>School Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seensch" x-model="sub.sch.seen"><label for="seensch">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="School Name" x-model="sub.sch.name">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.sch.link" x-show="sub.sch.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.sch.title" x-show="sub.sch.seen">
+                        <input type="text" class="drawer-input" placeholder="School Name" maxlength="250" x-model="sub.sch.name">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.sch.link" x-show="sub.sch.seen">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.sch.title" x-show="sub.sch.seen">
                     </div>
                 </template>
 
@@ -825,9 +930,9 @@
                     <div id="drawer-phn" class="details-drawer" x-transition>
                         <strong>Phone Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenphn" x-model="sub.phn.seen"><label for="seenphn">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Phone Number" x-model="sub.phn.num">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.phn.link" x-show="sub.phn.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.phn.title" x-show="sub.phn.seen">
+                        <input type="text" class="drawer-input" placeholder="Phone Number" maxlength="250" x-model="sub.phn.num">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.phn.link" x-show="sub.phn.seen">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.phn.title" x-show="sub.phn.seen">
                     </div>
                 </template>
 
@@ -836,9 +941,9 @@
                         <strong>Email Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="usrmai" x-model="sub.mail.usr"><label for="usrmai">Username</label></div>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenmai" x-model="sub.mail.seen"><label for="seenmai">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Email Address" x-model="sub.mail.addr" @input="sub.mail.addr = $event.target.value.toLowerCase()">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.mail.link" x-show="sub.mail.seen || sub.mail.usr">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.mail.title" x-show="sub.mail.seen || sub.mail.usr">
+                        <input type="text" class="drawer-input" placeholder="Email Address" maxlength="250" x-model="sub.mail.addr" @input="sub.mail.addr = $event.target.value.toLowerCase()">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.mail.link" x-show="sub.mail.seen || sub.mail.usr">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.mail.title" x-show="sub.mail.seen || sub.mail.usr">
                     </div>
                 </template>
 
@@ -846,9 +951,9 @@
                     <div id="drawer-wrk" class="details-drawer" x-transition>
                         <strong>Nature of Work Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenwrk" x-model="sub.wrk.seen"><label for="seenwrk">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Nature of Work" x-model="sub.wrk.nat">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.wrk.link" x-show="sub.wrk.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.wrk.title" x-show="sub.wrk.seen">
+                        <input type="text" class="drawer-input" placeholder="Nature of Work" maxlength="250" x-model="sub.wrk.nat">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.wrk.link" x-show="sub.wrk.seen">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.wrk.title" x-show="sub.wrk.seen">
                     </div>
                 </template>
 
@@ -856,9 +961,9 @@
                     <div id="drawer-emp" class="details-drawer" x-transition>
                         <strong>Employment Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenemp" x-model="sub.emp.seen"><label for="seenemp">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Company Name" x-model="sub.emp.name">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.emp.link" x-show="sub.emp.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.emp.title" x-show="sub.emp.seen">
+                        <input type="text" class="drawer-input" placeholder="Company Name" maxlength="250" x-model="sub.emp.name">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.emp.link" x-show="sub.emp.seen">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.emp.title" x-show="sub.emp.seen">
                     </div>
                 </template>
 
@@ -866,9 +971,9 @@
                     <div id="drawer-rel" class="details-drawer" x-transition>
                         <strong>Relative Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenrel" x-model="sub.rel.seen"><label for="seenrel">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Relative Name" x-model="sub.rel.name">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.rel.link" x-show="sub.rel.seen">
-                        <input type="text" class="drawer-input" placeholder="Database Name" x-model="sub.rel.title" x-show="sub.rel.seen">
+                        <input type="text" class="drawer-input" placeholder="Relative Name" maxlength="250" x-model="sub.rel.name">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.rel.link" x-show="sub.rel.seen">
+                        <input type="text" class="drawer-input" placeholder="Database Name" maxlength="250" x-model="sub.rel.title" x-show="sub.rel.seen">
                     </div>
                 </template>
 
@@ -876,25 +981,25 @@
                     <div id="drawer-vm" class="details-drawer" x-transition>
                         <strong>Visual Match Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenvm" x-model="sub.vm.seen"><label for="seenvm">As Seen On</label></div>
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.vm.link" x-show="sub.vm.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.vm.title" x-show="sub.vm.seen">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.vm.link" x-show="sub.vm.seen">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.vm.title" x-show="sub.vm.seen">
                     </div>
                 </template>
 
                 <template x-if="feats.user">
                     <div id="drawer-user" class="details-drawer" x-transition>
                         <strong>Username Details</strong>
-                        <input type="text" class="drawer-input" placeholder="Username" x-model="sub.user.txt">
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.user.link">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.user.title">
+                        <input type="text" class="drawer-input" placeholder="Username" maxlength="250" x-model="sub.user.txt">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.user.link">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.user.title">
                     </div>
                 </template>
 
                 <template x-if="feats.linked">
                     <div id="drawer-linked" class="details-drawer" x-transition>
                         <strong>Linked Details</strong>
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.linked.link">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.linked.title">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.linked.link">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.linked.title">
                     </div>
                 </template>
 
@@ -930,19 +1035,19 @@
                         </div>
                         
                         <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
-                            <input type="text" class="drawer-input" placeholder="Platform (e.g. FB)" x-model="sub.conn.net" :disabled="sub.conn.own || sub.conn.friend">
-                            <input type="text" class="drawer-input" placeholder="Platform Hyperlink" x-model="sub.conn.netL" :disabled="sub.conn.own || sub.conn.friend">
+                            <input type="text" class="drawer-input" placeholder="Platform (e.g. FB)" maxlength="250" x-model="sub.conn.net" :disabled="sub.conn.own || sub.conn.friend">
+                            <input type="text" class="drawer-input" placeholder="Platform Hyperlink" maxlength="3000" x-model="sub.conn.netL" :disabled="sub.conn.own || sub.conn.friend">
                             
-                            <input type="text" class="drawer-input" placeholder="Their Connection" x-model="sub.conn.id" :disabled="sub.conn.own || sub.conn.friend">
-                            <input type="text" class="drawer-input" placeholder="Connection Link 1" x-model="sub.conn.link1" :disabled="sub.conn.own || sub.conn.friend">
+                            <input type="text" class="drawer-input" placeholder="Their Connection" maxlength="250" x-model="sub.conn.id" :disabled="sub.conn.own || sub.conn.friend">
+                            <input type="text" class="drawer-input" placeholder="Connection Link 1" maxlength="3000" x-model="sub.conn.link1" :disabled="sub.conn.own || sub.conn.friend">
                             
-                            <input type="text" class="drawer-input" placeholder="Connection Name" x-model="sub.conn.name" :disabled="sub.conn.own">
-                            <input type="text" class="drawer-input" placeholder="Connection Link 2" x-model="sub.conn.link2" :disabled="sub.conn.own">
+                            <input type="text" class="drawer-input" placeholder="Connection Name" maxlength="250" x-model="sub.conn.name" :disabled="sub.conn.own">
+                            <input type="text" class="drawer-input" placeholder="Connection Link 2" maxlength="3000" x-model="sub.conn.link2" :disabled="sub.conn.own">
                         </div>
                         
                         <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;" x-show="sub.conn.seen || sub.conn.own">
-                            <input type="text" class="drawer-input" placeholder="Identified Network Link" x-model="sub.conn.accLink" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
-                            <input type="text" class="drawer-input" placeholder="Identified Network Name" x-model="sub.conn.title" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                            <input type="text" class="drawer-input" placeholder="Identified Network Link" maxlength="3000" x-model="sub.conn.accLink" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                            <input type="text" class="drawer-input" placeholder="Identified Network Name" maxlength="250" x-model="sub.conn.title" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
                         </div>
                     </div>
                 </template>
@@ -950,29 +1055,29 @@
                 <template x-if="feats.same">
                     <div id="drawer-same" class="details-drawer" x-transition>
                         <strong>Same Object Details</strong>
-                        <input type="text" class="drawer-input" placeholder="What Object?" x-model="sub.same.obj">
-                        <input type="text" class="drawer-input" placeholder="Object Link" x-model="sub.same.link1">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.same.net">
-                        <input type="text" class="drawer-input" placeholder="Network Link" x-model="sub.same.link2">
+                        <input type="text" class="drawer-input" placeholder="What Object?" maxlength="250" x-model="sub.same.obj">
+                        <input type="text" class="drawer-input" placeholder="Object Link" maxlength="3000" x-model="sub.same.link1">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.same.net">
+                        <input type="text" class="drawer-input" placeholder="Network Link" maxlength="3000" x-model="sub.same.link2">
                     </div>
                 </template>
 
                 <template x-if="feats.loc2">
                     <div id="drawer-loc2" class="details-drawer" x-transition>
                         <strong>Exact Location Details</strong>
-                        <input type="text" class="drawer-input" placeholder="Hyperlink" x-model="sub.loc2.link">
-                        <input type="text" class="drawer-input" placeholder="Network Name" x-model="sub.loc2.title">
+                        <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.loc2.link">
+                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.loc2.title">
                     </div>
                 </template>
 
                 <template x-if="feats.custom">
                     <div id="drawer-custom" class="details-drawer custom-drawer" x-transition>
                         <strong>Custom Identifiers</strong>
-                        <input type="text" class="drawer-input" placeholder="Custom Identifier 1" x-model="sub.custom[0]">
-                        <input type="text" class="drawer-input" placeholder="Custom Identifier 2" x-model="sub.custom[1]">
-                        <input type="text" class="drawer-input" placeholder="Custom Identifier 3" x-model="sub.custom[2]">
-                        <input type="text" class="drawer-input" placeholder="Custom Identifier 4" x-model="sub.custom[3]">
-                        <input type="text" class="drawer-input" placeholder="Custom Identifier 5" x-model="sub.custom[4]">
+                        <input type="text" class="drawer-input" placeholder="Custom Identifier 1" maxlength="250" x-model="sub.custom[0]">
+                        <input type="text" class="drawer-input" placeholder="Custom Identifier 2" maxlength="250" x-model="sub.custom[1]">
+                        <input type="text" class="drawer-input" placeholder="Custom Identifier 3" maxlength="250" x-model="sub.custom[2]">
+                        <input type="text" class="drawer-input" placeholder="Custom Identifier 4" maxlength="250" x-model="sub.custom[3]">
+                        <input type="text" class="drawer-input" placeholder="Custom Identifier 5" maxlength="250" x-model="sub.custom[4]">
                     </div>
                 </template>
 
@@ -989,17 +1094,20 @@
          x-transition:leave-end="opacity-0 translate-x-10"
          style="position: fixed; top: 100px; right: 20px; bottom: 100px; width: 340px; background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(246, 201, 14, 0.2); border-radius: 16px; padding: 20px 10px 20px 20px; z-index: 80; box-shadow: 0 10px 40px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;">
         
-        <h3 style="margin: 0 10px 15px 0; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; flex-shrink: 0;">Public Appearance Type</h3>
+        <h3 style="margin: 0 10px 15px 0; color: var(--accent); font-size: 13px; text-transform: capitalize; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; flex-shrink: 0;">Public Appearance Type</h3>
         
         <div class="sidebar-scroll">
             <div style="display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px;">
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <strong style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase;">Singular</strong>
+                    <strong style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: capitalize;">Singular</strong>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <div class="custom-toggle"><input type="radio" id="pubPost" name="pubGroup" value="post" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubPost">Post</label></div>
                         <div class="custom-toggle"><input type="radio" id="pubPhoto" name="pubGroup" value="photo" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubPhoto">Photo</label></div>
                         <div class="custom-toggle"><input type="radio" id="pubVideo" name="pubGroup" value="video" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubVideo">Video</label></div>
+                        <div class="custom-toggle"><input type="radio" id="pubArticle" name="pubGroup" value="article" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubArticle">Article</label></div>
+                        <div class="custom-toggle"><input type="radio" id="pubReview" name="pubGroup" value="review" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubReview">Review</label></div>
+                        <div class="custom-toggle"><input type="radio" id="pubListing" name="pubGroup" value="listing" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubListing">Listing</label></div>
                     </div>
                 </div>
 
@@ -1007,7 +1115,7 @@
                     <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                         
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <strong style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase;" x-text="sIndex === 0 ? 'Multiple' : 'Multiple (Set ' + (sIndex + 1) + ')'"></strong>
+                            <strong style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: capitalize;" x-text="sIndex === 0 ? 'Multiple' : 'Multiple (Set ' + (sIndex + 1) + ')'"></strong>
                             
                             <button x-show="sIndex > 0" 
                                     @click="pubSets.splice(sIndex, 1)" 
@@ -1021,28 +1129,31 @@
                             <div class="custom-toggle"><input type="radio" :id="'pubPosts'+sIndex" :name="'pubGroupMult'+sIndex" value="posts" x-model="pSet.type" @change="pubType = ''"><label :for="'pubPosts'+sIndex">Posts</label></div>
                             <div class="custom-toggle"><input type="radio" :id="'pubPhotos'+sIndex" :name="'pubGroupMult'+sIndex" value="photos" x-model="pSet.type" @change="pubType = ''"><label :for="'pubPhotos'+sIndex">Photos</label></div>
                             <div class="custom-toggle"><input type="radio" :id="'pubVideos'+sIndex" :name="'pubGroupMult'+sIndex" value="videos" x-model="pSet.type" @change="pubType = ''"><label :for="'pubVideos'+sIndex">Videos</label></div>
+                            <div class="custom-toggle"><input type="radio" :id="'pubArticles'+sIndex" :name="'pubGroupMult'+sIndex" value="articles" x-model="pSet.type" @change="pubType = ''"><label :for="'pubArticles'+sIndex">Articles</label></div>
+                            <div class="custom-toggle"><input type="radio" :id="'pubReviews'+sIndex" :name="'pubGroupMult'+sIndex" value="reviews" x-model="pSet.type" @change="pubType = ''"><label :for="'pubReviews'+sIndex">Reviews</label></div>
+                            <div class="custom-toggle"><input type="radio" :id="'pubListings'+sIndex" :name="'pubGroupMult'+sIndex" value="listings" x-model="pSet.type" @change="pubType = ''"><label :for="'pubListings'+sIndex">Listings</label></div>
                         </div>
                         
                         <div x-show="pSet.type" x-transition style="margin-top: 5px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                            <strong style="color: var(--accent); font-size: 11px; text-transform: uppercase;">Hyperlinks</strong>
+                            <strong style="color: var(--accent); font-size: 11px; text-transform: capitalize;">Hyperlinks</strong>
                             
                             <template x-for="(pu, index) in pSet.urls" :key="index">
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <div style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 4px; width: 24px; height: 24px; color: #777; font-size: 10px; font-weight: bold;" x-text="index + 1"></div>
-                                    <input type="text" x-model="pu.link" class="drawer-input" placeholder="https://..." style="flex: 1; height: 32px; font-size: 13px; min-width: 0;">
+                                    <input type="text" x-model="pu.link" class="drawer-input" placeholder="https://..." maxlength="3000" style="flex: 1; height: 32px; font-size: 13px; min-width: 0;">
                                     <button x-show="pSet.urls.length > 1" @click="pSet.urls.splice(index, 1)" style="color: #e74c3c; border: none; background: rgba(231, 76, 60, 0.1); border-radius: 4px; width: 28px; height: 28px; cursor: pointer;">✖</button>
                                 </div>
                             </template>
                             
                             <button @click="pSet.urls.push({link: ''})" style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.15); color: #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.2s; width: 100%; margin-top: 5px;">
-                                + ADD LINK
+                                + Add Link
                             </button>
                         </div>
                     </div>
                 </template>
                 
                 <button x-show="pubSets[pubSets.length - 1].type" @click="pubSets.push({type: '', urls: [{link: ''}]})" style="background: rgba(246, 201, 14, 0.1); border: 1px solid rgba(246, 201, 14, 0.3); color: var(--accent); padding: 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; width: 100%; margin-top: 5px;">
-                    + ADD ANOTHER SET
+                    + Add Another Set
                 </button>
 
             </div>
@@ -1056,8 +1167,19 @@
             <div class="subsliders">
                 <div class="step-container">
                     <h2 class="step-title">Step 1: Select Type</h2>
-                    <p style="text-align: center; color: #aaa; margin-top: -10px;">Your template maker. You match it, you build it. A tool may ease the work, but it cannot replace the craftsman.</p>
                     
+                    <div class="selection-group">
+                        <div class="custom-toggle">
+                            <input type="radio" id="modeAnalyst" name="modeGroup" value="analyst" x-model="toolMode">
+                            <label for="modeAnalyst">Analyst Mode</label>
+                        </div>
+                        <div class="custom-toggle">
+                            <input type="radio" id="modeProg" name="modeGroup" value="progressive" x-model="toolMode">
+                            <label for="modeProg">Progressive Mode</label>
+                        </div>
+                    </div>
+                    <hr class="step-divider">
+
                     <div class="selection-group">
                         <h3>Match Type</h3>
                         <div class="custom-toggle">
@@ -1072,7 +1194,7 @@
 
                     <hr class="step-divider">
 
-                    <div class="selection-group">
+                    <div class="selection-group" x-effect="if(accountType !== 'gsr' && urls.length > 1) urls = [urls[0]]">
                         <h3>Account Type</h3>
                         <div class="custom-toggle"><input type="radio" id="standard" name="accGroup" value="standard" x-model="accountType"><label for="standard">Standard</label></div>
                         <div class="custom-toggle"><input type="radio" id="gsr" name="accGroup" value="gsr" x-model="accountType"><label for="gsr">Google Search Result</label></div>
@@ -1086,7 +1208,7 @@
 
                     <div class="slider-controls">
                         <button class="slider-btn primary" 
-                                @click="step++" 
+                                @click="shouldSkipStep2 ? step = 3 : step++" 
                                 :disabled="!matchType || !accountType"
                                 :style="(!matchType || !accountType) ? 'opacity: 0.5; cursor: not-allowed;' : ''">
                             Next Step ➡
@@ -1106,29 +1228,39 @@
                             <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.1);">
                                 
                                 <div style="display: flex; width: 90%; gap: 10px;">
-                                    <input type="text" x-model="u.link" placeholder="https://..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: #fff; font-size: 16px; outline: none;">
                                     
-                                    <button class="slider-btn" 
-                                            @click="
-                                                if (matchType === 'possible' && accountType === 'fanpage' && u.link.toLowerCase().includes('morvan')) {
-                                                    window.open('https://htmlpreview.github.io/?https://github.com/nst00lk1tsd33r/v2/blob/2fe1901a057eacb644e21e03a2c5a007bdfc84c1/resources/morvs.html', '_blank');
-                                                } else {
-                                                    window.open(u.link.startsWith('http') ? u.link : 'https://' + u.link, '_blank');
-                                                }
-                                            " 
-                                            :disabled="!u.link" 
-                                            :style="!u.link ? 'opacity: 0.5; cursor: not-allowed;' : 'background: rgba(52, 152, 219, 0.2); border-color: #3498db; color: #3498db;'"
-                                            title="Test URL in new tab">
-                                        Test
-                                    </button>
+                                    <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+                                        <input type="text" x-model="u.link" placeholder="https://..." maxlength="3000" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: #fff; font-size: 16px; outline: none;">
+                                        
+                                        <div x-show="accountType === 'bs' && toolMode === 'progressive' && index === 0" x-transition>
+                                            <input type="text" x-model="bsName" placeholder="Business/Company Entity" maxlength="250" 
+                                                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: #fff; font-size: 16px; outline: none; border-left: 3px solid var(--accent);">
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                        <button class="slider-btn" 
+                                                @click="
+                                                    if (matchType === 'possible' && accountType === 'fanpage' && u.link.toLowerCase().includes('morvan')) {
+                                                        window.open('https://htmlpreview.github.io/?https://github.com/nst00lk1tsd33r/v2/blob/2fe1901a057eacb644e21e03a2c5a007bdfc84c1/resources/morvs.html', '_blank', 'noopener,noreferrer');
+                                                    } else {
+                                                        window.open(u.link.startsWith('http') ? u.link : 'https://' + u.link, '_blank', 'noopener,noreferrer');
+                                                    }
+                                                " 
+                                                :disabled="!u.link" 
+                                                :style="!u.link ? 'opacity: 0.5; cursor: not-allowed;' : 'background: rgba(52, 152, 219, 0.2); border-color: #3498db; color: #3498db;'"
+                                                title="Test URL in new tab">
+                                            Test
+                                        </button>
 
-                                    <button class="slider-btn" 
-                                            x-show="urls.length > 1" 
-                                            @click="urls.splice(index, 1)" 
-                                            style="color: #e74c3c; border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.1);"
-                                            title="Remove URL">
-                                        ❌
-                                    </button>
+                                        <button class="slider-btn" 
+                                                x-show="urls.length > 1" 
+                                                @click="urls.splice(index, 1)" 
+                                                style="color: #e74c3c; border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.1);"
+                                                title="Remove URL">
+                                            ❌
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="selection-group" style="margin-bottom: 0;">
@@ -1205,14 +1337,19 @@
 
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px; width: 100%;">
     
-                            <h3 style="margin: 0; color: #fff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8;">
+                            <h3 style="margin: 0; color: #fff; font-size: 14px; font-weight: 600; text-transform: capitalize; letter-spacing: 2px; opacity: 0.8;">
                                 Custom
                             </h3>
 
                             <button @click="showPresetControls = !showPresetControls" 
                                     class="preset-gear-btn"
                                     :class="{ 'active': showPresetControls }"
-                                    title="Toggle Preset Controls">⚙️</button>
+                                    title="Toggle Preset Controls">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                            </button>
 
                             <div x-show="showPresetControls" 
                                  x-transition:enter="transition ease-out duration-200"
@@ -1250,11 +1387,12 @@
                     </div>
 
                     <div class="slider-controls">
-                        <button class="slider-btn" @click="step--">⬅ Previous</button>
+                        <button class="slider-btn" @click="shouldSkipStep2 ? step = 1 : step--">⬅ Previous</button>
                         <button class="slider-btn primary" @click="
                             let generatedHTML = reportEngine;
                             document.getElementById('final-output').innerHTML = generatedHTML;
                             saveToHistory(generatedHTML);
+                            hasGenerated = true;
                             step++;
                         ">Generate Template</button>
                     </div>
@@ -1267,14 +1405,39 @@
                     
                     <div x-show="isEditing" x-transition style="display: flex; gap: 10px; width: 100%; margin-bottom: -10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid rgba(246, 201, 14, 0.3);">
                         <button @click="document.execCommand('bold', false, null)" style="padding: 5px 15px; border-radius: 5px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--accent); font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(246,201,14,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">B</button>
-                        <button @click="let linkURL = prompt('Enter URL:', 'https://'); if(linkURL) document.execCommand('createLink', false, linkURL);" style="padding: 5px 15px; border-radius: 5px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #3498db; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(52,152,219,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">Link</button>
+                        <button @click="
+                            let linkURL = prompt('Enter URL:', 'https://'); 
+                            if(linkURL) { 
+                                let cleanURL = linkURL.trim();
+                                if (/^https?:\/\//i.test(cleanURL)) {
+                                    document.execCommand('createLink', false, cleanURL);
+                                } else {
+                                    alert('Security Error: Only http:// or https:// links are allowed.');
+                                }
+                            }" 
+                            style="padding: 5px 15px; border-radius: 5px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #3498db; cursor: pointer; transition: 0.2s;" 
+                            onmouseover="this.style.background='rgba(52,152,219,0.2)'" 
+                            onmouseout="this.style.background='rgba(0,0,0,0.5)'">
+                            Link
+                        </button>
                         <span style="margin-left: auto; color: #aaa; font-size: 13px; align-self: center;">Highlight text, then click an action.</span>
                     </div>
 
                     <div style="width: 100%; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 30px; border-radius: 8px; min-height: 150px; font-size: 16px; line-height: 1.5; font-family: 'Segoe UI', sans-serif; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); outline: none; transition: all 0.3s ease;" 
                          id="final-output" 
                          :contenteditable="isEditing"
-                         :style="isEditing ? 'border-color: var(--accent); background: rgba(246, 201, 14, 0.05); box-shadow: 0 0 15px rgba(246, 201, 14, 0.15);' : ''">
+                         :style="isEditing ? 'border-color: var(--accent); background: rgba(246, 201, 14, 0.05); box-shadow: 0 0 15px rgba(246, 201, 14, 0.15);' : ''"
+                         @paste="
+                             if(isEditing) {
+                                 $event.preventDefault();
+                                 let text = ($event.clipboardData || window.clipboardData).getData('text/plain');
+
+                                 // Strip any unexpected brackets from the pasted plain text just to be safe
+                                 text = text.replace(/[<>]/g, '');
+
+                                 document.execCommand('insertText', false, text);
+                             }
+                         ">
                     </div>
 
                     <div class="slider-controls">
@@ -1289,18 +1452,24 @@
 
                         <button class="slider-btn primary" @click="
                             const outputDiv = document.getElementById('final-output');
-                            saveToHistory(outputDiv.innerHTML);
-                            const htmlBlob = new Blob([outputDiv.innerHTML], { type: 'text/html' });
+
+                            const safeHTML = DOMPurify.sanitize(outputDiv.innerHTML, { ADD_ATTR: ['target', 'rel'] });
+
+                            outputDiv.innerHTML = safeHTML; 
+
+                            saveToHistory(safeHTML);
+
+                            const htmlBlob = new Blob([safeHTML], { type: 'text/html' });
                             const textBlob = new Blob([outputDiv.innerText], { type: 'text/plain' });
                             const clipboardItem = new ClipboardItem({
                                 'text/html': htmlBlob,
                                 'text/plain': textBlob
                             });
-                            
+
                             navigator.clipboard.write([clipboardItem]).then(() => {
                                 showToast = true;
                                 setTimeout(() => showToast = false, 3000);
-
+                            
                                 let btn = $event.currentTarget;
                                 let originalText = btn.innerHTML;
                                 btn.innerHTML = '✓ Copied!';
@@ -1321,6 +1490,49 @@
     </div>
 
     <div class="progress-container">
+        
+        <button class="clear-id-btn" 
+                x-show="step === 3"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-x-5"
+                x-transition:enter-end="opacity-100 transform translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-x-0"
+                x-transition:leave-end="opacity-0 transform -translate-x-5"
+                @click="
+                    if(confirm('Are you sure you want to clear all selected identifiers and text fields?')) {
+                        activePreset = '';
+                        feats = { 
+                            alias: false, business: false, fname: false, mname: false, lname: false, 
+                            dob: false, age: false, loc: false, sch: false, phn: false, mail: false, 
+                            wrk: false, emp: false, rel: false, vm: false, user: false, linked: false, 
+                            conn: false, same: false, loc2: false, custom: false 
+                        };
+                        sub = { 
+                            names: { afname: false, ifname: false, amname: false, imname: false, alname: false, ilname: false }, 
+                            dob: { seen: false, link: '', title: '', acc: '' }, 
+                            age: { edu: false, seen: false, title: '' }, 
+                            loc: { prev: false, rel: false, cli: false, seen: false, link: '', title: '', relLnk: '', relNm: '' }, 
+                            sch: { name: '', seen: false, link: '', title: '' }, 
+                            phn: { num: '', seen: false, link: '', title: '' }, 
+                            mail: { addr: '', usr: false, seen: false, link: '', title: '' }, 
+                            wrk: { nat: '', seen: false, link: '', title: '' }, 
+                            emp: { name: '', seen: false, link: '', title: '' }, 
+                            rel: { name: '', seen: false, link: '', title: '' }, 
+                            vm: { seen: false, link: '', title: '' }, 
+                            user: { txt: '', link: '', title: '' }, 
+                            linked: { link: '', title: '' }, 
+                            conn: { friend: false, following: false, follower: false, connected: false, own: false, seen: false, net: '', netL: '', id: '', link1: '', name: '', link2: '', title: '', accLink: '' }, 
+                            same: { link1: '', obj: '', link2: '', net: '' }, 
+                            loc2: { link: '', title: '' }, 
+                            custom: ['', '', '', '', ''] 
+                        };
+                    }
+                " 
+                title="Clear Identifiers">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
+        </button>
+
         <button class="discard-btn" 
                 @click="
                     if(confirm('Are you sure you want to discard all progress and start over?')) {
@@ -1329,6 +1541,8 @@
                         pubSets[0].urls = [{ link: '' }];
 
                         step = 1;
+                        toolMode = 'analyst';
+                        hasGenerated = false;
                         showToast = false;
                         showQuickPreview = false;
                         showQuickUrl = false;
@@ -1336,6 +1550,7 @@
                         matchType = '';
                         accountType = '';
                         pubType = '';
+                        bsName = '',
                         urls = [{ link: '' }];
                         ordNum = '';
                         activePreset = '';
@@ -1379,7 +1594,10 @@
             <div class="progress-fill" :class="{'filled': step >= 1, 'current': step === 1}"></div>
         </div>
         
-        <div class="progress-block" @click="if(matchType && accountType) step = 2" title="Step 2: URL">
+        <div class="progress-block" 
+             @click="if(matchType && accountType && !shouldSkipStep2) step = 2" 
+             :style="shouldSkipStep2 ? 'opacity: 0.3; cursor: not-allowed; pointer-events: none;' : ''" 
+             title="Step 2: URL">
             <div class="progress-fill" :class="{'filled': step >= 2, 'current': step === 2}"></div>
         </div>
         
@@ -1387,7 +1605,7 @@
             <div class="progress-fill" :class="{'filled': step >= 3, 'current': step === 3}"></div>
         </div>
         
-        <div class="progress-block" @click="if(matchType && accountType) step = 4" title="Step 4: Output">
+        <div class="progress-block" @click="if(hasGenerated) step = 4" title="Step 4: Output">
             <div class="progress-fill" :class="{'filled': step >= 4, 'current': step === 4}"></div>
         </div>
     </div>
@@ -1402,17 +1620,6 @@
     </button>
 
     <div x-show="showHistory" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999; pointer-events: none; display: flex; justify-content: flex-end;">
-        
-        <div x-show="showHistory" 
-             @click="showHistory = false"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-300"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); pointer-events: auto;">
-        </div>
 
         <div x-show="showHistory" style="position: fixed; inset: 0; z-index: 99999; pointer-events: none;">
         
@@ -1437,9 +1644,9 @@
              style="position: absolute; top: 0; right: 0; width: 380px; max-width: 90%; height: 100vh; background: rgba(15, 15, 15, 0.98); border-left: 1px solid rgba(246, 201, 14, 0.3); box-shadow: -10px 0 40px rgba(0,0,0,0.9); display: flex; flex-direction: column; pointer-events: auto;">
              
              <div style="padding: 20px 25px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4);">
-                 <h2 style="margin: 0; color: var(--accent); font-size: 16px; text-transform: uppercase; letter-spacing: 2px;">Session History</h2>
+                 <h2 style="margin: 0; color: var(--accent); font-size: 16px; text-transform: capitalize; letter-spacing: 2px;">Session History</h2>
                  <div style="display: flex; gap: 12px; align-items: center;">
-                     <button @click="clearHistory()" x-show="history.length > 0" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; text-transform: uppercase; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">Clear All</button>
+                     <button @click="clearHistory()" x-show="history.length > 0" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.3); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; text-transform: capitalize; font-weight: bold; transition: 0.2s;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">Clear All</button>
                      <button @click="showHistory = false" style="background: transparent; color: #888; border: none; font-size: 24px; line-height: 1; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">×</button>
                  </div>
              </div>
@@ -1447,7 +1654,7 @@
              <div style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;" class="sidebar-scroll">
                  
                  <template x-if="history.length === 0">
-                     <div style="text-align: center; color: rgba(255,255,255,0.3); margin-top: 50px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
+                     <div style="text-align: center; color: rgba(255,255,255,0.3); margin-top: 50px; font-size: 13px; text-transform: capitalize; letter-spacing: 1px;">
                          No templates saved yet.
                      </div>
                  </template>
@@ -1470,7 +1677,7 @@
                              </div>
                          </div>
 
-                         <div style="font-size: 13px; color: #ddd; line-height: 1.5; max-height: 180px; overflow-y: auto; overflow-x: hidden; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; word-break: break-word; border: 1px inset rgba(255,255,255,0.05);" x-html="item.content" class="sidebar-scroll"></div>
+                         <div style="font-size: 13px; color: #ddd; line-height: 1.5; max-height: 180px; overflow-y: auto; overflow-x: hidden; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; word-break: break-word; border: 1px inset rgba(255,255,255,0.05);" x-html="DOMPurify.sanitize(item.content, { ADD_ATTR: ['target', 'rel'] })" class="sidebar-scroll"></div>
                      </div>
                  </template>
              </div>
@@ -1482,16 +1689,7 @@
         © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
     </footer>
 
-<script>
-    // Security and Context Menu Prevention
-    document.addEventListener("contextmenu", e => e.preventDefault());
-    document.addEventListener("keydown", function(e) {
-        if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-            e.preventDefault();
-        }
-    });
-</script>
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <script>
     (function() {
         // 1. Initialize with your specific keys
