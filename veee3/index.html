@@ -1,35 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NS Toolkits v3</title>
- <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
-<style>
-:root{
-    --bg:#0b0b0b;
-    --card:rgba(255,255,255,0.05);
-    --accent:#f6c90e;
-    --text:#fff;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>NS Toolkits v3</title>
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b0b0b;
+            --accent: #f6c90e;
+            --text: #fff;
+        }
 
-/* BACKGROUND */
-body{
-    margin:0;
-    font-family:'Segoe UI',sans-serif;
-    background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
-    color:var(--text);
-}
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; 
+            overflow-x: hidden;
+        }
 
-/* PARTICLES */
-canvas{
-    position:fixed;
-    top:0;
-    left:0;
-    z-index:-1;
-}
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
 
- /* NAVBAR */
+        /* NAVBAR */
         .navbar {
             width: 100%;
             background: rgba(20, 20, 20, 0.6);
@@ -69,1111 +73,482 @@ canvas{
 
         .nav-menu a:hover, .nav-menu a.active { color: var(--accent); opacity: 1; }
 
-/* RESPONSIVE */
-@media(max-width:768px){
-    .nav-menu{ display:none; }
-}
+        @media(max-width:768px){
+            .nav-menu{ display:none; }
+        }
 
-/* CONTAINER */
-.container{
-    max-width:1100px;
-    margin:0 auto;
-    padding:40px 20px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-}
+        /* CONTAINER */
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box; 
+            flex: 1 0 auto; 
+        }
 
-/* HERO */
-.hero-title{
-    font-size:52px;
-    font-weight:700;
-    text-align:center;
-    margin-bottom:10px;
+        /* HERO */
+        .hero-title {
+            font-size: 52px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ffffff, #f6c90e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(246,201,14,0.6));
+            animation: glowPulse 2.5s ease-in-out infinite;
+        }
 
-    background:linear-gradient(90deg,#ffffff,#f6c90e);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-	filter: drop-shadow(0 0 10px rgba(246,201,14,0.6));
+        .hero-sub {
+            text-align: center;
+            opacity: 0.7;
+            font-style: italic;
+            max-width: 600px;
+            line-height: 1.6;
+        }
 
-    /* GLOW EFFECT */
-    text-shadow:
-        0 0 5px rgba(246,201,14,0.6),
-        0 0 10px rgba(246,201,14,0.5),
-        0 0 20px rgba(246,201,14,0.4),
-        0 0 40px rgba(246,201,14,0.3);
+        /* CAROUSEL */
+        .carousel-container {
+            perspective: 1800px;
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            gap: 40px;
+        }
 
-    animation: glowPulse 2.5s ease-in-out infinite;
-}
+        .carousel {
+            width: 360px;
+            height: 220px;
+            position: relative;
+            transform-style: preserve-3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+        }
 
-.hero-sub{
-    text-align:center;
-    opacity:0.7;
-    font-style:italic;
-    max-width:600px;
-    line-height:1.6;
-}
+        .carousel:active {
+            cursor: grabbing;
+        }
 
-/* CAROUSEL */
-.carousel-container{
-    perspective:1800px;
-    margin-top:50px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    width:100%;
-}
+        /* CARD */
+        .card {
+            position: absolute;
+            width: 260px;
+            height: 180px;
+            border-radius: 20px;
+            background: rgba(50, 50, 50, 0.95);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: box-shadow 0.3s, border 0.3s; 
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+        }
 
-.carousel{
-    width:360px;
-    height:220px;
-    position:relative;
-    transform-style:preserve-3d;
-    transition:transform 1.5s cubic-bezier(.25,.8,.25,1);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
+        .card a {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
 
-/* CARD */
-.card{
-    position:absolute;
-    width:260px;
-    height:180px;
-    border-radius:20px;
-    background:rgba(255,255,255,0.05);
-    backdrop-filter:blur(14px);
-    border:1px solid rgba(255,255,255,0.08);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    transition:0.4s;
-    box-shadow:0 10px 40px rgba(0,0,0,.6);
-    text-align:center;
-}
+        .icon {
+            width: 53px;
+            height: 53px;
+            margin-bottom: 5px; 
+            transform: scale(0.83) translateZ(0); 
+            transition: transform 0.3s ease, filter 0.3s ease;
+            filter: drop-shadow(0 0 8px rgba(246,201,14,0.6));
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
 
-/* LINK WRAPPER */
-.card a{
-    text-decoration:none;
-    color:inherit;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    width:100%;
-    height:100%;
-}
+        .card h3 {
+            color: var(--accent);
+            margin: 5px 0;
+            font-size: 16px;
+        }
 
-/* ICON */
-.icon{
-    width:44px;
-    height:44px;
-    margin-bottom:10px;
-    transition:0.3s;
-    filter: drop-shadow(0 0 8px rgba(246,201,14,0.6));
-}
+        .card span {
+            font-size: 13px;
+            opacity: .7;
+        }
 
-/* TEXT */
-.card h3{
-    color:var(--accent);
-    margin:5px 0;
-    font-size:16px;
-}
+        .card.active {
+            border: 1px solid rgba(246, 201, 14, 0.4);
+        }
 
-.card span{
-    font-size:13px;
-    opacity:.7;
-}
+        .card:hover .icon {
+            transform: scale(1) translateZ(0); 
+            filter: drop-shadow(0 0 14px rgba(246,201,14,1));
+        }
 
-/* ACTIVE CARD */
-.card.active{
-    transform:scale(1.25) translateZ(40px) !important;
-    box-shadow:0 0 35px rgba(246,201,14,0.8);
-    border:1px solid rgba(246,201,14,0.4);
-}
+        /* CONTROLS */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
 
-/* HOVER */
-.card:hover{
-    transform:translateY(-8px) scale(1.05);
-}
+        button {
+            background: linear-gradient(135deg, #f6c90e, #d4a800);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #111;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: 0.3s;
+        }
 
-.card:hover .icon{
-    transform:scale(1.2);
-    filter: drop-shadow(0 0 14px rgba(246,201,14,1));
-}
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(246, 201, 14, 0.4);
+        }
 
-/* CONTROLS */
-.controls{
-    margin-top:30px;
-    display:flex;
-    gap:15px;
-}
+        /* LOADER */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #080808;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
 
-button{
-    background:linear-gradient(135deg,#f6c90e,#d4a800);
-    border:none;
-    padding:10px 16px;
-    border-radius:20px;
-    cursor:pointer;
-    color:#111;
-    font-weight:500;
-    box-shadow:0 4px 15px rgba(0,0,0,0.4);
-    transition:0.3s;
-}
+        .gold-ring {
+            width: 50px;
+            height: 50px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-top: 2px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s infinite cubic-bezier(0.6, 0.2, 0.4, 0.8);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
 
-button:hover{
-    transform:translateY(-2px);
-    box-shadow:0 6px 20px rgba(246,201,14,0.4);
-}
+        .loader-text {
+            margin-top: 30px;
+            color: #d4af37;
+            font-size: 9px;
+            letter-spacing: 8px;
+            font-weight: 300;
+            opacity: 0.7;
+        }
 
-/* GRID */
-.tool-grid{
-    margin-top:20px;
-    display:flex;
-    gap:20px;
-    flex-wrap:wrap;
-    justify-content:center;
-}
+        .progress-container {
+            margin-top: 20px;
+            width: 150px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
 
-.tool-card{
-    width:200px;
-    background:rgba(255,255,255,0.05);
-    padding:20px;
-    border-radius:12px;
-    text-align:center;
-    transition:0.3s;
-    border:1px solid rgba(255,255,255,0.08);
-}
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #d4af37;
+            animation: grow 3.5s forwards linear;
+        }
 
-.tool-card:hover{
-    transform:translateY(-6px);
-    box-shadow:0 12px 30px rgba(0,0,0,0.5);
-    border-color:rgba(246,201,14,0.3);
-}
+        /* FOOTER */
+        footer {
+            width: 100%;
+            padding: 20px 0;
+            opacity: .5;
+            text-align: center;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
 
-/* 1. Set the body to be a full-height flexbox column */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
-    color: var(--text);
-    
-    /* ADD THESE */
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; 
-}
-
-/* 2. Tell the container to grow and take up all empty space */
-.container {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-sizing: border-box; /* Ensures padding doesn't break width */
-    
-    /* ADD THIS - This pushes the footer down */
-    flex: 1 0 auto; 
-}
-
-/* 3. Footer stays at the very bottom of the flex stack */
-footer {
-    width: 100%;
-    padding: 20px 0;
-    opacity: .5;
-    text-align: center;
-    font-size: 14px;
-    background: rgba(0, 0, 0, 0.2); /* Slight dark tint to keep it distinct */
-    flex-shrink: 0; /* Prevents the footer from squishing */
-}
-/* MODAL */
-.modal{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,.8);
-    display:none;
-    justify-content:center;
-    align-items:center;
-}
-
-#loader-wrapper {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #080808;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s;
-}
-
-/* Modern Gold Spinner */
-.gold-ring {
-    width: 50px;
-    height: 50px;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    border-top: 2px solid #d4af37; /* Gold color */
-    border-radius: 50%;
-    animation: spin 1s infinite cubic-bezier(0.6, 0.2, 0.4, 0.8);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
-}
-
-/* Luxury Typography */
-.loader-text {
-    margin-top: 30px;
-    color: #d4af37;
-    font-size: 9px;
-    letter-spacing: 8px;
-    font-weight: 300;
-    opacity: 0.7;
-}
-
-/* Progress Bar (Optional Visual Aid) */
-.progress-container {
-    margin-top: 20px;
-    width: 150px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.progress-bar {
-    width: 0%;
-    height: 100%;
-    background: #d4af37;
-    animation: grow 3.5s forwards linear; /* Matches your 3.5s load time */
-}
-
-/* Animations */
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-@keyframes grow {
-    to { width: 100%; }
-}
-
-/* Content Reveal State */
-#main-content {
-    opacity: 0;
-    transform: scale(0.98);
-    transition: all 1.5s ease;
-    color: #fff;
-    text-align: center;
-    padding-top: 20vh;
-}
-
-/* Applied via JS after timeout */
-.loaded #loader-wrapper {
-    opacity: 0;
-    visibility: hidden;
-}
-
-.loaded #main-content {
-    opacity: 1;
-    transform: scale(1);
-}
-
-.modal-content{
-    background:#111;
-    padding:30px;
-    border-radius:20px;
-    width:300px;
-    text-align:center;
-}
-@keyframes glowPulse{
-    0%{
-        text-shadow:
-            0 0 5px rgba(246,201,14,0.4),
-            0 0 10px rgba(246,201,14,0.3),
-            0 0 20px rgba(246,201,14,0.2);
-    }
-    50%{
-        text-shadow:
-            0 0 10px rgba(246,201,14,0.9),
-            0 0 25px rgba(246,201,14,0.7),
-            0 0 45px rgba(246,201,14,0.5);
-    }
-    100%{
-        text-shadow:
-            0 0 5px rgba(246,201,14,0.4),
-            0 0 10px rgba(246,201,14,0.3),
-            0 0 20px rgba(246,201,14,0.2);
-    }
-}
-</style>
+        /* ANIMATIONS */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes grow { to { width: 100%; } }
+        @keyframes glowPulse {
+            0% { text-shadow: 0 0 5px rgba(246,201,14,0.4), 0 0 10px rgba(246,201,14,0.3), 0 0 20px rgba(246,201,14,0.2); }
+            50% { text-shadow: 0 0 10px rgba(246,201,14,0.9), 0 0 25px rgba(246,201,14,0.7), 0 0 45px rgba(246,201,14,0.5); }
+            100% { text-shadow: 0 0 5px rgba(246,201,14,0.4), 0 0 10px rgba(246,201,14,0.3), 0 0 20px rgba(246,201,14,0.2); }
+        }
+        
+        /* Utility to fade in main content smoothly once loader is gone */
+        .content-reveal {
+            animation: fadeInScale 1s ease-out forwards;
+        }
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.98); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
 </head>
-<body class="loading">
+<body x-data="toolkitApp()">
 
-    <div id="loader-wrapper">
+    <div id="loader-wrapper" x-show="!isLoaded" x-transition.opacity.duration.1000ms>
         <div class="gold-ring"></div>
         <div class="loader-text">ESTABLISHING CONNECTION</div>
         <div class="progress-container">
             <div class="progress-bar"></div>
         </div>
     </div>
-<body>
 
-<canvas id="bg"></canvas>
+    <div x-show="isLoaded" class="content-reveal" style="display: none; flex: 1; display: flex; flex-direction: column;">
+        <canvas id="bg"></canvas>
 
-<div class="navbar">
-    <div class="nav-inner">
-        <div class="nav-left"><a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
-        <div class="nav-menu">
-             <a href="https://nstoolkits.site/veee3/">Home</a>
-            <a href="about.html">About Us</a>
-			<a href="download.html">Download</a>
-            <a href="https://nstoolkits.site/">Version 2</a>
+        <div class="navbar">
+            <div class="nav-inner">
+                <div class="nav-left">
+                    <a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;">
+                        <h1>NS Toolkits v3</h1>
+                    </a>
+                </div>
+                <div class="nav-menu">
+                     <a href="https://nstoolkits.site/veee3/">Home</a>
+                    <a href="about.html">About Us</a>
+                    <a href="download.html">Download</a>
+                    <a href="https://nstoolkits.site/">Version 2</a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<div class="container">
-
-    <div class="hero-title">NS ToolKits v3</div>
-
-    <div class="hero-sub">
-        "A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection."
-    </div>
-
-    <!-- CAROUSEL -->
-    <div class="carousel-container">
-        <div class="carousel" id="carousel">
-
-            <div class="card">
-                <a href="tools/templatewriter.html">
-                    <img class="icon" src="https://i.imgur.com/U0d0Tx9.png">
-                    <h3>Template Writer</h3>
-                    <span>Advanced</span>
-                </a>
+        <div class="container">
+            <div class="hero-title">NS ToolKits v3</div>
+            <div class="hero-sub">
+                "A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection."
             </div>
 
-            <div class="card">
-                <a href="tools/templatewriterv2.html">
-                    <img class="icon" src="https://i.imgur.com/RTJon1q.png">
-                    <h3>Template Writer</h3>
-                    <span>Lite</span>
-                </a>
-            </div>
+            <div class="carousel-container" x-data="carouselApp()">
+                <div class="carousel"
+                     @mousedown="startDrag"
+                     @mousemove.window="onDrag"
+                     @mouseup.window="endDrag"
+                     @touchstart="startDrag"
+                     @touchmove="onDrag"
+                     @touchend="endDrag"
+                     @dragstart.prevent
+                     @keydown.window="if($event.key === 'ArrowLeft') rotate(-1); if($event.key === 'ArrowRight') rotate(1)">
 
-            <div class="card">
-                <a href="tools/excellenceextractor.html">
-                    <img class="icon" src="https://i.imgur.com/kAY5lXj.png">
-                    <h3>Excellence Extractor</h3>
-                    <span>Cleaner</span>
-                </a>
-            </div>
+                    <template x-for="(card, index) in cards" :key="index">
+                        <div class="card" 
+                             :class="isActive(index) ? 'active' : ''" 
+                             :style="getCardStyle(index)">
 
-            <div class="card">
-                <a href="tools/caseflip.html">
-                    <img class="icon" src="https://img.icons8.com/ios7/1200/sentence-case.jpg">
-                    <h3>CaseFlip</h3>
-                    <span>Converter</span>
-                </a>
+                            <a :href="card.url" @click="handleClick($event)" draggable="false">
+                                <img class="icon" :src="card.icon" draggable="false">
+                                <h3 x-text="card.title"></h3>
+                                <span x-text="card.type"></span>
+                            </a>
+                        </div>
+                    </template>
+                </div>
+            
+                <div class="controls">
+                    <button @click="rotate(-1)">⬅</button>
+                    <button @click="rotate(1)">➡</button>
+                </div>
             </div>
-			
-			            <div class="card">
-                <a href="tools/easeapp.html">
-                    <img class="icon" src="https://cdn-icons-png.flaticon.com/512/17806/17806095.png">
-                    <h3>EaseApp</h3>
-                    <span>Summary Maker</span>
-                </a>
-            </div>
-
-			 <div class="card">
-                <a href="openall.html">
-                    <img class="icon" src="https://i.imgur.com/UqNxx4u.png">
-                    <h3>Link Batch Opener</h3>
-                    <span>Paste and Open All Links</span>
-                </a>
-            </div>
-
-			 <div class="card">
-                <a href="tools/search&identify.html">
-                    <img class="icon" src="https://png.pngtree.com/png-vector/20250307/ourmid/pngtree-search-icon-png-image_15738214.png">
-                    <h3>S&I Toolkit</h3>
-                    <span>Profile Finder Tool</span>
-                </a>
-            </div>
-
         </div>
+
+        <footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
     </div>
 
-    <div class="controls">
-        <button onclick="rotate(-1)">⬅</button>
-        <button onclick="rotate(1)">➡</button>
-    </div>
-&nbsp;
-
-</div>
-
-<div class="modal" id="modal">
-    <div class="modal-content">
-        <h2 id="modalTitle"></h2>
-        <p id="modalDesc"></p>
-        <button onclick="closeModal()">Close</button>
-    </div>
-</div>
-<footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
-
-<div class="modal" id="modal">...</div>
-
-<script>
-
-const carousel = document.getElementById('carousel');
-
-const cards = document.querySelectorAll('.card');
-
-
-
-let current = 0;
-
-const total = cards.length;
-
-const theta = 360 / total;
-
-const radius = 320;
-
-
-
-/* =========================
-
-   UPDATE RENDER
-
-========================= */
-
-function update(){
-
-    cards.forEach((card,i)=>{
-
-        let angle = theta * (i + current);
-
-        let normalized = (i + current) % total;
-
-        if(normalized < 0) normalized += total;
-
-
-
-        let isActive = normalized === 0;
-
-
-
-        // stronger depth + zoom effect
-
-        let scale = isActive ? 1.35 : 1;
-
-
-
-        card.style.transform = `
-
-            rotateY(${angle}deg)
-
-            translateZ(${radius}px)
-
-            scale(${scale})
-
-        `;
-
-
-
-        card.classList.remove("active");
-
-
-
-        if(isActive){
-
-            card.classList.add("active");
-
-
-
-            // glow intensity boost
-
-            card.style.boxShadow = "0 0 50px rgba(246,201,14,0.9)";
-
-        } else {
-
-            card.style.boxShadow = "0 10px 40px rgba(0,0,0,.6)";
-
-        }
-
-    });
-
-}
-
-
-
-function rotate(dir){
-
-    current += dir;
-
-    update();
-
-}
-
-
-
-update();
-
-
-
-/* =========================
-
-   AUTO ROTATE
-
-========================= */
-
-
-
-
-
-/* =========================
-
-   PHYSICS SETTINGS
-
-========================= */
-
-let isDragging = false;
-
-let lastX = 0;
-
-let velocity = 0;
-
-let animationFrame;
-
-
-
-const friction = 0.88;
-
-const sensitivity = 0.005;
-
-const snapStrength = 0.1;
-
-
-
-/* =========================
-
-   SNAP TO CENTER
-
-========================= */
-
-function snapToNearest(){
-
-    let snapped = Math.round(current);
-
-    let diff = snapped - current;
-
-
-
-    function animateSnap(){
-
-        if(Math.abs(diff) < 0.001){
-
-            current = snapped;
-
-            update();
-
-            autoRotate = setInterval(()=>rotate(1),4000);
-
-            return;
-
-        }
-
-
-
-        current += diff * snapStrength;
-
-        diff = snapped - current;
-
-
-
-        update();
-
-        requestAnimationFrame(animateSnap);
-
-    }
-
-
-
-    animateSnap();
-
-}
-
-
-
-/* =========================
-
-   DRAG START
-
-========================= */
-
-carousel.addEventListener("mousedown", (e) => {
-
-    isDragging = true;
-
-    lastX = e.clientX;
-
-    velocity = 0;
-
-    clearInterval(autoRotate);
-
-});
-
-
-
-/* =========================
-
-   DRAG MOVE
-
-========================= */
-
-window.addEventListener("mousemove", (e) => {
-
-    if(!isDragging) return;
-
-
-
-    let delta = e.clientX - lastX;
-
-
-
-    // velocity-based rotation speed
-
-    velocity = delta;
-
-
-
-    // cinematic sensitivity scaling
-
-    let speedFactor = Math.min(Math.abs(delta) * 0.002, 2);
-
-
-
-    current += delta * sensitivity * speedFactor;
-
-
-
-    update();
-
-    lastX = e.clientX;
-
-});
-
-
-
-/* =========================
-
-   DRAG END + MOMENTUM
-
-========================= */
-
-window.addEventListener("mouseup", () => {
-
-    if(!isDragging) return;
-
-    isDragging = false;
-
-
-
-    function momentum(){
-
-        if(Math.abs(velocity) < 0.01){
-
-            snapToNearest();
-
-            cancelAnimationFrame(animationFrame);
-
-            return;
-
-        }
-
-
-
-        current += velocity * 0.012;
-
-        velocity *= friction;
-
-
-
-        update();
-
-        animationFrame = requestAnimationFrame(momentum);
-
-    }
-
-
-
-    momentum();
-
-});
-
-
-
-/* =========================
-
-   TOUCH SUPPORT
-
-========================= */
-
-carousel.addEventListener("touchstart", (e) => {
-
-    lastX = e.touches[0].clientX;
-
-    velocity = 0;
-
-    clearInterval(autoRotate);
-
-});
-
-
-
-carousel.addEventListener("touchmove", (e) => {
-
-    let x = e.touches[0].clientX;
-
-    let delta = x - lastX;
-
-
-
-    velocity = delta;
-
-
-
-    let speedFactor = Math.min(Math.abs(delta) * 0.002, 2);
-
-
-
-    current += delta * sensitivity * speedFactor;
-
-
-
-    update();
-
-    lastX = x;
-
-});
-
-
-
-carousel.addEventListener("touchend", () => {
-
-    function momentum(){
-
-        if(Math.abs(velocity) < 0.01){
-
-            snapToNearest();
-
-            cancelAnimationFrame(animationFrame);
-
-            return;
-
-        }
-
-
-
-        current += velocity * 0.012;
-
-        velocity *= friction;
-
-
-
-        update();
-
-        animationFrame = requestAnimationFrame(momentum);
-
-    }
-
-
-
-    momentum();
-
-});
-
-
-
-/* =========================
-
-   KEYBOARD CONTROL
-
-========================= */
-
-document.addEventListener("keydown", function(e){
-
-    if(e.key === "ArrowLeft"){
-
-        rotate(-1);
-
-    }
-
-    if(e.key === "ArrowRight"){
-
-        rotate(1);
-
-    }
-
-});
-
-
-
-/* =========================
-
-   PARTICLES
-
-========================= */
-
-const canvas = document.getElementById("bg");
-
-const ctx = canvas.getContext("2d");
-
-
-
-function resize(){
-
-    canvas.width = window.innerWidth;
-
-    canvas.height = window.innerHeight;
-
-}
-
-resize();
-
-window.addEventListener("resize", resize);
-
-
-
-let particles = [];
-
-
-
-for(let i=0;i<80;i++){
-
-    particles.push({
-
-        x:Math.random()*canvas.width,
-
-        y:Math.random()*canvas.height,
-
-        r:Math.random()*2,
-
-        dx:Math.random()-.5,
-
-        dy:Math.random()-.5
-
-    });
-
-}
-
-
-
-function animate(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-
-
-    particles.forEach(p=>{
-
-        p.x += p.dx;
-
-        p.y += p.dy;
-
-
-
-        if(p.x<0||p.x>canvas.width) p.dx*=-1;
-
-        if(p.y<0||p.y>canvas.height) p.dy*=-1;
-
-
-
-        ctx.beginPath();
-
-        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-
-        ctx.fillStyle="rgba(255,255,255,0.5)";
-
-        ctx.fill();
-
-    });
-
-
-
-    requestAnimationFrame(animate);
-
-}
-
-
-
-animate();
-
-</script>
-
-<script>
-
-document.addEventListener("keydown", function(e) {
-
-  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
-
-  if (
-
-    e.keyCode === 123 ||
-
-    (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
-
-    (e.ctrlKey && e.keyCode === 85)
-
-  ) {
-
-    e.preventDefault();
-
-    return false;
-
-  }
-
-
-
-  // Block Ctrl + A
-
-  if (e.ctrlKey && (e.key === "a" || e.key === "A")) {
-
-    e.preventDefault();
-
-    return false;
-
-  }
-
-});
-
-
-
-document.addEventListener("keydown", function(e) {
-
-  if (e.ctrlKey && e.shiftKey && e.key === "C") {
-
-    e.preventDefault();
-
-  }
-
-});
-
-
-
-// Disable right-click
-
-document.addEventListener("contextmenu", e => e.preventDefault());
-
-
-
-// Disable text selection via mouse drag
-
-document.addEventListener("selectstart", e => e.preventDefault());
-
-
-
-// Prevent dragging elements (images/text)
-
-document.addEventListener("dragstart", e => e.preventDefault());
-
-</script>
-
-<script>
-
-    /* ALL YOUR CAROUSEL AND PARTICLE CODE REMAINS THE SAME */
-
-
-
-    // UPDATED LOADING LOGIC
-
-    document.addEventListener("DOMContentLoaded", () => {
-
-        const loader = document.getElementById("loader-wrapper");
-
-        const LOADING_DURATION = 3500; 
-
-        const ONE_HOUR = 3600000; 
-
-
-
-        const lastLoad = localStorage.getItem("ns_v3_load_time");
-
-        const now = Date.now();
-
-
-
-        if (!lastLoad || (now - lastLoad) > ONE_HOUR) {
-
-            // First time or expired - Show Loading
-
-            setTimeout(() => {
-
-                document.body.classList.add("loaded");
-
-                localStorage.setItem("ns_v3_load_time", now);
-
-                setTimeout(() => { loader.style.display = "none"; }, 1000);
-
-            }, LOADING_DURATION);
-
-        } else {
-		
-            // Within 1 hour - Skip Loading
-            loader.style.display = "none";
-            document.body.classList.add("loaded");
-        }
-    });
-
-    // YOUR PROTECTION CODE (F12, Right Click, etc.)
-    document.addEventListener("contextmenu", e => e.preventDefault());
-    document.addEventListener("keydown", function(e) {
-        if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-            e.preventDefault();
-        }
-    });
-</script>
-<style>
-
-/* Prevent text highlighting via mouse drag */
-body {
-  user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  -moz-user-select: none;
-}
-</style>
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
-<script>
-    (function() {
-        // 1. Initialize with your specific keys
-        const pn = new PubNub({
-            publishKey: "pub-c-7db7d5d6-4bbf-48e2-82b8-c1807ca9640a",
-            subscribeKey: "sub-c-5a15f301-2d2a-4a54-a4f1-cd01a37d1978",
-            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
-            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
+    <script>
+        document.addEventListener('alpine:init', () => {
+            
+            // APP GLOBAL STATE (Handles Loader & Particles)
+            Alpine.data('toolkitApp', () => ({
+                isLoaded: false,
+                init() {
+                    this.handleLoading();
+                    this.initParticles();
+                },
+                handleLoading() {
+                    const lastLoad = localStorage.getItem("ns_v3_load_time");
+                    const now = Date.now();
+                    const ONE_HOUR = 3600000;
+
+                    if (!lastLoad || (now - lastLoad) > ONE_HOUR) {
+                        setTimeout(() => {
+                            this.isLoaded = true;
+                            localStorage.setItem("ns_v3_load_time", now);
+                        }, 3500);
+                    } else {
+                        this.isLoaded = true;
+                    }
+                },
+                initParticles() {
+                    // Ensures the canvas is ready once the DOM renders
+                    this.$nextTick(() => {
+                        const canvas = document.getElementById("bg");
+                        const ctx = canvas.getContext("2d");
+                        let particles = [];
+
+                        const resize = () => {
+                            canvas.width = window.innerWidth;
+                            canvas.height = window.innerHeight;
+                        };
+                        resize();
+                        window.addEventListener("resize", resize);
+
+                        for (let i = 0; i < 80; i++) {
+                            particles.push({
+                                x: Math.random() * canvas.width,
+                                y: Math.random() * canvas.height,
+                                r: Math.random() * 2,
+                                dx: Math.random() - .5,
+                                dy: Math.random() - .5
+                            });
+                        }
+
+                        const animate = () => {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            particles.forEach(p => {
+                                p.x += p.dx;
+                                p.y += p.dy;
+                                if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+                                if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+                                ctx.beginPath();
+                                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                                ctx.fill();
+                            });
+                            requestAnimationFrame(animate);
+                        };
+                        animate();
+                    });
+                }
+            }));
+
+            // 3D CAROUSEL STATE & PHYSICS
+            Alpine.data('carouselApp', () => ({
+                current: 0,
+                isDragging: false,
+                dragDistance: 0, 
+                lastX: 0,
+                velocity: 0,
+                animationFrame: null,
+                radius: 320,
+                friction: 0.92,
+                sensitivity: 0.004,
+
+                cards: [
+                    { title: 'Template Writer', type: 'Advanced', icon: 'https://i.imgur.com/U0d0Tx9.png', url: 'tools/templatewriter.html' },
+                    { title: 'Template Writer', type: 'Lite', icon: 'https://i.imgur.com/RTJon1q.png', url: 'tools/templatewriterv2.html' },
+                    { title: 'Excellence Extractor', type: 'Cleaner', icon: 'https://i.imgur.com/kAY5lXj.png', url: 'tools/excellenceextractor.html' },
+                    { title: 'CaseFlip', type: 'Converter', icon: 'https://img.icons8.com/ios7/1200/sentence-case.jpg', url: 'tools/caseflip.html' },
+                    { title: 'EaseApp', type: 'Summary Maker', icon: 'https://cdn-icons-png.flaticon.com/512/17806/17806095.png', url: 'tools/easeapp.html' },
+                    { title: 'Link Batch Opener', type: 'Paste and Open All Links', icon: 'https://i.imgur.com/UqNxx4u.png', url: 'openall.html' },
+                    { title: 'S&I Toolkit', type: 'Profile Finder Tool', icon: 'https://png.pngtree.com/png-vector/20250307/ourmid/pngtree-search-icon-png-image_15738214.png', url: 'tools/search&identify.html' }
+                ],
+
+                get theta() {
+                    return 360 / this.cards.length;
+                },
+            
+                animateTo(target) {
+                    cancelAnimationFrame(this.animationFrame);
+                    const ease = () => {
+                        let diff = target - this.current;
+                        if (Math.abs(diff) < 0.001) {
+                            this.current = target;
+                            return;
+                        }
+                        this.current += diff * 0.08;
+                        this.animationFrame = requestAnimationFrame(ease);
+                    };
+                    ease();
+                },
+            
+                rotate(dir) {
+                    let directionToMove = -dir; 
+                    let target = Math.round(this.current) + directionToMove;
+                    this.animateTo(target);
+                },
+            
+                isActive(index) {
+                    let normalized = Math.round((index + this.current) % this.cards.length);
+                    if (normalized < 0) normalized += this.cards.length;
+                    return normalized === 0 || normalized === this.cards.length;
+                },
+            
+                getCardStyle(index) {
+                    let angle = this.theta * (index + this.current);
+                    let scale = this.isActive(index) ? 1.15 : 1;
+                    let shadow = this.isActive(index) ? '0 0 50px rgba(246,201,14,0.9)' : '0 10px 40px rgba(0,0,0,.6)';
+
+                    return `
+                        transform: rotateY(${angle}deg) translateZ(${this.radius}px) scale(${scale});
+                        box-shadow: ${shadow};
+                    `;
+                },
+            
+                startDrag(e) {
+                    this.isDragging = true;
+                    this.dragDistance = 0; 
+                    this.lastX = e.clientX || e.touches[0].clientX;
+                    this.velocity = 0;
+                    cancelAnimationFrame(this.animationFrame);
+                },
+            
+                onDrag(e) {
+                    if (!this.isDragging) return;
+                    let currentX = e.clientX || (e.touches ? e.touches[0].clientX : this.lastX);
+                    let delta = currentX - this.lastX;
+
+                    this.dragDistance += Math.abs(delta); 
+                    this.velocity = delta;
+                    this.current += delta * this.sensitivity;
+                    this.lastX = currentX;
+                },
+            
+                endDrag() {
+                    if (!this.isDragging) return;
+                    this.isDragging = false;
+                    this.momentum();
+                },
+            
+                handleClick(e) {
+                    if (this.dragDistance > 5) {
+                        e.preventDefault();
+                    }
+                },
+            
+                momentum() {
+                    if (Math.abs(this.velocity) < 0.5) {
+                        this.snapToNearest();
+                        return;
+                    }
+                    this.current += this.velocity * this.sensitivity;
+                    this.velocity *= this.friction;
+                    this.animationFrame = requestAnimationFrame(() => this.momentum());
+                },
+            
+                snapToNearest() {
+                    let snapped = Math.round(this.current);
+                    this.animateTo(snapped);
+                }
+            }));
         });
-
-        // 2. IDENTIFY THE PAGE
-        // Change the channel name below for EACH page based on the mapping table
-        const pageChannel = "v3_main"; 
-
-        // 3. Connect and signal "Presence"
-        pn.subscribe({ 
-            channels: [pageChannel], 
-            withPresence: true 
-        });
-
-        // 4. Clean up connection when the tab is closed
-        window.addEventListener('beforeunload', function() {
-            pn.unsubscribe({ channels: [pageChannel] });
-        });
-    })();
-</script>
+    </script>
 </body>
 </html>
