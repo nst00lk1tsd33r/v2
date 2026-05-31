@@ -299,6 +299,41 @@
             0% { opacity: 0; transform: scale(0.98); }
             100% { opacity: 1; transform: scale(1); }
         }
+
+        /* SUPPORT BUTTON */
+        .support-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #f6c90e, #d4a800);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .support-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(246, 201, 14, 0.6);
+        }
+
+        .support-btn svg {
+            width: 32px;
+            height: 32px;
+            fill: #111; /* Dark icon to contrast the gold button */
+            transition: 0.3s;
+        }
+
+        .support-btn:hover svg {
+            transform: scale(1.1);
+        }
+
     </style>
 </head>
 <body x-data="toolkitApp()">
@@ -369,6 +404,12 @@
         </div>
 
         <footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
+        <!-- SUPPORT BUTTON -->
+        <a href="https://app.slack.com/client/T01R53JSBF1/C0ALKGUKZT8" target="_blank" class="support-btn" title="Need Help? Contact Us">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 3a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5v-1a7 7 0 1 1 14 0v1h-3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z"/>
+            </svg>
+        </a>
     </div>
 
     <script>
