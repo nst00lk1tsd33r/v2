@@ -2227,16 +2227,27 @@
                     }
                 }
 
-                // --- NEW: QUILL RICH LINK PASTE HANDLING ---
-                // If pasting into Quill and the clipboard contains an HTML link
-                if (isQuill && htmlData && htmlData.includes('<a')) {
-                    // Sanitize the HTML, only allowing the link to survive
-                    let cleanHtml = DOMPurify.sanitize(htmlData, { ALLOWED_TAGS: ['a'], ALLOWED_ATTR: ['href'] });
-                    if (cleanHtml) {
-                        // Insert as HTML so Quill keeps it as a clickable link
-                        // (The DOMPurify hook from Step 1 will auto-add noopener/noreferrer here!)
-                        document.execCommand('insertHTML', false, cleanHtml);
-                        return; // Exit early to bypass the plain-text truncation
+                // --- UPDATED: QUILL RICH LINK PASTE HANDLING & AUTO-CLEANUP ---
+                if (isQuill) {
+                    // Helper function to strip unwanted generator text
+                    const stripGeneratorText = (str) => {
+                        if (!str) return str;
+                        return str
+                            .replace(/^\s*Match found by\s+/i, '') // Removes "Match found by " at the start (case-insensitive)
+                            .replace(/\.\s*$/, '');                // Removes the trailing period at the end
+                    };
+
+                    // If clipboard contains an HTML link
+                    if (htmlData && htmlData.includes('<a')) {
+                        let cleanHtml = DOMPurify.sanitize(htmlData, { ALLOWED_TAGS: ['a'], ALLOWED_ATTR: ['href'] });
+                        if (cleanHtml) {
+                            cleanHtml = stripGeneratorText(cleanHtml); // Apply text stripping to HTML
+                            document.execCommand('insertHTML', false, cleanHtml);
+                            return; // Exit early to bypass the plain-text truncation
+                        }
+                    } else {
+                        // Apply the same text stripping if they paste plain text into Quill
+                        pasteData = stripGeneratorText(pasteData);
                     }
                 }
                 
@@ -2270,7 +2281,7 @@
         });
     });
     </script>
-        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+            <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <script>
     (function() {
         // 1. Initialize with your specific keys
