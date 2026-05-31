@@ -111,118 +111,6 @@
             line-height: 1.6;
         }
 
-        /* CAROUSEL */
-        .carousel-container {
-            perspective: 1800px;
-            margin-top: 50px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            gap: 40px;
-        }
-
-        .carousel {
-            width: 360px;
-            height: 220px;
-            position: relative;
-            transform-style: preserve-3d;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: grab;
-        }
-
-        .carousel:active {
-            cursor: grabbing;
-        }
-
-        /* CARD */
-        .card {
-            position: absolute;
-            width: 260px;
-            height: 180px;
-            border-radius: 20px;
-            background: rgba(50, 50, 50, 0.95);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            transition: box-shadow 0.3s, border 0.3s; 
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-        }
-
-        .card a {
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        .icon {
-            width: 53px;
-            height: 53px;
-            margin-bottom: 5px; 
-            transform: scale(0.83) translateZ(0); 
-            transition: transform 0.3s ease, filter 0.3s ease;
-            filter: drop-shadow(0 0 8px rgba(246,201,14,0.6));
-            backface-visibility: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .card h3 {
-            color: var(--accent);
-            margin: 5px 0;
-            font-size: 16px;
-        }
-
-        .card span {
-            font-size: 13px;
-            opacity: .7;
-        }
-
-        .card.active {
-            border: 1px solid rgba(246, 201, 14, 0.4);
-        }
-
-        .card:hover .icon {
-            transform: scale(1) translateZ(0); 
-            filter: drop-shadow(0 0 14px rgba(246,201,14,1));
-        }
-
-        /* CONTROLS */
-        .controls {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-        }
-
-        button {
-            background: linear-gradient(135deg, #f6c90e, #d4a800);
-            border: none;
-            padding: 10px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            color: #111;
-            font-weight: 500;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            transition: 0.3s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(246, 201, 14, 0.4);
-        }
-
         /* LOADER */
         #loader-wrapper {
             position: fixed;
@@ -334,6 +222,180 @@
             transform: scale(1.1);
         }
 
+        /* CAROUSEL */
+        .carousel-container {
+            perspective: 1800px;
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            gap: 40px;
+            min-height: 450px; /* Prevents button jump when switching views */
+        }
+
+        .carousel {
+            width: 360px;
+            height: 220px;
+            position: relative;
+            transform-style: preserve-3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+        }
+
+        .carousel:active {
+            cursor: grabbing;
+        }
+
+        /* CARD */
+        .card {
+            position: absolute;
+            width: 260px;
+            height: 180px;
+            border-radius: 20px;
+            background: rgba(50, 50, 50, 0.95);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: box-shadow 0.3s, border 0.3s; 
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            animation: condenseCarousel 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+        }
+
+        @keyframes condenseCarousel {
+            /* Starts clustered tightly at the center and expands to Alpine's inline inline coordinates */
+            0% { opacity: 0; transform: rotateY(0deg) translateZ(0px) scale(0.1); }
+        }
+
+        .card a {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .icon {
+            width: 53px;
+            height: 53px;
+            margin-bottom: 5px; 
+            transform: scale(0.83) translateZ(0); 
+            transition: transform 0.3s ease, filter 0.3s ease;
+            filter: drop-shadow(0 0 8px rgba(246,201,14,0.6));
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card h3 { color: var(--accent); margin: 5px 0; font-size: 16px; }
+        .card span { font-size: 13px; opacity: .7; }
+        .card.active { border: 1px solid rgba(246, 201, 14, 0.4); }
+        .card:hover .icon { transform: scale(1) translateZ(0); filter: drop-shadow(0 0 14px rgba(246,201,14,1)); }
+
+        /* CONTROLS */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .controls button {
+            background: linear-gradient(135deg, #f6c90e, #d4a800);
+            border: none;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: 0.3s;
+            padding: 0;
+        }
+
+        .controls button:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 6px 20px rgba(246, 201, 14, 0.6); 
+        }
+
+        .controls button svg {
+            width: 26px;
+            height: 26px;
+            fill: #111;
+            transition: 0.3s;
+        }
+
+        .controls button:hover svg {
+            transform: scale(1.15);
+        }
+
+        button {
+            background: linear-gradient(135deg, #f6c90e, #d4a800);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #111;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: 0.3s;
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(246, 201, 14, 0.4); }
+
+        /* GRID FIXES & SCATTER ANIMATION */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 240px);
+            justify-content: center; /* Forces identical horizontal/vertical gap layout */
+            gap: 25px;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .grid-card {
+            width: 240px;
+            height: 165px;
+            border-radius: 15px;
+            background: rgba(50, 50, 50, 0.95);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: box-shadow 0.3s, border 0.3s, transform 0.3s;
+            animation: scatterCards 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+        }
+
+        @keyframes scatterCards {
+            0% { opacity: 0; transform: scale(0.3) translate(0, -150px) rotate(-15deg); }
+            100% { opacity: 1; transform: scale(1) translate(0, 0) rotate(0); }
+        }
+
+        .grid-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(246, 201, 14, 0.4); }
+        .grid-card a { text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        .grid-card .icon { width: 40px; height: 40px; margin-bottom: 5px; transition: transform 0.3s ease, filter 0.3s ease; filter: drop-shadow(0 0 5px rgba(246,201,14,0.6)); }
+        .grid-card:hover .icon { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(246,201,14,1)); }
+        .grid-card h3 { color: var(--accent); margin: 5px 0; font-size: 14px; }
+        .grid-card span { font-size: 12px; opacity: .7; }
+
+        @media(max-width: 768px) { .grid-container { grid-template-columns: repeat(2, 240px); } }
+        @media(max-width: 480px) { .grid-container { grid-template-columns: 240px; } }
+
     </style>
 </head>
 <body x-data="toolkitApp()">
@@ -371,8 +433,9 @@
                 "A tool may ease the work, but it cannot replace the craftsman. Diligent proofing is the final step to perfection."
             </div>
 
-            <div class="carousel-container" x-data="carouselApp()">
+            <div class="carousel-container" x-data="carouselApp()" x-init="init()">
                 <div class="carousel"
+                     x-show="viewMode === 'carousel'"
                      @mousedown="startDrag"
                      @mousemove.window="onDrag"
                      @mouseup.window="endDrag"
@@ -395,10 +458,38 @@
                         </div>
                     </template>
                 </div>
+
+                <div class="grid-container" 
+                     x-show="viewMode === 'grid'" 
+                     style="display: none;">
+                    <template x-for="(card, index) in cards" :key="index">
+                        <div class="grid-card" :style="`animation-delay: ${(index * 0.05) + 0.05}s`">
+                            <a :href="card.url">
+                                <img class="icon" :src="card.icon">
+                                <h3 x-text="card.title"></h3>
+                                <span x-text="card.type"></span>
+                            </a>
+                        </div>
+                    </template>
+                </div>
             
                 <div class="controls">
-                    <button @click="rotate(-1)">⬅</button>
-                    <button @click="rotate(1)">➡</button>
+                    <button @click="rotate(-1)" x-show="viewMode === 'carousel'">
+                        <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                    </button>
+                    
+                    <button @click="toggleViewMode()">
+                        <svg x-show="viewMode === 'carousel'" viewBox="0 0 24 24">
+                            <path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/>
+                        </svg>
+                        <svg x-show="viewMode === 'grid'" viewBox="0 0 24 24" style="display: none;">
+                            <path d="M7 19h10V4H7v15zm-5-2h4V6H2v11zm16-11v11h4V6h-4z"/>
+                        </svg>
+                    </button>
+                    
+                    <button @click="rotate(1)" x-show="viewMode === 'carousel'">
+                        <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -482,6 +573,20 @@
 
             // 3D CAROUSEL STATE & PHYSICS
             Alpine.data('carouselApp', () => ({
+                viewMode: 'carousel',
+                
+                init() {
+                    const savedMode = localStorage.getItem('ns_v3_view_mode');
+                    if (savedMode) {
+                        this.viewMode = savedMode;
+                    }
+                },
+                
+                toggleViewMode() {
+                    this.viewMode = this.viewMode === 'carousel' ? 'grid' : 'carousel';
+                    localStorage.setItem('ns_v3_view_mode', this.viewMode);
+                },
+
                 current: 0,
                 isDragging: false,
                 dragDistance: 0, 
