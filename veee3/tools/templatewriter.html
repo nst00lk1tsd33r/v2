@@ -125,6 +125,44 @@
         document.body.removeChild(tempDiv);
     },
 
+    hasWww(link) {
+        if (!link) return false;
+        // Checks if 'www.' is at the exact start, or right after http:// or https://
+        return /^(https?:\/\/)?www\./i.test(link.trim());
+    },
+
+    toggleWww(u, forceState = null) {
+        if (!u || typeof u.link !== 'string') return;
+        let str = u.link.trim();
+        let currentHasWww = this.hasWww(str);
+        
+        // If the checkbox gives us a specific state, use it. Otherwise, just toggle.
+        let shouldAdd = (forceState !== null) ? forceState : !currentHasWww;
+        
+        if (shouldAdd && !currentHasWww) {
+            // Adds 'www.' right after the protocol, or at the start if no protocol exists
+            u.link = str.replace(/^(https?:\/\/)?/i, '$1www.');
+        } else if (!shouldAdd && currentHasWww) {
+            // Removes 'www.' only if it's right after the protocol or at the start
+            u.link = str.replace(/^(https?:\/\/)?www\./i, '$1');
+        }
+    },
+
+    extractPlatform(url) {
+        if (!url) return '';
+        let match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
+        if (!match) return '';
+        let domain = match[1].split('.')[0].toLowerCase();
+        let siteName = domain.charAt(0).toUpperCase() + domain.slice(1);
+        
+        if (domain === 'linkedin') siteName = 'LinkedIn';
+        else if (domain === 'youtube') siteName = 'YouTube';
+        else if (domain === 'tiktok') siteName = 'TikTok';
+        else if (domain === 'x' || domain === 'twitter') siteName = 'X (Twitter)';
+        
+        return siteName;
+    },
+
     // --- NEW PRESET FUNCTIONS ---
     savePreset() {
         if (this.feats.custom || this.activePreset) {
@@ -395,7 +433,7 @@ scrollToDrawer(id) {
                 let rel = c.friend ? 'friends with' : c.following ? 'following' : c.follower ? 'followed by' : c.connected ? 'connected to' : '';
                 if (rel && c.title) pf.push(`${rel} the # identified ${acc} account`);
             } else if (c.friend && c.seen) {
-                if (c.name && c.title) pf.push(`mutual friend${nm ? ` (${nm})` : ''} ${getAso()} the # identified ${acc} account`);
+                if (c.name && c.title) pf.push(`common friend${nm ? ` (${nm})` : ''} ${getAso()} the # identified ${acc} account`);
             } else if (c.following || c.follower || c.connected) {
                 let rel = c.following ? 'following' : c.follower ? 'followed by' : 'connected to';
                 let art = /^[aeiou]/i.test(c.net || c.id || '') ? 'an' : 'a';
@@ -661,40 +699,6 @@ let prefStr = '';
             t.dispatchEvent(new Event('input', { bubbles: true }));
         }
     }
-"
-@paste.window="
-    let t = $event.target;
-    if (t.tagName === 'INPUT' && (t.placeholder || '').toLowerCase().includes('link')) {
-        let pasted = ($event.clipboardData || window.clipboardData).getData('text').trim();
-        let match = pasted.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
-        
-        if (match) {
-            let domain = match[1].split('.')[0].toLowerCase();
-            let siteName = domain.charAt(0).toUpperCase() + domain.slice(1);
-            
-            // Special Cases
-            if (domain === 'linkedin') siteName = 'LinkedIn';
-            else if (domain === 'youtube') siteName = 'YouTube';
-            else if (domain === 'tiktok') siteName = 'TikTok';
-            else if (domain === 'x' || domain === 'twitter') siteName = 'X (Twitter)';
-
-            // Keywords to identify the correct adjacent input field
-            const targets = ['name', 'title', 'platform', 'database'];
-            const isTarget = (el) => el && el.tagName === 'INPUT' && targets.some(kw => (el.placeholder || '').toLowerCase().includes(kw));
-            
-            // Check next sibling first, then previous sibling (to handle layout variations like 'Same' & 'Conn' drawers)
-            let targetInput = isTarget(t.nextElementSibling) ? t.nextElementSibling : (isTarget(t.previousElementSibling) ? t.previousElementSibling : null);
-
-            if (targetInput) {
-                setTimeout(() => {
-                    if (!targetInput.value) { // Only populate if empty
-                        targetInput.value = siteName;
-                        targetInput.dispatchEvent(new Event('input', { bubbles: true })); // Tell Alpine to update x-model
-                    }
-                }, 50);
-            }
-        }
-    }
 ">
 
     <div class="navbar" style="position: relative;">
@@ -732,10 +736,10 @@ let prefStr = '';
                                 <input type="text" x-model="u.link" placeholder="https://..." maxlength="3000" 
                                        class="drawer-input" style="flex: 1; max-width: none; height: 35px; font-size: 14px; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0;">
                                 
-                                <button @click="u.link = u.link.includes('www.') ? u.link.replace('www.', '') : (u.link.includes('://') ? u.link.replace('://', '://www.') : 'www.' + u.link)"
+                                <button @click="toggleWww(u)"
                                         class="slider-btn" 
                                         style="padding: 0 15px; height: 35px; font-size: 14px; white-space: nowrap; border-radius: 8px;"
-                                        :style="u.link.includes('www.') ? 'background: rgba(246, 201, 14, 0.15); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(246, 201, 14, 0.2);' : ''">
+                                        :style="hasWww(u.link) ? 'background: rgba(246, 201, 14, 0.15); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(246, 201, 14, 0.2);' : ''">
                                     www.
                                 </button>
 
@@ -887,7 +891,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seendob" x-model="sub.dob.seen"><label for="seendob">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.dob.link">
                         <input type="text" class="drawer-input" placeholder="Custom Title" maxlength="250" x-model="sub.dob.title">
-                        <input type="text" class="drawer-input" placeholder="Database Name" maxlength="250" x-model="sub.dob.acc">
+                        <div class="input-with-btn">
+                            <button @click="sub.dob.acc = extractPlatform(sub.dob.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                            </button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Database Name" maxlength="250" x-model="sub.dob.acc">
+                        </div>
                     </div>
                 </template>
 
@@ -910,7 +919,12 @@ let prefStr = '';
                             <div class="custom-toggle"><input type="checkbox" id="seenloc" x-model="sub.loc.seen"><label for="seenloc">As Seen On</label></div>
                         </div>
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.loc.link">
-                        <input type="text" class="drawer-input" placeholder="Custom Title" maxlength="250" x-model="sub.loc.title">
+                        <div class="input-with-btn">
+                            <button @click="sub.loc.title = extractPlatform(sub.loc.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Custom Title" maxlength="250" x-model="sub.loc.title">
+                        </div>
                         <input type="text" class="drawer-input" placeholder="Relative Link" maxlength="3000" x-model="sub.loc.relLnk" x-show="sub.loc.rel">
                         <input type="text" class="drawer-input" placeholder="Relative Name" maxlength="250" x-model="sub.loc.relNm" x-show="sub.loc.rel">
                     </div>
@@ -922,7 +936,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seensch" x-model="sub.sch.seen"><label for="seensch">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="School Name" maxlength="250" x-model="sub.sch.name">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.sch.link" x-show="sub.sch.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.sch.title" x-show="sub.sch.seen">
+                        <div class="input-with-btn" x-show="sub.sch.seen">
+                            <button @click="sub.sch.title = extractPlatform(sub.sch.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.sch.title">
+                        </div>
                     </div>
                 </template>
 
@@ -932,7 +951,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenphn" x-model="sub.phn.seen"><label for="seenphn">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Phone Number" maxlength="250" x-model="sub.phn.num">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.phn.link" x-show="sub.phn.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.phn.title" x-show="sub.phn.seen">
+                        <div class="input-with-btn" x-show="sub.phn.seen">
+                            <button @click="sub.phn.title = extractPlatform(sub.phn.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.phn.title">
+                        </div>
                     </div>
                 </template>
 
@@ -943,7 +967,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenmai" x-model="sub.mail.seen"><label for="seenmai">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Email Address" maxlength="250" x-model="sub.mail.addr" @input="sub.mail.addr = $event.target.value.toLowerCase()">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.mail.link" x-show="sub.mail.seen || sub.mail.usr">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.mail.title" x-show="sub.mail.seen || sub.mail.usr">
+                        <div class="input-with-btn" x-show="sub.mail.seen || sub.mail.usr">
+                            <button @click="sub.mail.title = extractPlatform(sub.mail.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.mail.title">
+                        </div>
                     </div>
                 </template>
 
@@ -953,7 +982,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenwrk" x-model="sub.wrk.seen"><label for="seenwrk">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Nature of Work" maxlength="250" x-model="sub.wrk.nat">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.wrk.link" x-show="sub.wrk.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.wrk.title" x-show="sub.wrk.seen">
+                        <div class="input-with-btn" x-show="sub.wrk.seen">
+                            <button @click="sub.wrk.title = extractPlatform(sub.wrk.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.wrk.title">
+                        </div>
                     </div>
                 </template>
 
@@ -963,7 +997,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenemp" x-model="sub.emp.seen"><label for="seenemp">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Company Name" maxlength="250" x-model="sub.emp.name">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.emp.link" x-show="sub.emp.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.emp.title" x-show="sub.emp.seen">
+                        <div class="input-with-btn" x-show="sub.emp.seen">
+                            <button @click="sub.emp.title = extractPlatform(sub.emp.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.emp.title">
+                        </div>
                     </div>
                 </template>
 
@@ -973,7 +1012,12 @@ let prefStr = '';
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenrel" x-model="sub.rel.seen"><label for="seenrel">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Relative Name" maxlength="250" x-model="sub.rel.name">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.rel.link" x-show="sub.rel.seen">
-                        <input type="text" class="drawer-input" placeholder="Database Name" maxlength="250" x-model="sub.rel.title" x-show="sub.rel.seen">
+                        <div class="input-with-btn" x-show="sub.rel.seen">
+                            <button @click="sub.rel.title = extractPlatform(sub.rel.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Database Name" maxlength="250" x-model="sub.rel.title">
+                        </div>
                     </div>
                 </template>
 
@@ -982,7 +1026,12 @@ let prefStr = '';
                         <strong>Visual Match Details</strong>
                         <div class="custom-toggle" style="margin-top: 2px;"><input type="checkbox" id="seenvm" x-model="sub.vm.seen"><label for="seenvm">As Seen On</label></div>
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.vm.link" x-show="sub.vm.seen">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.vm.title" x-show="sub.vm.seen">
+                        <div class="input-with-btn" x-show="sub.vm.seen">
+                            <button @click="sub.vm.title = extractPlatform(sub.vm.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.vm.title">
+                        </div>
                     </div>
                 </template>
 
@@ -991,7 +1040,12 @@ let prefStr = '';
                         <strong>Username Details</strong>
                         <input type="text" class="drawer-input" placeholder="Username" maxlength="250" x-model="sub.user.txt">
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.user.link">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.user.title">
+                        <div class="input-with-btn">
+                            <button @click="sub.user.title = extractPlatform(sub.user.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.user.title">
+                        </div>
                     </div>
                 </template>
 
@@ -999,14 +1053,19 @@ let prefStr = '';
                     <div id="drawer-linked" class="details-drawer" x-transition>
                         <strong>Linked Details</strong>
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.linked.link">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.linked.title">
+                        <div class="input-with-btn">
+                            <button @click="sub.linked.title = extractPlatform(sub.linked.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.linked.title">
+                        </div>
                     </div>
                 </template>
 
                 <template x-if="feats.conn">
                     <div id="drawer-conn" class="details-drawer" x-transition style="flex-direction: column; align-items: flex-start;">
                         <strong>Connection Settings</strong>
-                        
+                    
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <div class="custom-toggle">
                                 <input type="checkbox" id="ismtf" x-model="sub.conn.friend" :disabled="sub.conn.following || sub.conn.follower || sub.conn.connected">
@@ -1033,21 +1092,36 @@ let prefStr = '';
                                 <label for="owncon">Own</label>
                             </div>
                         </div>
-                        
+                    
                         <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
-                            <input type="text" class="drawer-input" placeholder="Platform (e.g. FB)" maxlength="250" x-model="sub.conn.net" :disabled="sub.conn.own || sub.conn.friend">
-                            <input type="text" class="drawer-input" placeholder="Platform Hyperlink" maxlength="3000" x-model="sub.conn.netL" :disabled="sub.conn.own || sub.conn.friend">
-                            
+                        
+                            <div class="input-with-btn">
+                                <button @click="sub.conn.net = extractPlatform(sub.conn.netL)" class="auto-fill-btn" title="Auto-fill from link" :disabled="sub.conn.own || sub.conn.friend">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                                </button>
+                                <input type="text" class="drawer-input auto-fill-input" placeholder="Platform (e.g. FB)" maxlength="250" x-model="sub.conn.net" :disabled="sub.conn.own || sub.conn.friend">
+                            </div>
+                        
+                            <div style="display: flex; flex: 1 1 200px; min-width: 180px; max-width: 320px;">
+                                <input type="text" class="drawer-input" style="width: 100%; max-width: 100%;" placeholder="Platform Hyperlink" maxlength="3000" x-model="sub.conn.netL" :disabled="sub.conn.own || sub.conn.friend">
+                            </div>
+                        
                             <input type="text" class="drawer-input" placeholder="Their Connection" maxlength="250" x-model="sub.conn.id" :disabled="sub.conn.own || sub.conn.friend">
                             <input type="text" class="drawer-input" placeholder="Connection Link 1" maxlength="3000" x-model="sub.conn.link1" :disabled="sub.conn.own || sub.conn.friend">
-                            
+                        
                             <input type="text" class="drawer-input" placeholder="Connection Name" maxlength="250" x-model="sub.conn.name" :disabled="sub.conn.own">
                             <input type="text" class="drawer-input" placeholder="Connection Link 2" maxlength="3000" x-model="sub.conn.link2" :disabled="sub.conn.own">
-                        </div>
+
+                            <div style="display: flex; flex: 1 1 200px; min-width: 180px; max-width: 320px;" x-show="sub.conn.seen || sub.conn.own">
+                                <input type="text" class="drawer-input" style="width: 100%; max-width: 100%;" placeholder="Identified Network Link" maxlength="3000" x-model="sub.conn.accLink" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                            </div>
                         
-                        <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;" x-show="sub.conn.seen || sub.conn.own">
-                            <input type="text" class="drawer-input" placeholder="Identified Network Link" maxlength="3000" x-model="sub.conn.accLink" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
-                            <input type="text" class="drawer-input" placeholder="Identified Network Name" maxlength="250" x-model="sub.conn.title" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                            <div class="input-with-btn" x-show="sub.conn.seen || sub.conn.own">
+                                <button @click="sub.conn.title = extractPlatform(sub.conn.accLink)" class="auto-fill-btn" title="Auto-fill from link" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                                </button>
+                                <input type="text" class="drawer-input auto-fill-input" placeholder="Identified Network Name" maxlength="250" x-model="sub.conn.title" :disabled="!sub.conn.own && (sub.conn.following || sub.conn.follower || sub.conn.connected)">
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -1057,7 +1131,12 @@ let prefStr = '';
                         <strong>Same Object Details</strong>
                         <input type="text" class="drawer-input" placeholder="What Object?" maxlength="250" x-model="sub.same.obj">
                         <input type="text" class="drawer-input" placeholder="Object Link" maxlength="3000" x-model="sub.same.link1">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.same.net">
+                        <div class="input-with-btn">
+                            <button @click="sub.same.net = extractPlatform(sub.same.link2)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.same.net">
+                        </div>
                         <input type="text" class="drawer-input" placeholder="Network Link" maxlength="3000" x-model="sub.same.link2">
                     </div>
                 </template>
@@ -1066,7 +1145,12 @@ let prefStr = '';
                     <div id="drawer-loc2" class="details-drawer" x-transition>
                         <strong>Exact Location Details</strong>
                         <input type="text" class="drawer-input" placeholder="Hyperlink" maxlength="3000" x-model="sub.loc2.link">
-                        <input type="text" class="drawer-input" placeholder="Network Name" maxlength="250" x-model="sub.loc2.title">
+                        <div class="input-with-btn">
+                            <button @click="sub.loc2.title = extractPlatform(sub.loc2.link)" class="auto-fill-btn" title="Auto-fill from link"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                            </svg></button>
+                            <input type="text" class="drawer-input auto-fill-input" placeholder="Network Name" maxlength="250" x-model="sub.loc2.title">
+                        </div>
                     </div>
                 </template>
 
@@ -1266,16 +1350,8 @@ let prefStr = '';
                                 <div class="selection-group" style="margin-bottom: 0;">
                                     <div class="custom-toggle">
                                         <input type="checkbox" :id="'addWww' + index" 
-                                               :checked="u.link.includes('www.')"
-                                               @change="
-                                                   if ($el.checked) {
-                                                       if (!u.link.includes('www.')) {
-                                                           u.link = u.link.includes('://') ? u.link.replace('://', '://www.') : 'www.' + u.link;
-                                                       }
-                                                   } else {
-                                                       u.link = u.link.replace('www.', '');
-                                                   }
-                                               ">
+                                            :checked="hasWww(u.link)"
+                                            @change="toggleWww(u, $el.checked)">
                                         <label :for="'addWww' + index">Include 'www.'</label>
                                     </div>
                                 </div>
@@ -1688,8 +1764,8 @@ let prefStr = '';
     <footer>
         © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
     </footer>
-
-    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+    
+        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <script>
     (function() {
         // 1. Initialize with your specific keys
