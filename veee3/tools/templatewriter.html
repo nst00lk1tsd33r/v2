@@ -1772,13 +1772,14 @@ let prefStr = '';
         const pn = new PubNub({
             publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
             subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
-            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
-            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
+            userId: "v_" + Math.random().toString(36).substr(2, 9), 
+            heartbeatInterval: 10,
+            suppressLeaveEvents: false // Ensures leave events are explicitly tracked
         });
 
-        // 2. IDENTIFY THE PAGE
-        // Change the channel name below for EACH page based on the mapping table
-        const pageChannel = "v3_tw"; 
+        // 2. IDENTIFY THE PAGE 
+        // Try changing "v3_tw" to "v3-tw" if the underscore is causing an issue
+        const pageChannel = "v3-tw"; 
 
         // 3. Connect and signal "Presence"
         pn.subscribe({ 
@@ -1786,8 +1787,8 @@ let prefStr = '';
             withPresence: true 
         });
 
-        // 4. Clean up connection when the tab is closed
-        window.addEventListener('beforeunload', function() {
+        // 4. Clean up connection reliably using 'pagehide' (more reliable than beforeunload)
+        window.addEventListener('pagehide', function() {
             pn.unsubscribe({ channels: [pageChannel] });
         });
     })();
