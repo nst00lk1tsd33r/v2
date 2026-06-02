@@ -1191,7 +1191,7 @@ let prefStr = '';
                         <div class="custom-toggle"><input type="radio" id="pubVideo" name="pubGroup" value="video" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubVideo">Video</label></div>
                         <div class="custom-toggle"><input type="radio" id="pubArticle" name="pubGroup" value="article" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubArticle">Article</label></div>
                         <div class="custom-toggle"><input type="radio" id="pubReview" name="pubGroup" value="review" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubReview">Review</label></div>
-                        <div class="custom-toggle"><input type="radio" id="pubListing" name="pubGroup" value="listing" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="pubListing">Listing</label></div>
+                        <div class="custom-toggle"><input type="radio" id="ting" name="pubGroup" value="listing" x-model="pubType" @change="pubSets = [{type: '', urls: [{link: ''}]}]"><label for="ting">Listing</label></div>
                     </div>
                 </div>
 
@@ -1215,7 +1215,7 @@ let prefStr = '';
                             <div class="custom-toggle"><input type="radio" :id="'pubVideos'+sIndex" :name="'pubGroupMult'+sIndex" value="videos" x-model="pSet.type" @change="pubType = ''"><label :for="'pubVideos'+sIndex">Videos</label></div>
                             <div class="custom-toggle"><input type="radio" :id="'pubArticles'+sIndex" :name="'pubGroupMult'+sIndex" value="articles" x-model="pSet.type" @change="pubType = ''"><label :for="'pubArticles'+sIndex">Articles</label></div>
                             <div class="custom-toggle"><input type="radio" :id="'pubReviews'+sIndex" :name="'pubGroupMult'+sIndex" value="reviews" x-model="pSet.type" @change="pubType = ''"><label :for="'pubReviews'+sIndex">Reviews</label></div>
-                            <div class="custom-toggle"><input type="radio" :id="'pubListings'+sIndex" :name="'pubGroupMult'+sIndex" value="listings" x-model="pSet.type" @change="pubType = ''"><label :for="'pubListings'+sIndex">Listings</label></div>
+                            <div class="custom-toggle"><input type="radio" :id="'tings'+sIndex" :name="'pubGroupMult'+sIndex" value="listings" x-model="pSet.type" @change="pubType = ''"><label :for="'tings'+sIndex">Listings</label></div>
                         </div>
                         
                         <div x-show="pSet.type" x-transition style="margin-top: 5px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
@@ -1765,7 +1765,7 @@ let prefStr = '';
         © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
     </footer>
     
-        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <script>
     (function() {
         // 1. Initialize with your specific keys
