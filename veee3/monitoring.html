@@ -184,15 +184,16 @@
     addLog("System starting up...", "info");
 
     const pubnub = new PubNub({
-            publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
-            subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
+        publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
+        subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
         userId: ADMIN_ID
     });
 
+    // FIXED: Changed id back to "v3_tw" to match your visitor page script
     const tools = [
         { name: "Veee3 Main Hub", id: "v3_main", path: "veee3/" },
         { name: "Excellence Extractor", id: "v3_ext", path: "veee3/tools/excellenceextractor.html" },
-        { name: "Template Writer Advance", id: "v3-tw", path: "veee3/tools/templatewriter.html" },
+        { name: "Template Writer Advance", id: "v3_tw", path: "veee3/tools/templatewriter.html" }, 
         { name: "Template Writer Lite", id: "v3_tw2", path: "veee3/tools/templatewriterv2.html" },
         { name: "Search & Identify", id: "v3_si", path: "veee3/tools/search&identify.html" },
         { name: "Link Batch Opener", id: "v3_whl", path: "veee3/nswheel.html" },
@@ -223,11 +224,20 @@
             if (s.category === 'PNConnectedCategory') addLog("Connected to live network.", "join");
         },
         presence: (p) => {
-            if (p.uuid === ADMIN_ID) return;
+            // Subtract the admin dashboard view from the count so it reflects true real-time traffic
+            let realCount = p.occupancy;
+            
+            // Look up who joined/left
             const toolName = tools.find(t => t.id === p.channel)?.name || p.channel;
-            if (p.action === 'join') addLog(`+ ${toolName} (User joined)`, 'join');
-            if (p.action === 'leave' || p.action === 'timeout') addLog(`- ${toolName} (User left)`, 'leave');
-            updateDisplay(p.channel, p.occupancy);
+            
+            // Only log actions caused by actual visitors, not this monitoring tab
+            if (p.uuid !== ADMIN_ID) {
+                if (p.action === 'join') addLog(`+ ${toolName} (User joined)`, 'join');
+                if (p.action === 'leave' || p.action === 'timeout') addLog(`- ${toolName} (User left)`, 'leave');
+            }
+            
+            // Update UI
+            updateDisplay(p.channel, realCount > 0 ? realCount - 1 : 0);
         }
     });
 
@@ -243,7 +253,10 @@
             if (response && response.channels) {
                 Object.keys(response.channels).forEach(ch => {
                     let count = response.channels[ch].occupancy;
-                    if (count === 1) count = 0; else if (count > 1) count -= 1;
+                    // FIXED: Safer logic to subtract the dashboard connection out of initial sync
+                    if (count > 0) {
+                        count = count - 1; 
+                    }
                     updateDisplay(ch, count);
                 });
                 addLog("Initial counts loaded.", "info");
