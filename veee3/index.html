@@ -696,5 +696,49 @@
             }));
         });
     </script>
+     <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script>
+    (function() {
+        // 1. Initialize with your specific keys
+        const pn = new PubNub({
+            publishKey: "pub-c-7266ede4-8e4e-421a-b9f9-8b0bac695e28",
+            subscribeKey: "sub-c-edc021fc-94d8-480f-a887-a57103ee0cc7",
+            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
+            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
+        });
+
+        // 2. IDENTIFY THE PAGE
+        // Change the channel name below for EACH page based on the mapping table
+        const pageChannel = "v3_si"; 
+
+        // 3. Connect and signal "Presence"
+        pn.subscribe({ 
+            channels: [pageChannel], 
+            withPresence: true 
+        });
+
+        // 4. Clean up connection when the tab is closed
+        window.addEventListener('beforeunload', function() {
+            pn.unsubscribe({ channels: [pageChannel] });
+        });
+    })();
+</script>
+        <script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
 </body>
 </html>
