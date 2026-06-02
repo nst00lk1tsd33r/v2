@@ -218,31 +218,35 @@ const tools = [
         if (el) el.innerText = Math.max(0, count);
     }
 
-    pubnub.addListener({
-        status: (s) => {
-            if (s.error) addLog(`Network Error: ${s.errorData?.message || 'Unknown'}`, 'error');
-            if (s.category === 'PNConnectedCategory') addLog("Connected to live network.", "join");
-        },
-        presence: (p) => {
-            // Subtract the admin dashboard view from the count so it reflects true real-time traffic
-            let realCount = p.occupancy;
-            
-            // Look up who joined/left
-            const toolName = tools.find(t => t.id === p.channel)?.name || p.channel;
-            
-            // Only log actions caused by actual visitors, not this monitoring tab
-            if (p.uuid !== ADMIN_ID) {
-                if (p.action === 'join') addLog(`+ ${toolName} (User joined)`, 'join');
-                if (p.action === 'leave' || p.action === 'timeout') addLog(`- ${toolName} (User left)`, 'leave');
-            }
-            
-            // Update UI
-            updateDisplay(p.channel, realCount > 0 ? realCount - 1 : 0);
+pubnub.addListener({
+    status: (s) => {
+        if (s.error) addLog(`Network Error: ${s.errorData?.message || 'Unknown'}`, 'error');
+        if (s.category === 'PNConnectedCategory') addLog("Connected to live network.", "join");
+    },
+    presence: (p) => {
+        let realCount = p.occupancy;
+        
+        // Find tool by ID or check if it matches an alias
+        let targetTool = tools.find(t => t.id === p.channel || (t.aliases && t.aliases.includes(p.channel)));
+        const toolName = targetTool ? targetTool.name : p.channel;
+        const targetId = targetTool ? targetTool.id : p.channel;
+        
+        if (p.uuid !== ADMIN_ID) {
+            if (p.action === 'join') addLog(`+ ${toolName} (User joined)`, 'join');
+            if (p.action === 'leave' || p.action === 'timeout') addLog(`- ${toolName} (User left)`, 'leave');
         }
-    });
+        
+        updateDisplay(targetId, realCount > 0 ? realCount - 1 : 0);
+    }
+});
 
-    const allChannels = tools.map(t => t.id);
-    pubnub.subscribe({ channels: allChannels, withPresence: true });
+// Update the channels array subscription at the bottom of your Dashboard file to subscribe to ALL variants:
+const allChannels = [];
+tools.forEach(t => {
+    allChannels.push(t.id);
+    if (t.aliases) allChannels.push(...t.aliases);
+});
+pubnub.subscribe({ channels: allChannels, withPresence: true });
 
     setTimeout(() => {
         pubnub.hereNow({ channels: allChannels }, (status, response) => {
