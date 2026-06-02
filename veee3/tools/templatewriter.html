@@ -1765,33 +1765,6 @@ let prefStr = '';
         © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
     </footer>
     
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
-<script>
-    (function() {
-        // 1. Initialize with your specific keys
-        const pn = new PubNub({
-            publishKey: "pub-c-7266ede4-8e4e-421a-b9f9-8b0bac695e28",
-            subscribeKey: "sub-c-edc021fc-94d8-480f-a887-a57103ee0cc7",
-            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
-            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
-        });
-
-        // 2. IDENTIFY THE PAGE
-        // Change the channel name below for EACH page based on the mapping table
-        const pageChannel = "v3_tw1"; 
-
-        // 3. Connect and signal "Presence"
-        pn.subscribe({ 
-            channels: [pageChannel], 
-            withPresence: true 
-        });
-
-        // 4. Clean up connection when the tab is closed
-        window.addEventListener('beforeunload', function() {
-            pn.unsubscribe({ channels: [pageChannel] });
-        });
-    })();
-</script>
         <script>
 document.addEventListener("keydown", function(e) {
   // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
@@ -1809,5 +1782,65 @@ document.addEventListener("keydown", function(e) {
 // Optional: Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+
+    <script>
+        (function() {
+            // 2. Initialize with your keys
+            const pn = new PubNub({
+                publishKey: "pub-c-7266ede4-8e4e-421a-b9f9-8b0bac695e28",
+                subscribeKey: "sub-c-edc021fc-94d8-480f-a887-a57103ee0cc7",
+                userId: "v_" + Math.random().toString(36).substr(2, 9),
+                heartbeatInterval: 10
+            });
+
+            const pageChannel = "v3_tw1"; 
+
+            // 3. LISTEN FOR LIVE CHANGES (Presence Monitoring)
+            pn.addListener({
+                presence: function(event) {
+                    if (event.channel === pageChannel) {
+                        document.getElementById('live-count').innerText = event.occupancy;
+                    }
+                }
+            });
+
+            // 4. SUBSCRIBE TO THE MONITORING CHANNELS
+            pn.subscribe({ 
+                channels: [pageChannel], 
+                withPresence: true 
+            });
+
+            // 5. FETCH INITIAL LIVE STATUS IMMEDIATELY
+            pn.hereNow({
+                channels: [pageChannel],
+                includeUUIDs: false
+            }).then((response) => {
+                const currentLive = response.channels[pageChannel]?.occupancy || 1;
+                document.getElementById('live-count').innerText = currentLive;
+            }).catch(err => console.error("Live check failed:", err));
+
+            // 6. RECORD A "HIT" & FETCH RECENT HITS (Simulating Total Views safely)
+            // We publish a tiny heartbeat timestamp to keep track of historical traffic
+            pn.publish({
+                channel: pageChannel + "-counter",
+                message: { hit: true }
+            });
+
+            // Read the message history from PubNub storage to calculate recent activity
+            pn.history({
+                channel: pageChannel + "-counter",
+                count: 100 // Fetches up to the last 100 recent sessions
+            }).then((response) => {
+                const totalRecentHits = response.messages.length || 1;
+                document.getElementById('total-count').innerText = totalRecentHits;
+            }).catch(err => console.error("History check failed:", err));
+
+            // 7. CLEAN UNLOAD
+            window.addEventListener('beforeunload', function() {
+                pn.unsubscribe({ channels: [pageChannel] });
+            });
+        })();
+    </script>
 </body>
 </html>
