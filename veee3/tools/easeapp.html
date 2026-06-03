@@ -2281,32 +2281,31 @@
         });
     });
     </script>
-    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
-<script>
-    (function() {
-        // 1. Initialize with your specific keys
-        const pn = new PubNub({
-            publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
-            subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
-            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
-            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
-        });
+<script type="text/javascript" src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script type="text/javascript">
+    var MY_PAGE_ID = "v3_eas"; 
 
-        // 2. IDENTIFY THE PAGE
-        // Change the channel name below for EACH page based on the mapping table
-        const pageChannel = "v3_eas"; 
+    // 3. Initialize PubNub
+    var pubnub = new PubNub({
+        publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
+        subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
+        userId: "user_" + Math.random().toString(36).substring(2, 9),
+        heartbeatInterval: 30
+    });
 
-        // 3. Connect and signal "Presence"
-        pn.subscribe({ 
-            channels: [pageChannel], 
-            withPresence: true 
-        });
+    // 4. Join the specific channel
+    pubnub.subscribe({
+        channels: [MY_PAGE_ID],
+        withPresence: true
+    });
 
-        // 4. Clean up connection when the tab is closed
-        window.addEventListener('beforeunload', function() {
-            pn.unsubscribe({ channels: [pageChannel] });
+    // 5. Cleanup when the user leaves
+    // This ensures your "Live Monitor" updates the count immediately
+    window.onbeforeunload = function() {
+        pubnub.unsubscribe({
+            channels: [MY_PAGE_ID]
         });
-    })();
+    };
 </script>
 </body>
 </html>
