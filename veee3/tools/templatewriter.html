@@ -1765,31 +1765,27 @@ let prefStr = '';
         © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
     </footer>
     
-<script type="text/javascript" src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
-<script type="text/javascript">
-    var MY_PAGE_ID = "v3_tw"; 
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script>
+    const CHANNEL_ID = "v3_tw";
 
-    // 3. Initialize PubNub
-    var pubnub = new PubNub({
+    const pubnub = new PubNub({
         publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
         subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
         userId: "user_" + Math.random().toString(36).substring(2, 9),
         heartbeatInterval: 30
     });
 
-    // 4. Join the specific channel
     pubnub.subscribe({
-        channels: [MY_PAGE_ID],
+        channels: [CHANNEL_ID],
         withPresence: true
     });
 
-    // 5. Cleanup when the user leaves
-    // This ensures your "Live Monitor" updates the count immediately
-    window.onbeforeunload = function() {
+    window.addEventListener('beforeunload', () => {
         pubnub.unsubscribe({
-            channels: [MY_PAGE_ID]
+            channels: [CHANNEL_ID]
         });
-    };
+    });
 </script>
 </body>
 </html>
