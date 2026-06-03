@@ -552,7 +552,7 @@
                             let rawPse = data.pseNames || '';
                             let pseNames = '(public search engine)';
                             let rawTextPse = rawPse.replace(/<[^>]*>?/gm, '').trim(); 
-                            let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
+                            let cleanPse = rawPse.replace(/<\/a>\s*<a/gi, '</a>|||<a').replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
                             
                             if (cleanPse) {
                                 let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
@@ -653,7 +653,7 @@
                             let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
                             let rawPse = data.pseNames || '';
                             let pseNames = '(public search engine)';
-                            let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
+                            let cleanPse = rawPse.replace(/<\/a>\s*<a/gi, '</a>|||<a').replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
                             if (cleanPse) {
                                 let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
                                 if (items.length > 0) {
@@ -693,7 +693,7 @@
                             let idByStr = (data.idBy || '').trim() ? data.idBy.trim() : '(identifiers)';
                             let rawPse = data.pseNames || '';
                             let pseNames = '(public search engine)';
-                            let cleanPse = rawPse.replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
+                            let cleanPse = rawPse.replace(/<\/a>\s*<a/gi, '</a>|||<a').replace(/<\/p>\s*<p[^>]*>/gi, '|||').replace(/<br\s*\/?>/gi, '|||').replace(/<\/?p[^>]*>/gi, '').trim();
                             if (cleanPse) {
                                 let items = cleanPse.split('|||').map(s => s.trim()).filter(Boolean);
                                 if (items.length > 0) {
@@ -2281,31 +2281,5 @@
         });
     });
     </script>
-            <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
-<script>
-    (function() {
-        // 1. Initialize with your specific keys
-        const pn = new PubNub({
-            publishKey: "pub-c-7266ede4-8e4e-421a-b9f9-8b0bac695e28",
-            subscribeKey: "sub-c-edc021fc-94d8-480f-a887-a57103ee0cc7",
-            userId: "v_" + Math.random().toString(36).substr(2, 9), // Creates a unique ID for every visitor
-            heartbeatInterval: 10 // Tells PubNub the user is still active every 10 seconds
-        });
-
-        // 2. IDENTIFY THE PAGE
-        const pageChannel = "v3_eas"; 
-
-        // 3. Connect and signal "Presence"
-        pn.subscribe({ 
-            channels: [pageChannel], 
-            withPresence: true 
-        });
-
-        // 4. Clean up connection when the tab is closed
-        window.addEventListener('beforeunload', function() {
-            pn.unsubscribe({ channels: [pageChannel] });
-        });
-    })();
-</script>
 </body>
 </html>
