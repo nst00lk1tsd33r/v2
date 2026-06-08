@@ -231,6 +231,62 @@
 		th:nth-child(5), td:nth-child(5) { width: auto !important; }
 		th:nth-child(6), td:nth-child(6) { width: 85px !important; white-space: nowrap; }
 		[style*="display: none"] { display: none !important; width: 0 !important; padding: 0 !important; }
+		/* FORCE VIEWPORT LOCK */
+/* Clean slate for the table */
+#resultsTable {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+/* Horizontal Gold Lines */
+#resultsTable tr td, 
+#resultsTable tr th {
+    border-top: 1px solid #f6c90e !important;
+    border-bottom: 1px solid #f6c90e !important;
+}
+
+/* Left Gold Line (Always on the 'DEL' column) */
+#resultsTable tr td:first-child, 
+#resultsTable tr th:first-child {
+    border-left: 1px solid #f6c90e !important;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+.mgmt-btn {
+    background-color: #f6c90e; /* Modern Gold */
+    color: #000;
+    border: none;
+    cursor: pointer;
+    
+    /* PRECISE SIZE MATCH */
+    width: 100%;             
+    height: 32px;            /* Slimmer height to match screenshot */
+    border-radius: 4px;      /* Sharp but slightly rounded corners */
+    
+    /* SYMBOL ALIGNMENT */
+    font-size: 16px;         
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* SPACING & RESET */
+    margin: 5px 0;           
+    padding: 0;              
+    outline: none;
+    transition: background-color 0.2s ease;
+}
+
+/* Hover Animation */
+.mgmt-btn:hover {
+    background-color: #e5ba0d; 
+}
+
+/* Click Animation */
+.mgmt-btn:active {
+    transform: scale(0.98);
+}
     </style>
 </head>
 <body>
@@ -244,11 +300,11 @@
 
     <div class="navbar">
         <div class="nav-inner">
-            <div class="nav-left"><a href="https://nstoolkits.site/v3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
+            <div class="nav-left"><a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
             <div class="nav-menu">
-             <a href="https://nstoolkits.site/v3/">Home</a>
-            <a href="https://nstoolkits.site/v3/about.html">About Us</a>
-         <a href="https://nstoolkits.site/v3/download.html">Metascraper</a>
+             <a href="https://nstoolkits.site/veee3/">Home</a>
+            <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
+         <a href="https://nstoolkits.site/veee3/download.html">Download</a>
             <a href="https://nstoolkits.site/">Version 2</a>
             </div>
         </div>
@@ -257,13 +313,30 @@
     <div class="app-container">
         <aside class="sidebar">
             <h2>Socmed S&I</h2>
-            <p>Advanced Social Intelligence Gathering. v6.0</p>
+            <p>Advanced Social Intelligence Gathering. v7.0</p>
             
             <div class="input-group">
                 <label>Management</label>
-                <button class="btn btn-add" onclick="addRow()">+</button>
+                <button class="mgmt-btn" onclick="addRow()">+</button>
             </div>
 &nbsp;
+
+<div class="toggle-container">
+    <label style="font-size: 10px; cursor: pointer;" for="pseSearchToggle">PSE Search Mode</label>
+    <label class="switch">
+        <input type="checkbox" id="pseSearchToggle" onchange="handlePSESwitch(this)">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<div class="toggle-container">
+    <label style="font-size: 10px; cursor: pointer;" for="userModeToggle">Username Mode</label>
+    <label class="switch">
+        <input type="checkbox" id="userModeToggle" onchange="toggleUserMode(this.checked)">
+        <span class="slider"></span>
+    </label>
+</div>
+
             <div class="toggle-container">
                 <label style="font-size: 10px; cursor: pointer;" for="mainToggle">Main Socmed</label>
                 <label class="switch">
@@ -360,14 +433,14 @@
 			<div style="flex-grow: 1;"></div>
 
 		<div style="padding-top: 20px; border-top: 1px solid var(--border-color); flex-shrink: 0; margin-top: 20px;">
-		<div style="font-size: 10px; color: var(--text-dim);">Made by Darel Miranda | NS ToolKits Team</div>
+		<div style="font-size: 10px; color: var(--text-dim);">Created by Darel Miranda | NS ToolKits Team</div>
 		</div>
 		</aside>
 
         <main class="main-content">
             <header class="header-bar">
                 <div style="font-size: 10px; font-weight: bold; color: var(--text-dim);">S&I DASHBOARD // ACTIVE SESSION</div>
-                <div id="rowCount" style="font-size: 10px; color: var(--accent-gold);">0 TARGETS LOADED</div>
+                <div id="rowCount" style="font-size: 10px; color: var(--accent-gold);">0 TARGET/S LOADED</div>
             </header>
 
             <div class="table-container">
@@ -375,10 +448,10 @@
                     <thead>
                         <tr id="headerRow">
                             <th>Del</th>
-                            <th>POI Name/Username</th>
-                            <th>City</th>
+                            <th>Name</th>
+                            <th>CT</th>
                             <th>ST</th>
-                            <th>Additional</th>
+                            <th>Keyword</th>
                             <th>Bulk</th>
                         </tr>
                     </thead>
@@ -394,7 +467,7 @@
 
     const mainSocials = [
     { short: "FB", full: "Facebook" }, { short: "IG", full: "Instagram" }, { short: "TW", full: "Twitter" },
-    { short: "YT", full: "YouTube" }, { short: "LI", full: "LinkedIn" }, { short: "TK", full: "TikTok" },
+    { short: "YT", full: "YouTube" }, { short: "LK", full: "LinkedIn" }, { short: "TK", full: "TikTok" },
     { short: "PIN", full: "Pinterest" }, { short: "STR", full: "Strava" }, { short: "TUM", full: "Tumblr" }
 ];
 
@@ -404,11 +477,12 @@ const subSocials = [
     { short: "VSC", full: "VSCO" }, { short: "MY", full: "MySpace" }, 
     { short: "VIM", full: "Vimeo" }, { short: "GFM", full: "GoFundMe" }, 
     { short: "VEN", full: "Venmo" }, { short: "SPO", full: "Spotify" },
-    { short: "BSK", full: "BlueSky" }
+    { short: "BSK", full: "BlueSky" },
+    { short: "ZOM", full: "Zoominfo" }
 ];
 
 const searchTemplates = [
-    "https://www.facebook.com/search/top/?q=", 
+    "https://www.facebook.com/search/people/?q=", 
     "https://imginn.com/search/",              
     "https://www.x.com/search?q=",             
     "https://www.youtube.com/results?search_query=",
@@ -456,21 +530,16 @@ const searchTemplates = [
 	
 
     function toggleColumns(className, isVisible) {
-    // 1. Existing toggle logic for the social columns
     const displayValue = isVisible ? 'table-cell' : 'none';
     document.querySelectorAll('.' + className).forEach(col => {
         col.style.display = displayValue;
     });
 
-    // 2. Logic to hide/show the OPEN button
-    // This looks for all checkboxes in your sidebar to see if any are checked
     const anySocActive = Array.from(document.querySelectorAll('.sidebar input[type="checkbox"]'))
                               .some(input => input.checked);
     
-    // Select the 6th column (BULK header and all row cells)
     const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
 
-    // If NO checkboxes are checked, hide the column. Otherwise, show it.
     const bulkDisplay = anySocActive ? 'table-cell' : 'none';
     
     bulkCols.forEach(col => {
@@ -602,19 +671,16 @@ const searchTemplates = [
         col.style.display = displayValue;
     });
 
-    // Directly check your switch IDs
     const mainOn = document.getElementById('mainToggle').checked;
     const subOn = document.getElementById('subToggle').checked;
     const bulkCols = document.querySelectorAll('th:nth-child(6), td:nth-child(6)');
 
-    // Hide button ONLY if both are off
     bulkCols.forEach(col => {
         col.style.display = (mainOn || subOn) ? 'table-cell' : 'none';
     });
 	}
 
 	function loadHistoryName(name) {
-        // Force a new row for every history click
         const newRow = addRow(); 
         const input = newRow.querySelector('.name-input');
         input.value = name;
@@ -719,6 +785,18 @@ const searchTemplates = [
             links[21].href = `https://bsky.app/search?q=${enc}`;
             links[21].classList.remove('hidden-link');
         }
+		
+		const totalSocCount = mainSocials.length + subSocials.length;
+        const zoomIndex = totalSocCount - 1; 
+
+        if (links[zoomIndex]) {
+            // Re-using your logic: Clean name and join with /
+            const cleanZomName = name.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const zomPath = cleanZomName.split(/\s+/).join('/');
+            
+            links[zoomIndex].href = `https://www.zoominfo.com/people/${zomPath}`;
+            links[zoomIndex].classList.remove('hidden-link');
+        }
 
         if (input.classList.contains('name-input')) {
             clearTimeout(searchTimeout);
@@ -758,7 +836,7 @@ const searchTemplates = [
     }
 
     function removeRow(btn) { btn.closest('tr').remove(); updateCount(); saveToLocalStorage(); }
-    function updateCount() { document.getElementById('rowCount').innerText = `${document.getElementById('tableBody').children.length} TARGETS LOADED`; }
+    function updateCount() { document.getElementById('rowCount').innerText = `${document.getElementById('tableBody').children.length} TARGET/S LOADED`; }
     
     function openAllInRow(btn) { 
         btn.closest('tr').querySelectorAll('a:not(.hidden-link)').forEach(l => {
@@ -838,6 +916,459 @@ document.onkeydown = e => {
 function openYelpPortal() {
     window.open("https://www.yelp.com/find_friends/address_book?fsid=LpiV-_mJLfXiPGsVN3Wkjw", "_blank");
 }
+</script>
+<script>
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .btn-open, .btn-open-all {
+            transition: all 0.3s ease !important;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .btn-open:hover, .btn-open-all:hover {
+            background-color: #f6c90e !important;
+            color: #111 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(246, 201, 14, 0.4);
+            cursor: pointer;
+        }
+        .btn-open:active, .btn-open-all:active {
+            transform: translateY(0);
+        }
+    `;
+    document.head.appendChild(style);
+
+    /* --- 2. LOGIC & UI SYNC --- */
+    let isUserModeActive = false;
+    let standardRowTemplate = ''; 
+    let deleteBtnHTML = ''; 
+
+    const userPlatforms = [
+        { id: 'Facebook', url: 'https://facebook.com/' },
+        { id: 'Instagram', url: 'https://instagram.com/' },
+        { id: 'Twitter', url: 'https://x.com/' },
+        { id: 'YouTube', url: 'https://www.youtube.com/@' },
+        { id: 'LinkedIn', url: 'https://linkedin.com/in/' },
+        { id: 'TikTok', url: 'https://www.tiktok.com/@' },
+        { id: 'Pinterest', url: 'https://www.pinterest.com/' },
+        { id: 'Poshmark', url: 'https://poshmark.com/closet/' },
+        { id: 'VSCO', url: 'https://vsco.co/' },
+        { id: 'MySpace', url: 'https://myspace.com/' },
+        { id: 'Kik', url: 'https://kik.me/' },
+        { id: 'Snapchat', url: 'https://www.snapchat.com/add/' },
+        { id: 'Twitch', url: 'https://www.twitch.tv/' },
+        { id: 'Flickr', url: 'https://www.flickr.com/photos/' },
+        { id: 'Medium', url: 'https://medium.com/@' },
+        { id: 'DeviantArt', url: 'https://www.deviantart.com/' },
+        { id: 'Tripadvisor', url: 'https://www.tripadvisor.com/profile/' },
+        { id: 'OnlyFans', url: 'https://onlyfans.com/' },
+        { id: 'Tinder', url: 'https://tinder.com/@' }
+    ];
+
+    window.addEventListener('load', () => {
+        const firstRow = document.querySelector('#tableBody tr');
+        if (firstRow) {
+            standardRowTemplate = firstRow.innerHTML;
+            deleteBtnHTML = firstRow.cells[0].innerHTML; 
+        }
+    });
+
+    function toggleUserMode(enabled) {
+        isUserModeActive = enabled;
+        const headerRow = document.getElementById('headerRow');
+        const tableBody = document.getElementById('tableBody');
+        const otherToggles = ['mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 'crimToggle', 'pseSearchToggle', 'finToggle', 'yelpToggle'];
+
+        otherToggles.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.disabled = enabled;
+                const container = el.closest('.toggle-container');
+                if (container) {
+                    container.style.opacity = enabled ? '0.2' : '1';
+                    container.style.pointerEvents = enabled ? 'none' : 'auto';
+                }
+            }
+        });
+
+        if (enabled) {
+            headerRow.innerHTML = `
+                <th style="width:40px">DEL</th>
+                <th style="width:220px">TARGET USERNAME</th>
+                <th style="width:130px">BULK</th>
+                ${userPlatforms.map(p => `<th style="color:#f6c90e">${p.id}</th>`).join('')}
+            `;
+            
+            Array.from(tableBody.rows).forEach(row => {
+                const currentName = row.querySelector('.name-input')?.value || "";
+                renderUsernameRow(row, currentName);
+            });
+        } else {
+            headerRow.innerHTML = `
+                <th style="width:40px">DEL</th>
+                <th style="width:200px">NAME</th>
+                <th>CT</th>
+                <th style="width:40px">ST</th>
+                <th>Keyword</th>
+                <th style="width:80px">BULK</th>
+                <th class="main-col">FACEBOOK</th><th class="main-col">INSTAGRAM</th><th class="main-col">TWITTER</th><th class="main-col">YOUTUBE</th><th class="main-col">LINKEDIN</th>
+                <th class="sub-col">TIKTOK</th><th class="sub-col">PINTEREST</th><th class="sub-col">STRAVA</th><th class="sub-col">TUMBLR</th>
+            `;
+            
+            Array.from(tableBody.rows).forEach(row => {
+                const currentName = row.querySelector('.name-input')?.value || "";
+                row.innerHTML = standardRowTemplate;
+                const nameInput = row.querySelector('.name-input');
+                if (nameInput) nameInput.value = currentName;
+
+                const openBtn = row.querySelector('.btn-open');
+                if (openBtn) openBtn.classList.add('btn-open'); 
+            });
+
+            otherToggles.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.dispatchEvent(new Event('change'));
+                    if (el.onclick) el.onclick();
+                }
+            });
+        }
+
+        if (typeof fixDashboardLayout === "function") {
+            setTimeout(fixDashboardLayout, 100);
+        }
+    }
+
+    function renderUsernameRow(row, val) {
+        row.innerHTML = `
+            <td>${deleteBtnHTML}</td>
+            <td><input type="text" class="name-input" value="${val}" style="color:#f6c90e; background:transparent; border:none; outline:none; width:100%; font-weight:bold;"></td>
+            <td><button class="btn-open-all" style="border:1px solid #f6c90e; color:#f6c90e; background:transparent; border-radius:4px; padding:3px 15px; cursor:pointer; font-size:10px;" onclick="bulkDirectOpen(this)">OPEN ALL</button></td>
+            ${userPlatforms.map(p => `<td><a href="#" onclick="openDirectUser('${p.url}', this); return false;" style="color:#f6c90e; text-decoration:none; font-weight:bold;">GO</a></td>`).join('')}
+        `;
+    }
+
+    function openDirectUser(url, el) {
+        const u = el.closest('tr').querySelector('.name-input').value.trim().replace('@','');
+        if(u) window.open(url + u, '_blank');
+    }
+
+    function bulkDirectOpen(btn) {
+        const u = btn.closest('tr').querySelector('.name-input').value.trim().replace('@','');
+        if(u) userPlatforms.forEach(p => window.open(p.url + u, '_blank'));
+    }
+
+    const addBtn = document.querySelector('.btn-add');
+    if (addBtn) {
+        addBtn.onclick = function() {
+            const tbody = document.getElementById('tableBody');
+            const newRow = tbody.insertRow();
+            if (isUserModeActive) {
+                renderUsernameRow(newRow, "");
+            } else {
+                newRow.innerHTML = standardRowTemplate;
+                ['mainToggle', 'subToggle'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.dispatchEvent(new Event('change'));
+                });
+            }
+            if (typeof fixDashboardLayout === "function") {
+                setTimeout(fixDashboardLayout, 50);
+            }
+        };
+    }
+</script>
+<script>
+    /* --- ZOOMINFO SUB-SOCMED MODULE --- */
+    
+    function getZoominfoUrl(fullName) {
+        if (!fullName) return "#";
+        // Clean name and convert "John Doe" to "john/doe"
+        const cleanName = fullName.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '');
+        const namePath = cleanName.split(/\s+/).join('/');
+        return `https://www.zoominfo.com/people/${namePath}`;
+    }
+
+    // This function will be called inside your updateLinks loop
+    function updateZoominfoLink(row, name) {
+        // Zoominfo is the LAST item in the total socials list
+        const allLinks = row.querySelectorAll('a');
+        const zoomIndex = mainSocials.length + subSocials.length - 1;
+        
+        if (allLinks[zoomIndex]) {
+            const link = allLinks[zoomIndex];
+            if (name) {
+                link.href = getZoominfoUrl(name);
+                link.classList.remove('hidden-link');
+            } else {
+                link.classList.add('hidden-link');
+            }
+        }
+    }
+</script>
+<script>
+    (function() {
+        const UI_STORAGE_KEY = 'ns_ui_toggle_states';
+        const toggleIds = [
+            'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 
+            'crimToggle', 'finToggle', 'yelpToggle', 'pseSearchToggle', 'usernameModeToggle'
+        ];
+
+        function saveAllToggles() {
+            const state = {};
+            toggleIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) state[id] = el.checked;
+            });
+            localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function restoreAllToggles() {
+            const saved = JSON.parse(localStorage.getItem(UI_STORAGE_KEY));
+            if (!saved) return;
+
+            // Sort so usernameModeToggle runs LAST to prevent it being overridden
+            const sortedKeys = Object.keys(saved).sort((a, b) => 
+                (a === 'usernameModeToggle') ? 1 : (b === 'usernameModeToggle') ? -1 : 0
+            );
+
+            sortedKeys.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && saved[id] !== undefined) {
+                    el.checked = saved[id];
+                    
+                    // Trigger events
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (el.onclick) el.onclick();
+
+                    // Specific trigger for the UI reconstruction
+                    if (id === 'usernameModeToggle' && saved[id] === true) {
+                        if (typeof window.toggleUserMode === 'function') {
+                            window.toggleUserMode(true);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize with a safer check
+        function initPersistence() {
+            restoreAllToggles();
+            
+            toggleIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    // Use both 'change' and 'click' to catch all user interactions
+                    el.addEventListener('change', saveAllToggles);
+                    el.addEventListener('click', saveAllToggles);
+                }
+            });
+        }
+
+        const checkReady = setInterval(() => {
+            // Checks if the table body exists and your main function is defined
+            if (document.getElementById('tableBody') && typeof window.toggleUserMode === 'function') {
+                clearInterval(checkReady);
+                initPersistence();
+            }
+        }, 100);
+
+        // Fallback: stop checking after 3 seconds
+        setTimeout(() => clearInterval(checkReady), 3000);
+    })();
+</script>
+<script>
+    (function() {
+        const YT_FILTER = "&sp=EgIQAg%253D%253D";
+
+        function applyFilterToHrefs() {
+            // Find all rows in your table
+            const rows = document.querySelectorAll('#tableBody tr');
+            
+            rows.forEach(row => {
+                const nameInput = row.querySelector('.name-input');
+                const name = nameInput ? nameInput.value.trim() : "";
+                if (!name) return;
+
+                // Look for any link that points to YouTube
+                const links = row.querySelectorAll('a[href*="youtube.com"]');
+                
+                links.forEach(link => {
+                    // Update the actual href so bulk scripts see the filter
+                    if (!link.href.includes(YT_FILTER)) {
+                        // Construct the clean filtered URL
+                        const filteredUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(name)}${YT_FILTER}`;
+                        link.href = filteredUrl;
+                    }
+                });
+            });
+        }
+
+        // 1. Run whenever the table changes (new rows or name edits)
+        const observer = new MutationObserver(applyFilterToHrefs);
+        const tableBody = document.getElementById('tableBody');
+        
+        if (tableBody) {
+            observer.observe(tableBody, { 
+                childList: true, 
+                subtree: true, 
+                characterData: true 
+            });
+        }
+
+        // 2. Run when the Main Toggle is flipped
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'mainToggle' || e.target.classList.contains('name-input')) {
+                setTimeout(applyFilterToHrefs, 100);
+            }
+        });
+
+        // 3. Initial run
+        window.addEventListener('load', () => {
+            setTimeout(applyFilterToHrefs, 500);
+        });
+    })();
+</script>
+<script>
+    (function() {
+        let originalRows = [];
+        const W_DEL = "50px", W_NAME = "220px", W_CT = "220px", W_ST = "70px";
+
+        const stateMap = {'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD', 'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY'};
+
+        function getStateAbbr(input) {
+            let clean = input.trim().toLowerCase();
+            return stateMap[clean] || input.trim().toUpperCase();
+        }
+
+        window.handlePSESwitch = function(checkbox) {
+            if (checkbox.checked) {
+                sessionStorage.setItem('pse_active', 'true');
+                togglePSEMode(true);
+            } else {
+                if (sessionStorage.getItem('pse_active') === 'true') {
+                    sessionStorage.removeItem('pse_active');
+                    location.reload(); 
+                }
+            }
+        };
+
+        window.togglePSEMode = function(isActive) {
+            const tbody = document.getElementById('tableBody');
+            const thead = document.querySelector('thead tr');
+            const otherToggles = ['userModeToggle', 'mainToggle', 'subToggle', 'engineToggle', 'legalToggle', 'crimToggle', 'finToggle', 'yelpToggle'];
+            
+            if (isActive) {
+                otherToggles.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = true;
+                        const container = el.closest('.toggle-container') || el.parentElement;
+                        container.style.opacity = '0.3';
+                        container.style.pointerEvents = 'none';
+                    }
+                });
+
+                originalRows = Array.from(tbody.rows).map(row => ({
+                    name: row.querySelector('.name-input')?.value || "",
+                    ct: row.cells[2]?.querySelector('input')?.value || "",
+                    st: row.cells[3]?.querySelector('input')?.value || ""
+                }));
+
+                thead.innerHTML = `
+                    <th style="width: ${W_DEL}; text-align: center; font-size: 10px; opacity: 0.8;">DEL</th>
+                    <th style="width: ${W_NAME}; text-align: left; padding-left: 15px; font-size: 10px; opacity: 0.8;">FULL NAME</th>
+                    <th style="width: ${W_CT}; text-align: left; font-size: 10px; opacity: 0.8;">CITY, STATE</th>
+                    <th style="width: ${W_ST}; text-align: center; font-size: 10px; opacity: 0.8;">BULK</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Truepeoplesearch</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Searchpeoplefree</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Fastpeoplesearch</th>
+                    <th style="text-align: center; color:#f6c90e; font-size: 9px;">Fastbackgroundcheck</th>
+                `;
+
+                tbody.innerHTML = '';
+                (originalRows.length ? originalRows : [{name: ""}]).forEach(data => renderPSERow(tbody.insertRow(), data.name, data.ct));
+            }
+        };
+
+        function renderPSERow(row, name, ct) {
+            const goStyle = `background:none; border:none; color:#f6c90e; cursor:pointer; outline:none; font-size: 11px; font-weight: normal;`;
+            row.innerHTML = `
+                <td style="text-align: center;"><button class="btn btn-delete" style="color:#ff4d4d; background:transparent; border:none; font-size: 10px;" onclick="this.closest('tr').remove()">✕</button></td>
+                <td style="padding-left: 15px;"><input type="text" class="ps-fullname name-input" value="${name}" style="background:transparent; border:none; width:100%; outline:none; font-size: 11px; font-weight: normal;"></td>
+                <td style="padding-left: 5px;"><input type="text" class="ps-address" value="${ct}" placeholder="City, State" style="background:transparent; border:none; width:100%; outline:none; color:white; font-size: 11px; font-weight: normal;"></td>
+                <td style="text-align:center;"><button style="border:1px solid #f6c90e; color:#f6c90e; background:transparent; border-radius:4px; padding:1px 6px; cursor:pointer; font-size: 9px; text-transform: uppercase;" onclick="bulkPSESearch(this)">OPEN</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('true', this)">GO</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('free', this)">GO</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('fast', this)">GO</button></td>
+                <td style="text-align:center;"><button style="${goStyle}" onclick="runPSESearch('check', this)">GO</button></td>
+            `;
+        }
+
+        window.runPSESearch = function(type, btn) {
+            const row = btn.closest('tr');
+            const fullName = row.querySelector('.ps-fullname').value.trim();
+            const addr = row.querySelector('.ps-address').value.trim();
+            if (!fullName && !addr) return;
+
+            const nameSlug = fullName.toLowerCase().replace(/ /g, '-');
+            const nameParts = fullName.toLowerCase().split(' ');
+            const first = nameParts[0] || "", last = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+
+            let citySlug = "", state = "", fullAddrSlug = "";
+            const addrParts = addr.split(',');
+            
+            if (addrParts.length >= 2) {
+                let city = addrParts[addrParts.length - 2].trim().toLowerCase();
+                citySlug = city.replace(/ /g, '-');
+                state = getStateAbbr(addrParts[addrParts.length - 1].trim()).toLowerCase();
+                fullAddrSlug = `${citySlug}-${state}`;
+            } else { 
+                citySlug = addr.trim().toLowerCase().replace(/ /g, '-'); 
+                fullAddrSlug = citySlug;
+            }
+
+            let url = "";
+            switch(type) {
+                case 'true': url = `https://www.truepeoplesearch.com/results?name=${encodeURIComponent(fullName)}&citystate=${encodeURIComponent(addr)}`; break;
+                case 'free': url = `https://www.searchpeoplefree.com/find/${first}-${last}/${state}/${citySlug}`; break;
+                case 'fast': url = `https://www.fastpeoplesearch.com/name/${first}-${last}_${fullAddrSlug}`; break;
+                case 'check': url = `https://www.fastbackgroundcheck.com/people/${nameSlug}/${fullAddrSlug}`; break;
+            }
+            window.open(url, '_blank');
+        };
+
+        window.bulkPSESearch = function(btn) {
+            ['true', 'free', 'fast', 'check'].forEach(t => runPSESearch(t, btn));
+        };
+    })();
+</script>
+<script type="text/javascript" src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script type="text/javascript">
+    var MY_PAGE_ID = "v3_si"; 
+
+    // 3. Initialize PubNub
+    var pubnub = new PubNub({
+        publishKey: "pub-c-d5bac423-38d7-4096-bb1f-dca8c8339f49",
+        subscribeKey: "sub-c-4eb236b2-cdf6-4249-a760-391c23a938dc",
+        userId: "user_" + Math.random().toString(36).substring(2, 9),
+        heartbeatInterval: 30
+    });
+
+    // 4. Join the specific channel
+    pubnub.subscribe({
+        channels: [MY_PAGE_ID],
+        withPresence: true
+    });
+
+    // 5. Cleanup when the user leaves
+    // This ensures your "Live Monitor" updates the count immediately
+    window.onbeforeunload = function() {
+        pubnub.unsubscribe({
+            channels: [MY_PAGE_ID]
+        });
+    };
 </script>
 </body>
 </html>
