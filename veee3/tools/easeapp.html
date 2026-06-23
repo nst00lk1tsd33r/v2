@@ -952,8 +952,8 @@
                         p += `${getArt(fName)} ${fName} account was identified by ${idByStr}. ${metricSentence}`;
                         let lP = data.loc.prev.on ? (data.loc.prev.val || '(City, State)') : '';
                         let lC = data.loc.curr.on ? (data.loc.curr.val || '(City, State)') : '';
-                        if (lP && lC) p += `The subject was from ${lP} and is currently living in ${lC}. `;
-                        else if (lP) p += `The subject was from ${lP}. `;
+                        if (lP && lC) p += `The subject is from ${lP} and is currently living in ${lC}. `;
+                        else if (lP) p += `The subject is from ${lP}. `;
                         else if (lC) p += `The subject is currently living in ${lC}. `;
 
                         let wN = data.workEd.emp.on ? (data.workEd.nature.val || '(Nature of work)') : '';
