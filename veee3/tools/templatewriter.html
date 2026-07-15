@@ -673,7 +673,7 @@ let prefStr = '';
         return DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'rel'] });
     }
 }"
-@keydown.window="if($event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 1500); }"
+@keydown.window="if(false && $event.key === 'Control' && !ctrlTimer) { ctrlTimer = setTimeout(() => { showQuickPreview = true; }, 1500); }"
 @keyup.window="if($event.key === 'Control') { clearTimeout(ctrlTimer); ctrlTimer = null; showQuickPreview = false; }"
 @change.window="
     let t = $event.target;
