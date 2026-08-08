@@ -34,7 +34,7 @@
             justify-content: center;
             min-height: 100vh;
             box-sizing: border-box;
-            position: relative; /* Added for absolute footer */
+            position: relative;
         }
 
         .form-container {
@@ -254,6 +254,108 @@
             font-weight: 700;
         }
 
+        /* Fully Overwritten Modern NS Alert Modal Styles (Ensuring No Native Prompt Look) */
+        #ns-custom-alert.ns-alert-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            display: none;
+            justify-content: center !important;
+            align-items: center !important;
+            z-index: 999999 !important;
+            backdrop-filter: blur(5px) !important;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #ns-custom-alert.ns-alert-overlay.active {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        .ns-alert-box {
+            background: #111111 !important;
+            border: 1px solid #d4af37 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.2) !important;
+            padding: 30px !important;
+            border-radius: 14px !important;
+            width: 100% !important;
+            max-width: 380px !important;
+            color: #e0e0e0 !important;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+            text-align: left !important;
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        #ns-custom-alert.ns-alert-overlay.active .ns-alert-box {
+            transform: translateY(0) scale(1);
+        }
+
+        .ns-alert-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .ns-alert-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 50%;
+            padding: 4px;
+        }
+
+        .ns-alert-title {
+            font-size: 12px;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            font-weight: 700;
+        }
+
+        .ns-alert-message {
+            font-size: 15px;
+            color: #ffffff !important;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .ns-alert-btn {
+            width: 100% !important;
+            background: linear-gradient(135deg, #d4af37 0%, #5c4b16 100%) !important;
+            color: #000000 !important;
+            border: none !important;
+            padding: 12px !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+            font-size: 13px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3) !important;
+        }
+
+        .ns-alert-btn:hover {
+            background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%) !important;
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5) !important;
+            transform: translateY(-2px);
+        }
+
+        .ns-alert-btn:active {
+            transform: translateY(1px);
+        }
+
         @media (max-width: 600px) {
             .form-row {
                 flex-direction: column;
@@ -264,7 +366,6 @@
             }
         }
 
-        /* Fallback for smaller screens to prevent footer overlap */
         @media (max-height: 750px) {
             .footer-credits {
                 position: relative;
@@ -373,11 +474,41 @@
     </form>
 </div>
 
+<!-- Custom Modern NS Alert Modal Markup -->
+<div id="ns-custom-alert" class="ns-alert-overlay">
+    <div class="ns-alert-box">
+        <div class="ns-alert-header">
+            <div class="ns-alert-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="ns-alert-title">NS Toolkits Notice</div>
+        </div>
+        <div class="ns-alert-message" id="ns-alert-text">Entry recorded as In Progress!</div>
+        <button class="ns-alert-btn" onclick="closeNsAlert()">OK</button>
+    </div>
+</div>
+
 <div class="footer-credits">
     Credits by <span>LDevelopmentS</span> • <span>NS Toolkits</span> • <span>Darel Miranda</span>
 </div>
 
 <script>
+    function showNsAlert(message) {
+        document.getElementById('ns-alert-text').innerText = message;
+        const alertOverlay = document.getElementById('ns-custom-alert');
+        alertOverlay.style.display = 'flex';
+        alertOverlay.offsetHeight; // Force reflow
+        alertOverlay.classList.add('active');
+    }
+
+    function closeNsAlert() {
+        const alertOverlay = document.getElementById('ns-custom-alert');
+        alertOverlay.classList.remove('active');
+        setTimeout(() => {
+            alertOverlay.style.display = 'none';
+        }, 300);
+    }
+
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz6gmeChQsA57AdLAgIMHOnzvhJdL7zJ5xY8XrNiXOeDa85RSdrWx2Kh8KwVpTXVCH5XA/exec';
     
     const form = document.getElementById('trackerForm');
@@ -494,7 +625,7 @@
         hiddenForm.submit();
 
         setTimeout(() => {
-            alert(currentMode === 'progress' ? 'Entry recorded as In Progress!' : 'Record updated successfully!');
+            showNsAlert(currentMode === 'progress' ? 'Entry recorded as In Progress!' : 'Record updated successfully!');
             form.reset();
             setMode('progress');
             loading.style.display = 'none';
