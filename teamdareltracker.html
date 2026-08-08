@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Darel Tracker</title>
+    
+	<link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+
+    <style>
+        /* NS Toolkits Dark Gold Theme - Modernized & Compact */
+        :root {
+            --bg-color: #0a0a0a;
+            --panel-bg: #111111;
+            --primary-gold: #d4af37;
+            --bright-gold: #ffd700;
+            --dim-gold: #5c4b16;
+            --text-main: #e0e0e0;
+            --text-muted: #999999;
+            --input-bg: #1a1a1a;
+            --input-border: #2a2a2a;
+            --input-hover: #222222;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2vh 20px;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            position: relative; /* Added for absolute footer */
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--panel-bg);
+            padding: 25px 35px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary-gold);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+
+        /* Mode Toggle Tabs */
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-muted);
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 0;
+            width: auto;
+        }
+
+        .tab-btn:hover {
+            background-color: var(--input-hover);
+            color: var(--text-main);
+            border-color: rgba(212, 175, 55, 0.5);
+        }
+
+        .tab-btn.active {
+            background-color: rgba(212, 175, 55, 0.1);
+            color: var(--primary-gold);
+            border-color: var(--primary-gold);
+            box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 9px 12px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        input:hover, select:hover, textarea:hover {
+            background-color: var(--input-hover);
+            border-color: rgba(212, 175, 55, 0.4);
+        }
+
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        /* Fixed Custom Select Arrow */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4af37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 14px;
+            padding-right: 35px;
+            cursor: pointer;
+        }
+
+        select option {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            padding: 8px;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 60px;
+            line-height: 1.4;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            background-color: #1c1c1c;
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+        }
+
+        ::-webkit-calendar-picker-indicator {
+            filter: invert(1) sepia(100%) saturate(400%) hue-rotate(10deg) brightness(90%) contrast(90%);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        ::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--dim-gold) 100%);
+            color: #000000;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.2);
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, var(--bright-gold) 0%, var(--primary-gold) 100%);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Mode-based Hiding */
+        .full-only {
+            display: none;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            color: var(--primary-gold);
+            margin-top: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; text-shadow: 0 0 8px rgba(212, 175, 55, 0.5); }
+            100% { opacity: 0.5; }
+        }
+
+        /* Footer Credits */
+        .footer-credits {
+            position: absolute;
+            bottom: 15px;
+            text-align: center;
+            width: 100%;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .footer-credits span {
+            color: var(--primary-gold);
+            font-weight: 700;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .form-container {
+                padding: 20px;
+            }
+        }
+
+        /* Fallback for smaller screens to prevent footer overlap */
+        @media (max-height: 750px) {
+            .footer-credits {
+                position: relative;
+                margin-top: 20px;
+                bottom: 0;
+            }
+            body {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Team Darel Tracker Q3</h2>
+
+    <!-- Form Mode Tabs -->
+    <div class="tab-container">
+        <button type="button" class="tab-btn active" id="btnProgress" onclick="setMode('progress')">In Progress Mode</button>
+        <button type="button" class="tab-btn" id="btnFull" onclick="setMode('full')">Full Update Mode</button>
+    </div>
+
+    <form id="trackerForm">
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+            <div class="form-group">
+                <label for="dataAnalyst">Data Analyst</label>
+                <select id="dataAnalyst" name="dataAnalyst" required>
+                    <option value="">-- Select Analyst --</option>
+                    <option value="Daniela Joy.Cervantes">Daniela Joy.Cervantes</option>
+                    <option value="Jonell.Julao">Jonell.Julao</option>
+                    <option value="Rosa Camille Teodosio.Macasieb">Rosa Camille Teodosio.Macasieb</option>
+                    <option value="Ehren Patrick.Pangilinan">Ehren Patrick.Pangilinan</option>
+                    <option value="Rafael Anjello.Rivera">Rafael Anjello.Rivera</option>
+                    <option value="Andrea.Sunga">Andrea.Sunga</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="poiName">Name of POI</label>
+                <input type="text" id="poiName" name="poiName" placeholder="E.g., John Smith" required>
+            </div>
+            <div class="form-group">
+                <label for="poiUrl">POI Link (URL)</label>
+                <input type="url" id="poiUrl" name="poiUrl" placeholder="https://next.socialmediareportbuilder.com/">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="client">Client</label>
+                <input type="text" id="client" name="client" placeholder="Client Name">
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" required>
+                    <!-- Options populated by JavaScript based on Mode -->
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row full-only">
+            <div class="form-group">
+                <label for="aht">AHT</label>
+                <input type="text" id="aht" name="aht" placeholder="E.g., 15 (in mins)">
+            </div>
+            <div class="form-group">
+                <label for="activeNotActive">Active / Not Active</label>
+                <select id="activeNotActive" name="activeNotActive">
+                    <option value="">-- Select Option --</option>
+                    <option value="Active">Active</option>
+                    <option value="Not Active">Not Active</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row full-only">
+            <div class="form-group">
+                <label for="numScreenshots"># Screenshots</label>
+                <input type="number" id="numScreenshots" name="numScreenshots" min="0" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label for="numVideos"># Videos</label>
+                <input type="number" id="numVideos" name="numVideos" min="0" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label for="numAccounts"># Accounts</label>
+                <input type="number" id="numAccounts" name="numAccounts" min="0" placeholder="0">
+            </div>
+        </div>
+
+        <div class="form-group full-only">
+            <label for="comment">Comment</label>
+            <textarea id="comment" name="comment" placeholder="Add any comments or notes here..."></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn" class="submit-btn">Submit Data</button>
+        <div id="loading">Submitting to Tracker...</div>
+    </form>
+</div>
+
+<div class="footer-credits">
+    Credits by <span>LDevelopmentS</span> • <span>NS Toolkits</span> • <span>Darel Miranda</span>
+</div>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz6gmeChQsA57AdLAgIMHOnzvhJdL7zJ5xY8XrNiXOeDa85RSdrWx2Kh8KwVpTXVCH5XA/exec';
+    
+    const form = document.getElementById('trackerForm');
+    const loading = document.getElementById('loading');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusSelect = document.getElementById('status');
+    let currentMode = 'progress';
+
+    // Store dropdown options as constants
+    const progressStatusHTML = `
+        <option value="In progress" id="optInProgress">In progress</option>
+    `;
+    const fullStatusHTML = `
+        <option value="">-- Select Status --</option>
+        <option value="In progress" id="optInProgress">In progress</option>
+        <option value="Agent Submitted">Agent Submitted</option>
+        <option value="Send Back">Send Back</option>
+        <option value="CI Moved in / Active">CI Moved in / Active</option>
+        <option value="CI Moved in / Data con">CI Moved in / Data con</option>
+        <option value="Completed Case">Completed Case</option>
+    `;
+
+    function setMode(mode) {
+        currentMode = mode;
+        const fullFields = document.querySelectorAll('.full-only');
+        const btnProgress = document.getElementById('btnProgress');
+        const btnFull = document.getElementById('btnFull');
+
+        if (mode === 'progress') {
+            btnProgress.classList.add('active');
+            btnFull.classList.remove('active');
+            
+            // Limit options to only "In progress" and set it
+            statusSelect.innerHTML = progressStatusHTML;
+            statusSelect.value = "In progress";
+
+            fullFields.forEach(el => {
+                el.style.display = 'none';
+                const inputs = el.querySelectorAll('input, select, textarea');
+                inputs.forEach(i => i.removeAttribute('required'));
+            });
+        } else {
+            btnFull.classList.add('active');
+            btnProgress.classList.remove('active');
+            
+            // Restore all status options
+            statusSelect.innerHTML = fullStatusHTML;
+            statusSelect.value = "";
+
+            fullFields.forEach(el => {
+                if (el.classList.contains('form-row')) {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'block';
+                }
+            });
+        }
+    }
+
+    // Initialize in Progress Mode
+    setMode('progress');
+
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        submitBtn.style.display = 'none';
+        loading.style.display = 'block';
+
+        const pName = document.getElementById('poiName').value.trim();
+        const pUrl = document.getElementById('poiUrl').value.trim();
+        
+        let formattedPoi = pName; 
+        if (pName && pUrl) {
+            formattedPoi = `=HYPERLINK("${pUrl}", "${pName}")`; 
+        } else if (pUrl && !pName) {
+            formattedPoi = pUrl;
+        }
+
+        const iframeName = 'hidden_iframe_' + Date.now();
+        let iframe = document.createElement('iframe');
+        iframe.name = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        let hiddenForm = document.createElement('form');
+        hiddenForm.action = scriptURL;
+        hiddenForm.method = 'POST';
+        hiddenForm.target = iframeName;
+
+        const fields = {
+            formMode: currentMode,
+            poiNameRaw: pName,
+            date: document.getElementById('date').value,
+            dataAnalyst: document.getElementById('dataAnalyst').value,
+            poiNameUrl: formattedPoi,
+            client: document.getElementById('client').value,
+            status: document.getElementById('status').value,
+            aht: currentMode === 'full' ? document.getElementById('aht').value : "",
+            activeNotActive: currentMode === 'full' ? document.getElementById('activeNotActive').value : "",
+            numScreenshots: currentMode === 'full' ? document.getElementById('numScreenshots').value : "",
+            numVideos: currentMode === 'full' ? document.getElementById('numVideos').value : "",
+            numAccounts: currentMode === 'full' ? document.getElementById('numAccounts').value : "",
+            comment: currentMode === 'full' ? document.getElementById('comment').value : ""
+        };
+
+        for (const key in fields) {
+            let input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = fields[key];
+            hiddenForm.appendChild(input);
+        }
+
+        document.body.appendChild(hiddenForm);
+        hiddenForm.submit();
+
+        setTimeout(() => {
+            alert(currentMode === 'progress' ? 'Entry recorded as In Progress!' : 'Record updated successfully!');
+            form.reset();
+            setMode('progress');
+            loading.style.display = 'none';
+            submitBtn.style.display = 'block';
+            document.body.removeChild(hiddenForm);
+            document.body.removeChild(iframe);
+        }, 1200);
+    });
+</script>
+<script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+
+</body>
+</html>
