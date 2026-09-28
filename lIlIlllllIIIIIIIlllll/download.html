@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download | NS Toolkits v3</title>
+    <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <style>
+        :root {
+            --bg: #0b0b0b;
+            --card: rgba(255, 255, 255, 0.04);
+            --card-hover: rgba(246, 201, 14, 0.03);
+            --accent: #f6c90e;
+            --accent-glow: rgba(246, 201, 14, 0.25);
+            --text: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(246, 201, 14, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: radial-gradient(circle at top, #161616 0%, #070707 70%);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -moz-user-select: none;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* LOADER WRAPPER */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #060606;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+        }
+
+        .gold-ring {
+            width: 55px;
+            height: 55px;
+            border: 2px solid rgba(246, 201, 14, 0.1);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s infinite cubic-bezier(0.6, 0.2, 0.4, 0.8);
+            box-shadow: 0 0 25px rgba(246, 201, 14, 0.15);
+        }
+
+        .loader-text {
+            margin-top: 25px;
+            color: var(--accent);
+            font-size: 10px;
+            letter-spacing: 7px;
+            font-weight: 300;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            width: 160px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            animation: grow 3.5s forwards linear;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes grow { to { width: 100%; } }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(246, 201, 14, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+
+        .nav-menu {
+            display: flex;
+            gap: 28px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-menu a {
+            color: #e6e6e6;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .nav-menu a:hover, .nav-menu a.active { color: var(--accent); opacity: 1; }
+
+        /* CONTAINER & LAYOUT */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 50px 24px;
+            animation: fadeIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        .section-sub {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-style: italic;
+        }
+
+        /* SYSTEM REQUIREMENT CALLOUT */
+        .system-notice {
+            background: rgba(246, 201, 14, 0.03);
+            border: 1px dashed rgba(246, 201, 14, 0.25);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.95rem;
+            color: #e0e0e0;
+        }
+
+        .system-notice span.icon {
+            font-size: 1.4rem;
+            color: var(--accent);
+        }
+
+        /* DOWNLOAD GRID SYSTEM */
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 28px;
+            margin-bottom: 60px;
+        }
+
+        .download-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                        border-color 0.3s ease, 
+                        background-color 0.3s ease;
+        }
+
+        .download-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--border-hover);
+            background: var(--card-hover);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(246, 201, 14, 0.03);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .software-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .software-name {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .version-badge {
+            background: rgba(246, 201, 14, 0.09);
+            color: var(--accent);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 1px solid rgba(246, 201, 14, 0.15);
+        }
+
+        .software-desc {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .meta-specs {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 15px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .spec-item strong {
+            color: #d0d0d0;
+        }
+
+        .btn-download {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: var(--accent);
+            color: #0d0d0d;
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+            transition: all 0.3s ease;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-download:hover {
+            background: #ffffff;
+            box-shadow: 0 4px 15px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        /* DOCUMENTATION QUICK LINKS PANEL */
+        .doc-section {
+            background: linear-gradient(135deg, rgba(246, 201, 14, 0.05) 0%, transparent 100%);
+            border: 1px solid rgba(246, 201, 14, 0.15);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 20px;
+        }
+
+        .doc-title {
+            color: var(--accent);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .doc-item h4 {
+            margin-bottom: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .doc-item p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .doc-item code {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+            font-size: 0.85rem;
+        }
+
+        footer {
+            margin-top: 80px;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 0.82rem;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu { display: none; }
+            .section-title { font-size: 2rem; }
+            .download-grid { grid-template-columns: 1fr; }
+            .doc-section { padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GLOBAL PROGRESS LOADER -->
+    <div id="loader-wrapper">
+        <div class="gold-ring"></div>
+        <div class="loader-text">ESTABLISHING CONNECTION</div>
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- PARTICLE DECORATION BG -->
+    <canvas id="bg"></canvas>
+
+    <!-- NAVIGATION BAR -->
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-left">
+                <a href="https://nstoolkits.site/veee3/" style="text-decoration: none; color: inherit;">
+                    <h1>NS Toolkits v3</h1>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="https://nstoolkits.site/veee3/">Home</a>
+                <a href="https://nstoolkits.site/veee3/about.html">About Us</a>
+                <a href="https://nstoolkits.site/veee3/download.html" class="active">Download</a>
+                <a href="https://nstoolkits.site/">Version 2</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN HUB CONTAINER -->
+    <div class="container">
+        
+        <header class="section-header">
+            <h2 class="section-title">NS Toolkits - Extension Download</h2>
+            <p class="section-sub">Created by Morvan Hsu and Darel Miranda</p>
+        </header>
+
+<div class="system-notice">
+            <span class="icon">⚡</span>
+            <p><strong>Official Release:</strong> Powering your workflow from dusk till dawn. All specialized components, dynamic scripts, and core architecture deployments featured in this hub are engineered exclusively by the <strong>NS Toolkits Team</strong>.</p>
+        </div>
+
+        <!-- SEPARATED SOFTWARE & ARCHITECTURE GRID -->
+        <div class="download-grid">
+            
+<div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.4.0 - Updated</span>
+                    </div>
+                    <h3 class="software-name">FB Quick Tool</h3>
+                    <p class="software-desc">Custom Year Search: Take control of your timeline. You can now set a custom year range for advanced searches.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1_9QDzFwJlKG683TJo2CEN0OgaqWokz62" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+            <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.3.1 - Stable</span>
+                    </div>
+                    <h3 class="software-name">Metascraper</h3>
+                    <p class="software-desc">Stop digging through source code! Meta Scraper is here to streamline your workflow, letting you grab or save metadata in seconds without the "View Source" headache.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1HvYEzSxchucyc6T5Dek9G5Sc0gPwDkC0" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+            <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v2.0 - Updated</span>
+                    </div>
+                    <h3 class="software-name">Auto Scroll</h3>
+                    <p class="software-desc">Designed specifically to scroll through Facebook, Instagram, X (Twitter), TikTok, and Threads friends/followers/following modals without losing focus or glitching.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1JnsqXE6lzzhmsn3Dl1b1eg7XRJkut45i" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+            <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v2 - Updated</span>
+                    </div>
+                    <h3 class="software-name">Web Freezer</h3>
+                    <p class="software-desc">This extension utility completely isolates and freezes active tabs by severing outbound network packets, effectively halting distracting scripts and anti-adblock nag screens so you can browse uninterrupted and capture clean, full-page screenshots free of intrusive overlays.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1jjWReYaSLVA5lVgV6Nj7pK-J36dx_nUp" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+            <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.3 - Stable</span>
+                    </div>
+                    <h3 class="software-name">Rocket Grabber</h3>
+                    <p class="software-desc">Supercharge your productivity with this Chrome extension that lets you seamlessly search, expand, and capture profiles in seconds—completely eliminating the hassle of manual typing and messy screenshots.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1o4WYB134Nes7I_t3mcIVOclhX7efVAxa" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+                        <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.0 Stable</span>
+                    </div>
+                    <h3 class="software-name">Pinterest Matcher</h3>
+                    <p class="software-desc">Tired of manually finding common friends, followers, and followings on Pinterest? Our extension automatically scans and extracts matching connections for fast and easy results.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1p3gro1lkhtvGfSk4AYB4Zw0kLUqLsrLX" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+                        <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.2 Stable</span>
+                    </div>
+                    <h3 class="software-name">NS Element Eraser</h3>
+                    <p class="software-desc">Removes elements that are normally difficult or impossible to remove with an ad blocker (e.g., ads), clears blurred sections (e.g., TheOrg), allows you to manually remove other unwanted elements, and includes Undo and Redo history for easy editing.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=10jZIzGFyC---OIAz4wC3jmiE4oYQSwEm" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+                        <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.0 Stable</span>
+                    </div>
+                    <h3 class="software-name">FB & Google video downloader</h3>
+                    <p class="software-desc">A smart, automated browser extension designed to instantly capture and download .mp4 videos from Facebook Marketplace and Google Reviews listings with a single click.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=1U10AJon_RqjThqPzjSYdV18U4DXTKRtm" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+                        <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v2.0 - Updated</span>
+                    </div>
+                    <h3 class="software-name">Hyperlink/Metadata Checker</h3>
+                    <p class="software-desc">Hyperlink/Metadata Checker is a browser extension designed to make web auditing faster and easier. It automatically highlights hyperlinks, checks metadata, indicates link status, and provides quick URL previews to help identify missing, incorrect, or potentially problematic links and page details.</p>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id=12ZFotWap9IT0nVcApwgNrvRv_-HOOXSa" class="btn-download">
+                    <span>Download Now</span>
+                </a>
+            </div>
+
+            <div class="download-card">
+                <div>
+                    <div class="card-header">
+                        <img src="https://i.imgur.com/QWLMgK8.jpeg" alt="Icon" style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(246, 201, 14, 0.3); object-fit: cover;">
+                        <span class="version-badge">v1.0</span>
+                    </div>
+                    <h3 class="software-name">Coming Soon</h3>
+                    <p class="software-desc">Coming Soon.</p>
+                </div>
+                <a href="https://nstoolkits.site/veee3" class="btn-download">
+                    <span>Coming Soon</span>
+                </a>
+            </div>
+
+        </div>
+
+<section class="doc-section">
+    <h3 class="doc-title">Chrome Extension Installation Guide</h3>
+    <div class="doc-grid">
+        <div class="doc-item">
+            <h4>1. Unpack the Asset</h4>
+            <p>Locate the downloaded <code>.zip</code> file on your machine and extract its contents into a dedicated folder.</p>
+        </div>
+        <div class="doc-item">
+            <h4>2. Enable Developer Mode</h4>
+            <p>Navigate to <code>chrome://extensions</code> in your browser window, and toggle the <strong>Developer Mode</strong> switch in the top-right corner active.</p>
+        </div>
+        <div class="doc-item">
+            <h4>3. Load Unpacked Extension</h4>
+            <p>Click on <strong>Load unpacked</strong> and select your extracted folder, or simply drag and drop the folder anywhere into the browser window viewport.</p>
+        </div>
+    </div>
+</section>
+
+    </div>
+
+    <footer>2026 NS Tool Kits v3 | Developed by Morvan Hsu and Darel Miranda</footer>
+
+    <!-- BACKGROUND ENGINE & CONTROLS SCRIPT -->
+    <script>
+        /* BACKGROUND BACKGROUND PARTICLE ENGINE */
+        const canvas = document.getElementById("bg");
+        const ctx = canvas.getContext("2d");
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener("resize", resize);
+
+        let particles = [];
+        for (let i = 0; i < 70; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 1.8,
+                dx: (Math.random() - 0.5) * 0.4,
+                dy: (Math.random() - 0.5) * 0.4
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.dx;
+                p.y += p.dy;
+
+                if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        /* SECURE ENVIRONMENT HANDLERS */
+        document.addEventListener("keydown", function(e) {
+            if (e.keyCode === 123 || 
+                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || 
+                (e.ctrlKey && e.keyCode === 85) ||
+                (e.ctrlKey && (e.key === "a" || e.key === "A"))) {
+                e.preventDefault();
+                return false;
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === "C") {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener("contextmenu", e => e.preventDefault());
+        document.addEventListener("selectstart", e => e.preventDefault());
+        document.addEventListener("dragstart", e => e.preventDefault());
+
+        /* PRE-LOAD CACHE LOGIC ARCHITECTURE */
+        document.addEventListener("DOMContentLoaded", () => {
+            const loader = document.getElementById("loader-wrapper");
+            const LOADING_DURATION = 3500; 
+            const ONE_HOUR = 3600000; 
+
+            const lastLoad = localStorage.getItem("ns_v3_load_time");
+            const now = Date.now();
+
+            if (!lastLoad || (now - lastLoad) > ONE_HOUR) {
+                setTimeout(() => {
+                    document.body.classList.add("loaded");
+                    localStorage.setItem("ns_v3_load_time", now);
+                    setTimeout(() => { loader.style.display = "none"; }, 800);
+                }, LOADING_DURATION);
+            } else {
+                loader.style.display = "none";
+                document.body.classList.add("loaded");
+            }
+        });
+    </script>
+    <!-- ### -->
+</body>
+</html>
