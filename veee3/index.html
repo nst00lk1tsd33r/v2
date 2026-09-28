@@ -100,6 +100,15 @@
       margin-bottom: 0;
     }
 
+    .copyright-notice {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.8rem;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -128,20 +137,26 @@
       <p>Creators &gt; Darel Miranda &amp; Morvan Hsu</p>
       <p>Contact us if you have any questions.</p>
     </div>
+
+    <div class="copyright-notice">
+      <p>&copy; 2026 NSToolkits. All rights reserved.</p>
+      <p>Unauthorized use, copying, or redistribution of this website, or extension app is strictly prohibited.</p>
+    </div>
   </main>
+
   <script>
 document.addEventListener("keydown", function(e) {
-  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
-  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-    e.preventDefault();
-    return false;
-  }
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
 });
 
 document.addEventListener("keydown", function(e) {
-  if (e.ctrlKey && e.shiftKey && e.key === "C") {
-    e.preventDefault();
-  }
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
 });
 // Optional: Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
