@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Reports</title>
+
+</head>
+
+<body>
+
+<h1>Performance Reports</h1>
+
+<nav>
+
+    <a href="../dashboard.html">
+        Dashboard
+    </a>
+
+    |
+
+    <a href="team.html">
+        Team
+    </a>
+
+    |
+
+    <a href="user.html">
+        My Performance
+    </a>
+
+</nav>
+
+
+<h2>Reports</h2>
+
+<ul>
+
+    <li>Daily Performance</li>
+
+    <li>Weekly Performance</li>
+
+    <li>Monthly Performance</li>
+
+    <li>Quality Reports</li>
+
+    <li>Productivity Reports</li>
+
+    <li>Attendance Reports</li>
+
+    <li>Callout Reports</li>
+
+</ul>
+
+
+<script src="../js/auth.js"></script>
+
+<script>
+
+    if (!requireLogin()) {
+
+        throw new Error(
+            "Authentication required."
+        );
+
+    }
+
+</script>
+
+</body>
+
+</html>

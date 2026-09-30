@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NS CaseFlip | NS Toolkits v3</title>
+ <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+<style>
+    :root {
+        --bg: #0b0b0b;
+        --card: rgba(255,255,255,0.05);
+        --card-border: rgba(255,255,255,0.1);
+        --accent: #f6c90e;
+        --text: #fff;
+        --nav-bg: rgba(20,20,20,0.6);
+        --input-bg: rgba(0,0,0,0.3);
+    }
+
+    /* LIGHT MODE OVERRIDES */
+    body.light-mode {
+        --bg: #f5f6fa;
+        --card: #ffffff;
+        --card-border: #d1d1d1;
+        --accent: #007BFF;
+        --text: #333;
+        --nav-bg: rgba(255, 255, 255, 0.8);
+        --input-bg: #f9f9f9;
+    }
+
+    /* BACKGROUND */
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        transition: background 0.3s, color 0.3s;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    body:not(.light-mode) {
+        background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+    }
+
+    /* PARTICLES */
+    canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+    }
+
+    /* NAVBAR */
+    /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(246, 201, 14, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+
+        .nav-menu {
+            display: flex;
+            gap: 28px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-menu a {
+            color: #e6e6e6;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .nav-menu a:hover, .nav-menu a.active { color: var(--accent); opacity: 1; }
+
+    /* TOGGLE BUTTON */
+    .nav-right button {
+        background: linear-gradient(135deg, var(--accent), #d4a800);
+        color: #111;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(246,201,14,0.4);
+        transition: 0.3s;
+    }
+
+    body.light-mode .nav-right button {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+    }
+
+    .nav-right button:hover {
+        transform: scale(1.05);
+    }
+
+    /* CONTAINER */
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    /* TOOL UI */
+    .container h2 { margin-bottom: 10px; font-weight: 600; }
+    
+    .credits-subtext {
+        margin-bottom: 30px;
+        max-width: 600px;
+        text-align: center;
+        opacity: 0.7;
+    }
+
+    .button-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .buttons {
+        padding: 10px 18px;
+        font-size: 13px;
+        font-weight: bold;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        background: var(--card);
+        color: var(--text);
+        cursor: pointer;
+        transition: all .25s ease;
+        backdrop-filter: blur(5px);
+    }
+
+    .buttons:hover {
+        transform: translateY(-2px);
+        background: var(--accent);
+        color: #111;
+        border-color: var(--accent);
+    }
+
+    body.light-mode .buttons:hover {
+        color: #fff;
+    }
+
+    .editor-container {
+        width: 100%;
+        max-width: 1000px;
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+        transition: background 0.3s, border-color 0.3s;
+    }
+
+    .counter-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+
+    .counter-box {
+        background: var(--input-bg);
+        padding: 4px 10px;
+        border: 1px solid var(--card-border);
+        border-radius: 5px;
+        font-size: 12px;
+        color: var(--text);
+        font-family: monospace;
+        transition: all 0.3s ease;
+    }
+
+    .inputarea {
+        width: 100%;
+        height: 400px;
+        box-sizing: border-box;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        padding: 20px;
+        background: var(--input-bg);
+        border: 1px solid var(--card-border);
+        outline: none;
+        resize: vertical;
+        color: var(--text);
+        font-family: 'Courier New', Courier, monospace;
+        transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    .inputarea:focus {
+        border-color: var(--accent);
+    }
+
+    /* FOOTER */
+    footer {
+        padding: 20px;
+        opacity: .5;
+        text-align: center;
+        font-size: 14px;
+        margin-top: auto;
+    }
+
+    /* ANIMATIONS */
+    @keyframes highlightAnimDark {
+        0% { background: var(--accent); color: #111; }
+        100% { background: var(--input-bg); color: var(--text); }
+    }
+    
+    @keyframes highlightAnimLight {
+        0% { background: var(--accent); color: #fff; }
+        100% { background: var(--input-bg); color: var(--text); }
+    }
+
+    .counter-box.animate { animation: highlightAnimDark 0.6s ease; }
+    body.light-mode .counter-box.animate { animation: highlightAnimLight 0.6s ease; }
+
+    /* RESPONSIVE */
+    @media(max-width:768px){
+        .nav-menu { display: none; }
+    }
+</style>
+</head>
+
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="navbar">
+    <div class="nav-inner">
+        <div class="nav-left"><a href="https://nstoolkits.site/nsv3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
+        <div class="nav-menu">
+             <a href="https://nstoolkits.site/nsv3/">Home</a>
+            <a href="https://nstoolkits.site/nsv3/about.html">About Us</a>
+         <a href="https://nstoolkits.site/nsv3/download.html">Download</a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <h2>NS CaseFlip</h2>
+    <p class="credits-subtext">A tool may ease the work, but it cannot replace the craftsman.</p>
+
+    <div class="button-container">
+        <button class="buttons" id="upperBtn">UPPER CASE</button>
+        <button class="buttons" id="lowerBtn">lower case</button>
+        <button class="buttons" id="sentenceBtn">Sentence case</button>
+        <button class="buttons" id="capitalizedBtn">Capitalized Case</button>
+        <button class="buttons" id="altBtn">aLtErNaTiNg</button>
+        <button class="buttons" id="copyBtn">COPY</button>
+        <button class="buttons" id="clearBtn">CLEAR</button>
+    </div>
+
+    <div class="editor-container">
+        <div class="counter-wrapper">
+            <div class="counter-box" id="char-count">Characters: 0</div>
+            <div class="counter-box" id="word-count">Words: 0</div>
+            <div class="counter-box" id="line-count">Lines: 0</div>
+        </div>
+        <textarea id="text-input" class="inputarea" placeholder="Type or paste your text here..."></textarea>
+    </div>
+</div>
+
+<footer>© 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda</footer>
+
+<script>
+    const textarea = document.getElementById("text-input");
+    const charBox = document.getElementById("char-count");
+    const wordBox = document.getElementById("word-count");
+    const lineBox = document.getElementById("line-count");
+    const modeBtn = document.getElementById('modeToggle');
+
+    let prevChars = 0, prevWords = 0, prevLines = 0;
+
+    function animateBox(box){
+        box.classList.remove("animate"); 
+        void box.offsetWidth; 
+        box.classList.add("animate");
+    }
+
+    function updateCounter(){
+        const text = textarea.value;
+        const chars = text.length;
+        const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+        const lines = text.trim() === "" ? 0 : text.split(/\r\n|\r|\n/).length;
+
+        if(chars > prevChars) animateBox(charBox);
+        if(words > prevWords) animateBox(wordBox);
+        if(lines > prevLines) animateBox(lineBox);
+
+        prevChars = chars; prevWords = words; prevLines = lines;
+
+        charBox.innerText = `Characters: ${chars}`;
+        wordBox.innerText = `Words: ${words}`;
+        lineBox.innerText = `Lines: ${lines}`;
+    }
+
+    textarea.addEventListener("input", updateCounter);
+
+    // Case functions
+    function toUpper(){ textarea.value = textarea.value.toUpperCase(); updateCounter(); }
+    function toLower(){ textarea.value = textarea.value.toLowerCase(); updateCounter(); }
+    function toSentence() {
+        let t = textarea.value.toLowerCase();
+        textarea.value = t.replace(/(^\s*\w|[.!?]\s*\w)/g, function(c) {
+            return c.toUpperCase();
+        });
+        updateCounter();
+    }
+    function toCapitalized() {
+        textarea.value = textarea.value
+            .toLowerCase()
+            .replace(/(^|\s)\S/g, l => l.toUpperCase());
+        updateCounter();
+    }
+    function toAlternating(){ 
+        let t=textarea.value, r=""; 
+        for(let i=0; i<t.length; i++){ 
+            r += i%2===0 ? t[i].toLowerCase() : t[i].toUpperCase(); 
+        } 
+        textarea.value=r; 
+        updateCounter(); 
+    }
+
+    function copyText() {
+        if (!textarea.value) return;
+        const copyBtn = document.getElementById("copyBtn");
+        navigator.clipboard.writeText(textarea.value).then(() => {
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = "Copied!";
+            setTimeout(() => copyBtn.innerText = originalText, 1500);
+        });
+    }
+
+    function clearText() {
+        textarea.value = "";
+        updateCounter();
+    }
+
+    document.getElementById("upperBtn").onclick = toUpper;
+    document.getElementById("lowerBtn").onclick = toLower;
+    document.getElementById("sentenceBtn").onclick = toSentence;
+    document.getElementById("capitalizedBtn").onclick = toCapitalized;
+    document.getElementById("altBtn").onclick = toAlternating;
+    document.getElementById("copyBtn").onclick = copyText;
+    document.getElementById("clearBtn").onclick = clearText;
+
+    updateCounter();
+</script>
+ <script>
+document.addEventListener("keydown", function(e) {
+  // Block F12 and common shortcuts (Ctrl+Shift+I/J, Ctrl+U)
+  if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "C") {
+    e.preventDefault();
+  }
+});
+// Optional: Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+<script src="../js/guard.js"></script>
+</body>
+</html>

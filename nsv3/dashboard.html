@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>NS ToolKits - Monitoring</title>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>
+        NS ToolKits Monitoring
+    </h1>
+
+    <div>
+
+        <span id="loggedUser"></span>
+
+        <button onclick="logout()">
+            Logout
+        </button>
+
+    </div>
+
+</header>
+
+
+<nav>
+
+    <a href="dashboard.html">
+        Dashboard
+    </a>
+
+    <a href="monitoring/team.html">
+        Team
+    </a>
+
+    <a href="monitoring/user.html">
+        My Performance
+    </a>
+
+    <a href="monitoring/reports.html">
+        Reports
+    </a>
+
+</nav>
+
+
+<main>
+
+    <h2 id="welcome"></h2>
+
+    <p id="team"></p>
+
+
+    <div class="cards">
+
+        <div>
+            <h3>Quality</h3>
+            <strong id="quality">--</strong>
+        </div>
+
+
+        <div>
+            <h3>Productivity</h3>
+            <strong id="productivity">--</strong>
+        </div>
+
+
+        <div>
+            <h3>Attendance</h3>
+            <strong id="attendance">--</strong>
+        </div>
+
+
+        <div>
+            <h3>Callouts</h3>
+            <strong id="callouts">--</strong>
+        </div>
+
+    </div>
+
+</main>
+
+
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+
+</body>
+
+</html>

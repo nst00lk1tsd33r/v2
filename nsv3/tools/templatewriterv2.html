@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NS Toolkits v3</title>
+
+     <link rel="icon" type="image/jpg" href="https://i.imgur.com/QWLMgK8.jpeg">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    
+<style>
+    :root {
+        --bg: #0b0b0b;
+        --card: rgba(255, 255, 255, 0.05);
+        --accent: #f6c90e;
+        --text: #fff;
+        --step-bg: #2c3e50;
+        --accent-glow: rgba(246, 201, 14, 0.3);
+    }
+
+    /* RESET & LAYOUT */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        background: radial-gradient(circle at top, #1a1a1a 0%, #0b0b0b 60%);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    canvas { position: fixed; top: 0; left: 0; z-index: -1; }
+
+
+    /* CONTAINER */
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        flex: 1;
+    }
+
+    .app-title { text-align: center; margin-bottom: 10px; color: var(--accent); }
+    
+/* MUTED DARK THEME - ORIGINAL RECTANGULAR STYLE */
+.steps {
+    display: block;
+    /* Muted gold-to-dark gradient */
+    background: linear-gradient(90deg, #1e1b0a 0%, #0b0b0b 100%);
+    color: #e0d080; /* Softer gold text */
+    padding: 12px 15px;
+    font-weight: bold;
+    border-radius: 5px 5px 0 0; /* Original small rounding */
+    margin-top: 20px;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #3a351a;
+}
+
+.maincontent {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    margin-bottom: 10px;
+}
+
+/* THE ALIGNMENT FIX - Similar to original code but pins box to text */
+.maincontent label {
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: inline-flex; /* Ensures box and text stay on one line */
+    align-items: center; 
+    white-space: nowrap; /* Forces "School Attended" to never break */
+    margin-right: 20px;
+    color: #ccc;
+    transition: 0.2s;
+}
+
+.maincontent label:hover {
+    color: var(--accent);
+}
+
+.maincontent input[type="checkbox"] {
+    accent-color: #d4af37; /* Metallic gold instead of bright yellow */
+    width: 17px;
+    height: 17px;
+    margin-right: 8px; /* Original spacing */
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+    .maincontent {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+        margin-bottom: 10px;
+    }
+
+    /* --- THE ULTIMATE ALIGNMENT FIX --- */
+    
+    /* Container for the checkboxes (Step 1, Step 3, etc) */
+    #matchtype, #accounttype, .maincontent div:not(.subgroup) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 0px; /* Vertical gap between rows */
+    }
+
+    /* This targets the checkbox and label as a pair */
+    .maincontent input[type="checkbox"] {
+        cursor: pointer;
+        accent-color: var(--accent);
+        width: 18px;
+        height: 18px;
+        margin: 0 8px 0 0; /* Space between box and text */
+        flex-shrink: 0;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .maincontent label {
+        cursor: pointer;
+        font-size: 0.95rem;
+        margin-right: 20px; /* Space between different options */
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap; /* PREVENTS "SCHOOL ATTENDED" FROM WRAPPING */
+        vertical-align: middle;
+    }
+
+    /* Subgroup Fixes */
+    .checkbox-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 5px 0;
+    }
+
+    .subgroup label { margin-right: 12px; }
+
+    /* INPUTS */
+    input[type="text"] {
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    #hidden1 {
+        display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px;
+    }
+
+    .subgroup {
+        display: none;
+        flex-direction: column;
+        min-width: 220px;
+        padding: 15px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        gap: 10px;
+    }
+
+    .subgroup.active { display: flex; }
+    .subgroup strong { color: var(--accent); display: block; margin-bottom: 5px; }
+    .title-links { width: 100%; margin-top: 5px; }
+
+    /* BUTTONS */
+    .button-group { display: flex; gap: 10px; margin: 20px 0; }
+
+    .buttons {
+        padding: 10px 20px;
+        font-weight: bold;
+        border: 2px solid var(--accent);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--accent);
+        cursor: pointer;
+        transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .buttons:hover {
+        background: var(--accent);
+        color: #000;
+        box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    /* OUTPUT AREA */
+    .output-area {
+        min-height: 150px;
+        max-height: 600px;
+        overflow-y: auto;
+        background: #111;
+        color: #ccc;
+    }
+
+    footer {
+        padding: 20px; text-align: center;
+        opacity: 0.5; font-size: 13px;
+    }
+ /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(246, 201, 14, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+
+        .nav-menu {
+            display: flex;
+            gap: 28px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-menu a {
+            color: #e6e6e6;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .nav-menu a:hover, .nav-menu a.active { color: var(--accent); opacity: 1; }
+
+/* RESPONSIVE */
+@media(max-width:768px){
+    .nav-menu{ display:none; }
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="navbar">
+    <div class="nav-inner">
+        <div class="nav-left"><a href="https://nstoolkits.site/nsv3/" style="text-decoration: none; color: inherit;"><h1>NS Toolkits v3</h1></a></div>
+        <div class="nav-menu">
+             <a href="https://nstoolkits.site/nsv3/">Home</a>
+            <a href="https://nstoolkits.site/nsv3/about.html">About Us</a>
+         <a href="https://nstoolkits.site/nsv3/download.html">Download</a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <main>
+        <h2 class="app-title">NS Template Writer</h2>
+
+        <p style="text-align:center; color:#7f8c8d; font-size:14px; margin-bottom:20px; margin: 0 auto 30px auto; max-width: 700px;">
+            Your search query cleaner. It does everything for you. | A tool may ease the work, but it cannot replace the craftsman.
+        </p>
+
+        <span class="steps">Step 1 - Select Type</span>
+        <div class="maincontent">
+            <section id="matchtype" style="margin-bottom: 15px;">
+                <input type="checkbox" id="match"><label for="match">Match</label>
+                <input type="checkbox" id="possible"><label for="possible">Possible</label>
+            </section>
+
+            <section id="accounttype">
+                <input type="checkbox" id="standard"><label for="standard">Standard</label>
+                <input type="checkbox" id="gsr"><label for="gsr">Google</label>
+                <input type="checkbox" id="pub"><label for="pub">Public</label>
+                <input type="checkbox" id="bs"><label for="bs">Business</label>
+                <input type="checkbox" id="gfm"><label for="gfm">GFM</label>
+                <input type="checkbox" id="mgs"><label for="mgs">Mugshot</label>
+                <input type="checkbox" id="psg"><label for="psg">Personal Page</label>
+            </section>
+        </div>
+
+        <span class="steps">Step 2 - Social Media URL | Don’t forget to add https://</span>
+        <div class="maincontent">
+            <section id="linkbox">
+                <label for="textbox">URL: </label>
+                <input type="text" id="textbox" style="width: 70%;">
+            </section>
+        </div>
+
+        <span class="steps">Step 3 - Identifiers</span>
+        <div class="maincontent">
+            <h4 style="color: var(--accent);">1 Point</h4>
+            <div style="margin: 10px 0;">
+                <input type="checkbox" id="alias" name="featname" value="alias"><label for="alias">Alias</label>
+                <input type="checkbox" id="fname" name="featname" value="first name"><label for="fname">First Name</label>
+                <input type="checkbox" id="mname" name="featname" value="middle name"><label for="mname">Middle Name</label>
+                <input type="checkbox" id="lname" name="featname" value="last name"><label for="lname">Last Name</label>
+                <input type="checkbox" id="business" name="featname" value="business name"><label for="business">Business Name</label>
+                <input type="checkbox" id="dob1" name="featDob" value="date of birth"><label for="dob1">Date of Birth</label>
+                <input type="checkbox" id="age1" name="featAge" value="age"><label for="age1">Age</label>
+                <input type="checkbox" id="location" name="featLoc" value="location"><label for="location">Location</label>
+				<label><input type="checkbox" id="school" name="featSch" value="school attended"> School Attended</label>
+				<label><input type="checkbox" id="phone" name="featSch" value="phone number"> Phone Number</label>
+                <input type="checkbox" id="email" name="featSch" value="email address"><label for="email">Email</label>
+                <input type="checkbox" id="naturework" name="featSch" value="nature of work"><label for="naturework">Nature of Work</label>
+                <input type="checkbox" id="employment" name="featSch" value="employment"><label for="employment">Employment</label>
+                <input type="checkbox" id="relative" name="featSch" value="relative"><label for="relative">Relative</label>
+            </div>
+            
+            <h4 style="color: var(--accent); margin-top: 15px;">2 Points</h4>
+            <div style="margin: 10px 0;">
+                <input type="checkbox" id="visualmatch" name="featAge" value="visual match"><label for="visualmatch">Visual Match</label>
+                <input type="checkbox" id="username" name="featname" value="same username (username)"><label for="username">Username</label>
+                <input type="checkbox" id="linked" name="featname" value="linked"><label for="linked">Linked</label>
+                <input type="checkbox" id="connections" name="featname" value="connected to a"><label for="connections">Connections</label>
+                <input type="checkbox" id="same" name="featVis" value="same"><label for="same">Same</label>
+                <input type="checkbox" id="visualmatch2" name="featVis" value="exact location"><label for="visualmatch2">Exact Location</label>
+            </div>
+
+            <h4 style="color: var(--accent); margin-top: 15px;">Custom</h4>
+            <input type="checkbox" id="custom" name="featname"><label for="custom">Enable Custom Fields</label>
+        </div>
+
+<!-- Hidden Section -->
+<section id="hidden1">
+    <div id="firstnamesection" class="subgroup">
+        <strong>First Name</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="afname" name="afname" value="alias first name">
+            <label for="afname">Alias</label>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="ifname" name="ifname" value="first name initial">
+            <label for="ifname">Initial</label>
+        </div>
+    </div>
+
+    <div id="middlenamesection" class="subgroup">
+        <strong>Middle Name</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="amname" name="amname" value="alias middle name">
+            <label for="amname">Alias</label>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="imname" name="imname" value="middle name initial">
+            <label for="imname">Initial</label>
+        </div>
+    </div>
+    
+    <div id="lastnamesection" class="subgroup">
+        <strong>Last Name</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="alname" name="alname" value="alias last name">
+            <label for="alname">Alias</label>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="ilname" name="ilname" value="last name initial">
+            <label for="ilname">Initial</label>
+        </div>
+    </div>
+
+    <div id="dobsection" class="subgroup">
+        <strong>Date of Birth</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="seendob" name="seendob" value="as seen on">
+            <label for="seendob">As Seen On</label>
+        </div>
+        <input type="text" id="doblink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="dobtitle" class="title-links" placeholder="Custom Title Here">
+        <input type="text" id="dobacc" class="title-links" placeholder="PSE/Public Database">
+    </div>
+
+    <div id="agesection" class="subgroup">
+        <strong>Age</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="basedage" name="basedage" value="as seen on">
+            <label for="basedage">Education</label>
+            <input type="checkbox" id="seenage" name="seenage" value="as seen on">
+            <label for="seenage">As Seen On</label>
+        </div>
+        <input type="text" id="agetitle" class="title-links" placeholder="Custom Title Here">
+    </div>
+
+    <div id="locsection" class="subgroup">
+        <strong>Location</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="prevloc" name="prevloc" value="previous location">
+            <label for="prevloc">Previous</label>
+            <input type="checkbox" id="basedrel" name="basedrel" value="based on a relative (relative)">
+            <label for="basedrel">Based on a Relative</label>
+            <input type="checkbox" id="basedcli" name="basedcli" value="provided by the client">
+            <label for="basedcli">Provided by the Client</label>
+            <input type="checkbox" id="seenloc" name="seenloc" value="as seen on">
+            <label for="seenloc">As Seen On</label>
+        </div>
+        <input type="text" id="loclink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="loctitle" class="title-links" placeholder="Custom Title">
+        <input type="text" id="locrelnk" class="title-links" placeholder="Relative Hyperlink">
+        <input type="text" id="locrelnm" class="title-links" placeholder="Relative Name">
+    </div>
+
+    <div id="schsection" class="subgroup">
+        <strong>School Attended</strong>
+        <input type="text" id="schname" class="title-links" placeholder="School Name">
+        <div class="checkbox-row">
+            <input type="checkbox" id="seensch" name="seensch" value="as seen on">
+            <label for="seensch">As Seen On</label>
+        </div>
+        <input type="text" id="schlink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="schtitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="phnsection" class="subgroup">
+        <strong>Phone Number</strong>
+        <input type="text" id="phnnmb" class="title-links" placeholder="Phone Number">
+        <div class="checkbox-row">
+            <input type="checkbox" id="seenphn" name="seenphn" value="as seen on">
+            <label for="seenphn">As Seen On</label>
+        </div>
+        <input type="text" id="phnlink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="phntitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="maisection" class="subgroup">
+        <strong>Email</strong>
+        <input type="text" id="mailad" class="title-links" placeholder="Email Address">
+        <div class="checkbox-row">
+            <input type="checkbox" id="usrmai" name="usrnmai" value="username">
+            <label for="usrmai">Username</label>
+            <input type="checkbox" id="seenmai" name="seenmai" value="as seen on">
+            <label for="seenmai">As Seen On</label>
+        </div>
+        <input type="text" id="mailink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="maititle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="wrksection" class="subgroup">
+        <strong>Nature of Work</strong>
+        <input type="text" id="wrknatr" class="title-links" placeholder="Nature of Work">
+        <div class="checkbox-row">
+            <input type="checkbox" id="seenwrk" name="seenwrk" value="as seen on">
+            <label for="seenwrk">As Seen On</label>
+        </div>
+        <input type="text" id="wrklink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="wrktitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="empsection" class="subgroup">
+        <strong>Employment</strong>
+        <input type="text" id="empnm" class="title-links" placeholder="Company Name">
+        <div class="checkbox-row">
+            <input type="checkbox" id="seenemp" name="seenemp" value="as seen on">
+            <label for="seenemp">As Seen On</label>
+        </div>
+        <input type="text" id="emplink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="emptitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="relsection" class="subgroup">
+        <strong>Relative</strong>
+        <input type="text" id="relnm" class="title-links" placeholder="Relative Name">
+        <div class="checkbox-row">
+            <input type="checkbox" id="seenrel" name="seenrel" value="as seen on">
+            <label for="seenrel">As Seen On</label>
+        </div>
+        <input type="text" id="rellink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="reltitle" class="title-links" placeholder="PSE/Public Database">
+    </div>
+
+    <!-- 2 POINTS -->
+
+    <div id="vmsection" class="subgroup">
+        <strong>Visual Match</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="seenvm" name="seenvm" value="as seen on">
+            <label for="seenvm">As Seen On</label>
+        </div>
+        <input type="text" id="vmlink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="vmtitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="usersection" class="subgroup">
+        <strong>Username</strong>
+        <input type="text" id="username_txt" class="title-links" placeholder="Username">
+        <input type="text" id="userlink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="usertitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="linksection" class="subgroup">
+        <strong>Linked</strong>
+        <input type="text" id="linkedlink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="linkedtitle" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="connsection" class="subgroup">
+        <strong>Connections</strong>
+        <div class="checkbox-row">
+            <input type="checkbox" id="ismtf" name="ismtf">
+            <label for="ismtf">Friend</label>
+            <input type="checkbox" id="isfo1" name="isfo1">
+            <label for="isfo1">Following</label>
+            <input type="checkbox" id="isfo2" name="isfo2">
+            <label for="isfo2">Follower</label>
+            <input type="checkbox" id="iscon" name="iscon">
+            <label for="iscon">Connected</label>
+        </div>
+        <input type="text" id="conet" class="title-links" placeholder="Facebook/Instagram/TikTok">
+        <input type="text" id="conetl" class="title-links" placeholder="Network Hyperlink">
+        <input type="text" id="conid" class="title-links" placeholder="Their Connection">
+        <input type="text" id="conlink1" class="title-links" placeholder="Connection Hyperlink 1">
+        <input type="text" id="conname" class="title-links" placeholder="Connection Name">
+        <input type="text" id="conlink2" class="title-links" placeholder="Connection Hyperlink 2">
+        <div class="checkbox-row">
+            <input type="checkbox" id="seencon" name="seencon" value="as seen on">
+            <label for="seencon">As Seen On</label>
+            <input type="checkbox" id="owncon" name="owncon">
+            <label for="owncon">Own</label>
+        </div>
+        <input type="text" id="contitle" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="conlink" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="samesection" class="subgroup">
+        <strong>Same</strong>
+        <input type="text" id="samelink" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="samewhat" class="title-links" placeholder="What Object">
+        <input type="text" id="samelink2" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="samewhat2" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <div id="loc2section" class="subgroup">
+        <strong>Exact Location</strong>
+        <input type="text" id="loc2link" class="title-links" placeholder="Hyperlink">
+        <input type="text" id="loc2title" class="title-links" placeholder="Identified Network Name">
+    </div>
+
+    <!-- CUSTOM -->
+    <div id="cussection" class="subgroup">
+        <strong>Custom</strong>
+        <input type="text" id="cus1" class="title-links" placeholder="Custom Identifier 1">
+        <input type="text" id="cus2" class="title-links" placeholder="Custom Identifier 2">
+        <input type="text" id="cus3" class="title-links" placeholder="Custom Identifier 3">
+        <input type="text" id="cus4" class="title-links" placeholder="Custom Identifier 4">
+        <input type="text" id="cus5" class="title-links" placeholder="Custom Identifier 5">
+    </div>
+
+</section>
+
+        <section class="button-group">
+            <button id="generateBtn" class="buttons">Generate</button>
+            <button id="copyBuilderBtn" class="buttons">Copy Template</button>
+            <button id="clearBtn" class="buttons">Clear</button>
+            <span id="copyFeedback"></span>
+        </section>
+
+        <span class="steps">Step 4 - Output Area | Don't forget to edit the # sign to 1st, 2nd, etc.</span>
+        <div class="maincontent output-area">
+            <section id="builder">
+                <p>Please input data.</p>
+                <p>&nbsp;</p>
+                <p>Please input data.</p>
+            </section>
+        </div>
+    </main>
+</div>
+
+<footer>
+    © 2026 NS Tool Kits v3 | Made by Morvan Hsu and Darel Miranda
+</footer>
+
+<script src="../scripts/templatewriterscript.js" defer></script>
+<script>
+    // Security and Context Menu Prevention
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", function(e) {
+        if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+            e.preventDefault();
+        }
+    });
+</script>
+<script src="../js/guard.js"></script>
+</body>
+</html>
