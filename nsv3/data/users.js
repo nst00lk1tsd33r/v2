@@ -121,6 +121,18 @@ window.NS_USERS = [
   { username: "TeamLeandro_09", pinHash: "542cacae1d41132ac9e10320dc19210336f60ee3b2d5bb64838eff7556132823", team: "TeamLeandro", role: "member" },
   { username: "TeamLeandro_10", pinHash: "1e12c1e01097cf3861ff603cd173c6b4376ee0a3e438ab7c92a7ae68a245dea8", team: "TeamLeandro", role: "member" },
 
+    // TeamKevin
+  { username: "TeamKevin_01", pinHash: "f74fee330886f88ceea28e9bdb43c9db1df048010398f407c9cb67e1c1c80e5e", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_02", pinHash: "f36e2794472c13efdb7e0f233e69de46716c22aadecf5950771353cec1a69b21", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_03", pinHash: "2336ff27392cd68f53e5af6c8672f576e52481e00ec765689a69ce8806020b98", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_04", pinHash: "597180d3039f1b7b7dde3ebdc56e13c698ef66dc18cf72ed61a4f79c8a904524", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_05", pinHash: "bcd7dddaf951959ebf6076a3a594b426a246d3bffe13339b10d04e45f222e011", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_06", pinHash: "4c5f863a279220d839c547f0330f8e8a3bd0f92752a0bd7f9f603a6b3a336bf5", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_07", pinHash: "36cb04664da48b6438cc6d1535ab0a853479b5d8d70de0f8f8bc0c0a9b126c33", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_08", pinHash: "9daa98ce3a24c2264ed088bb0d65b398e9967e8d16bb6e31467c1fd3a0cd9584", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_09", pinHash: "542cacae1d41132ac9e10320dc19210336f60ee3b2d5bb64838eff7556132823", team: "TeamKevin", role: "member" },
+  { username: "TeamKevin_010", pinHash: "1e12c1e01097cf3861ff603cd173c6b4376ee0a3e438ab7c92a7ae68a245dea8", team: "TeamKevin", role: "member" },
+
   // TeamFannie
   { username: "TeamFannie_01", pinHash: "e78f27ab3ef177a9926e6b90e572b9853ce6cf4d87512836e9ae85807ec9d7fe", team: "TeamFannie", role: "member" },
   { username: "TeamFannie_02", pinHash: "44961068d853255c4dc139a8473ccd203df401afb9aa50b11c4362ac6b8efb2b", team: "TeamFannie", role: "member" },
