@@ -2918,7 +2918,7 @@ document.addEventListener("contextmenu", e => e.preventDefault());
 
         function sessionIsValid() {
             try {
-                const raw = localStorage.getItem("nsToolkitUser");
+                const raw = sessionStorage.getItem("nsToolkitUser");
                 if (!raw) return false;
 
                 const session = JSON.parse(raw);
