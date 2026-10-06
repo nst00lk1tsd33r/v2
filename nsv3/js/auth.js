@@ -1,4 +1,3 @@
-```javascript
 (function () {
 
     "use strict";
@@ -11,7 +10,6 @@
 
     const USERS =
         window.NS_USERS || [];
-
 
 
     // =========================================
@@ -32,7 +30,6 @@
 
     const SESSION_DURATION =
         10 * 60 * 60 * 1000; // 10 HOURS
-
 
 
     // =========================================
@@ -65,7 +62,6 @@
     }
 
 
-
     // =========================================
     // DEVICE ID
     // =========================================
@@ -77,10 +73,6 @@
                 DEVICE_KEY
             );
 
-
-        // -------------------------------------
-        // Generate device ID if none exists
-        // -------------------------------------
 
         if (!deviceId) {
 
@@ -118,7 +110,6 @@
     }
 
 
-
     // =========================================
     // DEVICE OWNER
     // =========================================
@@ -132,9 +123,8 @@
     }
 
 
-
     // =========================================
-    // CHECK DEVICE ACCESS
+    // CHECK DEVICE
     // =========================================
 
     function isDeviceAllowed(username) {
@@ -143,10 +133,7 @@
             getDeviceOwner();
 
 
-        // -------------------------------------
         // Device has never been assigned
-        // -------------------------------------
-
         if (!owner) {
 
             return true;
@@ -154,17 +141,13 @@
         }
 
 
-        // -------------------------------------
-        // Device already belongs to this user
-        // -------------------------------------
-
+        // Same user is allowed
         return (
             owner.toLowerCase() ===
             username.toLowerCase()
         );
 
     }
-
 
 
     // =========================================
@@ -177,7 +160,7 @@
             getDeviceOwner();
 
 
-        // Do not overwrite another owner
+        // Someone already owns this device
         if (existingOwner) {
 
             if (
@@ -202,7 +185,6 @@
         );
 
     }
-
 
 
     // =========================================
@@ -242,7 +224,6 @@
     }
 
 
-
     function savePinOverrides(data) {
 
         localStorage.setItem(
@@ -253,9 +234,8 @@
     }
 
 
-
     // =========================================
-    // GET PIN HASH
+    // GET ACTIVE PIN HASH
     // =========================================
 
     function getStoredPinHash(user) {
@@ -265,8 +245,8 @@
 
 
         /*
-         * If the user changed their PIN,
-         * use the local PIN hash.
+         * If the user has changed their PIN,
+         * the local PIN takes priority.
          */
 
         if (
@@ -280,15 +260,10 @@
         }
 
 
-        /*
-         * Otherwise use the original
-         * hash from users.js.
-         */
-
+        // Otherwise use original users.js PIN
         return user.pinHash;
 
     }
-
 
 
     // =========================================
@@ -302,10 +277,6 @@
                 SESSION_KEY
             );
 
-
-        // -------------------------------------
-        // No existing session
-        // -------------------------------------
 
         if (!saved) {
 
@@ -321,7 +292,7 @@
 
 
             // ---------------------------------
-            // Invalid session
+            // Validate session
             // ---------------------------------
 
             if (
@@ -342,7 +313,7 @@
 
 
             // ---------------------------------
-            // Check 10-hour expiration
+            // Check expiration
             // ---------------------------------
 
             if (
@@ -368,7 +339,7 @@
 
 
             // ---------------------------------
-            // Check device
+            // Check device ID
             // ---------------------------------
 
             const currentDevice =
@@ -412,10 +383,6 @@
             }
 
 
-            // ---------------------------------
-            // Session still valid
-            // ---------------------------------
-
             return session;
 
 
@@ -437,7 +404,6 @@
         }
 
     }
-
 
 
     // =========================================
@@ -474,10 +440,9 @@
         error.textContent = "";
 
 
-
-        // =====================================
-        // VALIDATE USERNAME
-        // =====================================
+        // -------------------------------------
+        // Username
+        // -------------------------------------
 
         if (!username) {
 
@@ -489,10 +454,9 @@
         }
 
 
-
-        // =====================================
-        // VALIDATE PIN
-        // =====================================
+        // -------------------------------------
+        // PIN
+        // -------------------------------------
 
         if (!pin) {
 
@@ -504,20 +468,20 @@
         }
 
 
-
         try {
 
-            // =================================
-            // GET DEVICE
-            // =================================
+            // ---------------------------------
+            // Device
+            // ---------------------------------
 
             const deviceId =
                 getDeviceId();
 
 
-            // =================================
-            // CHECK DEVICE OWNER
-            // =================================
+            // ---------------------------------
+            // Check device ownership BEFORE
+            // checking another account
+            // ---------------------------------
 
             if (
                 !isDeviceAllowed(username)
@@ -531,18 +495,9 @@
             }
 
 
-            // =================================
-            // HASH PIN
-            // =================================
-
-            const hash =
-                await sha256(pin);
-
-
-
-            // =================================
-            // FIND USERNAME
-            // =================================
+            // ---------------------------------
+            // Find username
+            // ---------------------------------
 
             const user =
                 USERS.find(
@@ -552,10 +507,6 @@
                         username
                 );
 
-
-            // =================================
-            // INVALID USERNAME
-            // =================================
 
             if (!user) {
 
@@ -567,13 +518,25 @@
             }
 
 
-            // =================================
-            // CHECK PIN
-            // =================================
+            // ---------------------------------
+            // Hash entered PIN
+            // ---------------------------------
+
+            const hash =
+                await sha256(pin);
+
+
+            // ---------------------------------
+            // Get active PIN
+            // ---------------------------------
 
             const storedPinHash =
                 getStoredPinHash(user);
 
+
+            // ---------------------------------
+            // Verify PIN
+            // ---------------------------------
 
             if (
                 storedPinHash !==
@@ -588,18 +551,18 @@
             }
 
 
-            // =================================
-            // ASSIGN DEVICE
-            // =================================
+            // ---------------------------------
+            // Assign this browser/device
+            // ---------------------------------
 
             assignDevice(
                 user.username
             );
 
 
-            // =================================
-            // CREATE 10-HOUR SESSION
-            // =================================
+            // ---------------------------------
+            // Create session
+            // ---------------------------------
 
             const now =
                 Date.now();
@@ -629,10 +592,9 @@
             };
 
 
-
-            // =================================
-            // SAVE SESSION
-            // =================================
+            // ---------------------------------
+            // Save session
+            // ---------------------------------
 
             localStorage.setItem(
                 SESSION_KEY,
@@ -642,10 +604,9 @@
             );
 
 
-
-            // =================================
-            // HIDE LOGIN
-            // =================================
+            // ---------------------------------
+            // Hide login
+            // ---------------------------------
 
             const overlay =
                 document.getElementById(
@@ -662,10 +623,9 @@
             }
 
 
-
-            // =================================
-            // CLEAR PIN
-            // =================================
+            // ---------------------------------
+            // Clear PIN field
+            // ---------------------------------
 
             const pinInput =
                 document.getElementById(
@@ -680,10 +640,9 @@
             }
 
 
-
-            // =================================
-            // LOGIN SUCCESS EVENT
-            // =================================
+            // ---------------------------------
+            // Login success event
+            // ---------------------------------
 
             document.dispatchEvent(
                 new CustomEvent(
@@ -712,7 +671,6 @@
     }
 
 
-
     // =========================================
     // CHANGE PIN
     // =========================================
@@ -731,6 +689,19 @@
 
             throw new Error(
                 "You must be logged in to change your PIN."
+            );
+
+        }
+
+
+        // -------------------------------------
+        // Validate current PIN
+        // -------------------------------------
+
+        if (!currentPin) {
+
+            throw new Error(
+                "Enter your current PIN."
             );
 
         }
@@ -768,7 +739,7 @@
 
 
         // -------------------------------------
-        // Find account
+        // Find current account
         // -------------------------------------
 
         const user =
@@ -827,7 +798,7 @@
 
 
         // -------------------------------------
-        // Save local PIN override
+        // Save new PIN locally
         // -------------------------------------
 
         const overrides =
@@ -848,7 +819,6 @@
         return true;
 
     }
-
 
 
     // =========================================
@@ -873,19 +843,9 @@
     }
 
 
-
     // =========================================
-    // RESET DEVICE
+    // RESET DEVICE BINDING
     // =========================================
-
-    /*
-     * This removes the device assignment.
-     *
-     * IMPORTANT:
-     * Do not expose this function as a normal
-     * public button unless you specifically want
-     * users to be able to move their account.
-     */
 
     function resetDeviceBinding() {
 
@@ -900,7 +860,6 @@
     }
 
 
-
     // =========================================
     // START
     // =========================================
@@ -910,9 +869,9 @@
         function () {
 
 
-            // =================================
-            // CHECK EXISTING SESSION
-            // =================================
+            // ---------------------------------
+            // Existing session
+            // ---------------------------------
 
             const currentUser =
                 getCurrentUser();
@@ -943,10 +902,9 @@
             }
 
 
-
-            // =================================
-            // LOGIN BUTTON
-            // =================================
+            // ---------------------------------
+            // Login button
+            // ---------------------------------
 
             const button =
                 document.getElementById(
@@ -971,10 +929,9 @@
             );
 
 
-
-            // =================================
-            // ENTER KEY - USERNAME
-            // =================================
+            // ---------------------------------
+            // Enter - Username
+            // ---------------------------------
 
             document
                 .getElementById(
@@ -997,10 +954,9 @@
                 );
 
 
-
-            // =================================
-            // ENTER KEY - PIN
-            // =================================
+            // ---------------------------------
+            // Enter - PIN
+            // ---------------------------------
 
             document
                 .getElementById(
@@ -1024,7 +980,6 @@
 
         }
     );
-
 
 
     // =========================================
@@ -1056,163 +1011,3 @@
 
 
 })();
-```
-
-### Add this to your Settings page
-
-You can create a simple settings section anywhere inside your existing dashboard:
-
-```html
-<section class="settings-panel">
-
-    <h2>Account Settings</h2>
-
-    <div class="setting-group">
-
-        <label for="currentPin">
-            Current PIN
-        </label>
-
-        <input
-            type="password"
-            id="currentPin"
-            placeholder="Enter current PIN"
-            autocomplete="current-password"
-        >
-
-    </div>
-
-
-    <div class="setting-group">
-
-        <label for="newPin">
-            New PIN
-        </label>
-
-        <input
-            type="password"
-            id="newPin"
-            placeholder="Enter new PIN"
-            autocomplete="new-password"
-        >
-
-    </div>
-
-
-    <div class="setting-group">
-
-        <label for="confirmPin">
-            Confirm New PIN
-        </label>
-
-        <input
-            type="password"
-            id="confirmPin"
-            placeholder="Confirm new PIN"
-            autocomplete="new-password"
-        >
-
-    </div>
-
-
-    <button
-        type="button"
-        id="changePinButton"
-    >
-        Change PIN
-    </button>
-
-
-    <div id="pinMessage"></div>
-
-</section>
-```
-
-Then add:
-
-```javascript
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const button =
-            document.getElementById(
-                "changePinButton"
-            );
-
-        const message =
-            document.getElementById(
-                "pinMessage"
-            );
-
-
-        if (!button) {
-            return;
-        }
-
-
-        button.addEventListener(
-            "click",
-            async function () {
-
-                const currentPin =
-                    document.getElementById(
-                        "currentPin"
-                    ).value;
-
-
-                const newPin =
-                    document.getElementById(
-                        "newPin"
-                    ).value;
-
-
-                const confirmPin =
-                    document.getElementById(
-                        "confirmPin"
-                    ).value;
-
-
-                message.textContent = "";
-
-
-                try {
-
-                    await window.nsChangePin(
-                        currentPin,
-                        newPin,
-                        confirmPin
-                    );
-
-
-                    message.textContent =
-                        "PIN changed successfully.";
-
-
-                    document.getElementById(
-                        "currentPin"
-                    ).value = "";
-
-
-                    document.getElementById(
-                        "newPin"
-                    ).value = "";
-
-
-                    document.getElementById(
-                        "confirmPin"
-                    ).value = "";
-
-
-                } catch (error) {
-
-                    message.textContent =
-                        error.message;
-
-                }
-
-            }
-        );
-
-    }
-);
