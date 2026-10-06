@@ -1,6 +1,6 @@
 window.NS_USERS = [
-  { username: "admin01", pinHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", team: "ALL", role: "admin" },
-  { username: "admin02", pinHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", team: "ALL", role: "admin" },
+  { username: "morvan", pinHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", team: "ALL", role: "admin" },
+  { username: "darel", pinHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", team: "ALL", role: "admin" },
 
   // TeamDarel
   { username: "TeamDarel_01", pinHash: "35543fa109d1144c357ffe7697bce3b1f22a84dc508b29d066db8dc55bcc8613", team: "TeamDarel", role: "member" },
