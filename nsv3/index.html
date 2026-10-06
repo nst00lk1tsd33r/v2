@@ -3181,5 +3181,39 @@ else initCleanFX();
 </script>
 
 <script src="./js/auth.js"></script>
+    <script>
+        /* =========================================================
+   NAV LOGOUT
+========================================================= */
+
+const navLogoutButton =
+    document.getElementById("navLogoutButton");
+
+if (navLogoutButton) {
+
+    navLogoutButton.addEventListener(
+        "click",
+        function () {
+
+            if (
+                typeof window.nsLogout ===
+                "function"
+            ) {
+
+                window.nsLogout();
+
+            } else {
+
+                console.error(
+                    "nsLogout() is not available."
+                );
+
+            }
+
+        }
+    );
+
+}
+        </script>
 </body>
 </html>
