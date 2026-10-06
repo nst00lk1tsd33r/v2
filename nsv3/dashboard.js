@@ -5,27 +5,19 @@
 // AUTHENTICATION CHECK
 // ========================================
 
-if (!requireLogin()) {
-
-    throw new Error(
-        "Authentication required."
-    );
-
-}
-
-
-// ========================================
-// CURRENT USER
-// ========================================
-
 const user =
-    getCurrentUser();
+    window.nsGetCurrentUser
+        ? window.nsGetCurrentUser()
+        : null;
 
 
 if (!user) {
 
+    window.location.href =
+        "./index.html";
+
     throw new Error(
-        "No authenticated user found."
+        "Authentication required."
     );
 
 }
@@ -72,7 +64,7 @@ if (welcome) {
 if (team) {
 
     team.textContent =
-        `Team: ${user.team}`;
+        `Team: ${user.team || "No team assigned"}`;
 
 }
 
@@ -80,84 +72,57 @@ if (team) {
 // ========================================
 // PERFORMANCE DATA
 // ========================================
-//
-// TEMPORARY DATA
-//
-// Replace this later with your actual
-// performance data source.
-//
-// IMPORTANT:
-// There is NO ?user= parameter here.
-// The dashboard always uses the
-// authenticated account.
-// ========================================
 
 const PERFORMANCE = {
 
     rosa01: {
 
-        quality:
-            "88.50%",
+        quality: "88.50%",
 
-        productivity:
-            "3.80",
+        productivity: "3.80",
 
-        attendance:
-            "100%",
+        attendance: "100%",
 
-        callouts:
-            2
+        callouts: 2
 
     },
 
 
     rafael01: {
 
-        quality:
-            "82.00%",
+        quality: "82.00%",
 
-        productivity:
-            "3.60",
+        productivity: "3.60",
 
-        attendance:
-            "100%",
+        attendance: "100%",
 
-        callouts:
-            3
+        callouts: 3
 
     },
 
 
     andrea01: {
 
-        quality:
-            "84.50%",
+        quality: "84.50%",
 
-        productivity:
-            "3.40",
+        productivity: "3.40",
 
-        attendance:
-            "100%",
+        attendance: "100%",
 
-        callouts:
-            1
+        callouts: 1
 
     },
 
 
     ehren01: {
 
-        quality:
-            "79.50%",
+        quality: "79.50%",
 
-        productivity:
-            "3.20",
+        productivity: "3.20",
 
-        attendance:
-            "95%",
+        attendance: "95%",
 
-        callouts:
-            4
+        callouts: 4
 
     }
 
@@ -179,7 +144,6 @@ const performance =
 // ========================================
 
 if (performance) {
-
 
     const quality =
         document.getElementById(
@@ -236,7 +200,6 @@ if (performance) {
 
     }
 
-
 }
 
 
@@ -256,7 +219,13 @@ if (logoutButton) {
         "click",
         function () {
 
-            window.nsLogout();
+            if (
+                window.nsLogout
+            ) {
+
+                window.nsLogout();
+
+            }
 
         }
     );
@@ -282,41 +251,45 @@ const pinMessage =
 
 if (changePinButton) {
 
-
     changePinButton.addEventListener(
         "click",
         async function () {
 
-
             const currentPin =
                 document.getElementById(
                     "currentPin"
-                ).value;
+                ).value.trim();
 
 
             const newPin =
                 document.getElementById(
                     "newPin"
-                ).value;
+                ).value.trim();
 
 
             const confirmPin =
                 document.getElementById(
                     "confirmPin"
-                ).value;
+                ).value.trim();
 
 
-            // Clear previous message
+            // --------------------------------
+            // Clear old message
+            // --------------------------------
 
             pinMessage.textContent =
                 "";
 
+            pinMessage.style.color =
+                "";
 
+
+            // --------------------------------
             // Disable button
+            // --------------------------------
 
             changePinButton.disabled =
                 true;
-
 
             changePinButton.textContent =
                 "Changing PIN...";
@@ -324,6 +297,24 @@ if (changePinButton) {
 
             try {
 
+                // --------------------------------
+                // Check auth.js
+                // --------------------------------
+
+                if (
+                    !window.nsChangePin
+                ) {
+
+                    throw new Error(
+                        "PIN change system is not loaded. Please check auth.js."
+                    );
+
+                }
+
+
+                // --------------------------------
+                // Change PIN
+                // --------------------------------
 
                 await window.nsChangePin(
 
@@ -336,7 +327,9 @@ if (changePinButton) {
                 );
 
 
+                // --------------------------------
                 // Success
+                // --------------------------------
 
                 pinMessage.textContent =
                     "PIN changed successfully.";
@@ -345,7 +338,9 @@ if (changePinButton) {
                     "#22c55e";
 
 
+                // --------------------------------
                 // Clear inputs
+                // --------------------------------
 
                 document.getElementById(
                     "currentPin"
@@ -364,24 +359,27 @@ if (changePinButton) {
 
             } catch (error) {
 
+                console.error(
+                    "PIN CHANGE ERROR:",
+                    error
+                );
+
 
                 pinMessage.textContent =
-                    error.message;
+                    error.message ||
+                    "Unable to change PIN.";
+
 
                 pinMessage.style.color =
                     "#ef4444";
 
-
             } finally {
-
 
                 changePinButton.disabled =
                     false;
 
-
                 changePinButton.textContent =
                     "Change PIN";
-
 
             }
 
