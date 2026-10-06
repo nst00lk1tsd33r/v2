@@ -3,21 +3,15 @@
     "use strict";
 
 
-    // =========================================
-    // USERS
-    // Loaded from ./data/users.js
-    // =========================================
-
-    const USERS =
-        window.NS_USERS || [];
-
-
-    // =========================================
-    // STORAGE SETTINGS
-    // =========================================
+    // ==================================================
+    // SETTINGS
+    // ==================================================
 
     const SESSION_KEY =
         "nsToolkitUser";
+
+    const SESSION_DURATION =
+        10 * 60 * 60 * 1000; // 10 HOURS
 
     const DEVICE_KEY =
         "nsToolkitDevice";
@@ -28,43 +22,48 @@
     const PIN_OVERRIDES_KEY =
         "nsToolkitPinOverrides";
 
-    const SESSION_DURATION =
-        10 * 60 * 60 * 1000; // 10 HOURS
 
-
-    // =========================================
+    // ==================================================
     // SHA-256
-    // =========================================
+    // ==================================================
 
-    async function sha256(value) {
+    async function sha256(text) {
 
-        const buffer =
-            new TextEncoder().encode(value);
+        const data =
+            new TextEncoder().encode(text);
 
-        const hash =
-            await crypto.subtle.digest(
+        const hashBuffer =
+            await window.crypto.subtle.digest(
                 "SHA-256",
-                buffer
+                data
             );
 
-        return Array
-            .from(
-                new Uint8Array(hash)
-            )
-            .map(
-                byte =>
-                    byte
-                        .toString(16)
-                        .padStart(2, "0")
-            )
-            .join("");
+        const hashArray =
+            new Uint8Array(hashBuffer);
+
+        let hash = "";
+
+        for (
+            let i = 0;
+            i < hashArray.length;
+            i++
+        ) {
+
+            hash +=
+                hashArray[i]
+                    .toString(16)
+                    .padStart(2, "0");
+
+        }
+
+        return hash;
 
     }
 
 
-    // =========================================
+    // ==================================================
     // DEVICE ID
-    // =========================================
+    // ==================================================
 
     function getDeviceId() {
 
@@ -110,9 +109,9 @@
     }
 
 
-    // =========================================
+    // ==================================================
     // DEVICE OWNER
-    // =========================================
+    // ==================================================
 
     function getDeviceOwner() {
 
@@ -123,61 +122,7 @@
     }
 
 
-    // =========================================
-    // CHECK DEVICE
-    // =========================================
-
-    function isDeviceAllowed(username) {
-
-        const owner =
-            getDeviceOwner();
-
-
-        // Device has never been assigned
-        if (!owner) {
-
-            return true;
-
-        }
-
-
-        // Same user is allowed
-        return (
-            owner.toLowerCase() ===
-            username.toLowerCase()
-        );
-
-    }
-
-
-    // =========================================
-    // ASSIGN DEVICE
-    // =========================================
-
-    function assignDevice(username) {
-
-        const existingOwner =
-            getDeviceOwner();
-
-
-        // Someone already owns this device
-        if (existingOwner) {
-
-            if (
-                existingOwner.toLowerCase() !==
-                username.toLowerCase()
-            ) {
-
-                throw new Error(
-                    "This device is already assigned to another account."
-                );
-
-            }
-
-            return;
-
-        }
-
+    function setDeviceOwner(username) {
 
         localStorage.setItem(
             DEVICE_OWNER_KEY,
@@ -187,9 +132,9 @@
     }
 
 
-    // =========================================
+    // ==================================================
     // PIN OVERRIDES
-    // =========================================
+    // ==================================================
 
     function getPinOverrides() {
 
@@ -213,7 +158,7 @@
         } catch (error) {
 
             console.error(
-                "Unable to read PIN overrides:",
+                "PIN override error:",
                 error
             );
 
@@ -234,20 +179,54 @@
     }
 
 
-    // =========================================
-    // GET ACTIVE PIN HASH
-    // =========================================
+    // ==================================================
+    // FIND USER
+    // ==================================================
 
-    function getStoredPinHash(user) {
+    function findUser(username) {
+
+        if (
+            !Array.isArray(
+                window.NS_USERS
+            )
+        ) {
+
+            console.error(
+                "NS_USERS was not loaded."
+            );
+
+            return null;
+
+        }
+
+
+        return window.NS_USERS.find(
+            function (account) {
+
+                return (
+                    String(
+                        account.username
+                    )
+                        .toLowerCase() ===
+                    String(username)
+                        .toLowerCase()
+                );
+
+            }
+        );
+
+    }
+
+
+    // ==================================================
+    // GET ACTIVE PIN HASH
+    // ==================================================
+
+    function getActivePinHash(user) {
 
         const overrides =
             getPinOverrides();
 
-
-        /*
-         * If the user has changed their PIN,
-         * the local PIN takes priority.
-         */
 
         if (
             overrides[user.username]
@@ -260,20 +239,73 @@
         }
 
 
-        // Otherwise use original users.js PIN
         return user.pinHash;
 
     }
 
 
-    // =========================================
-    // GET CURRENT USER / SESSION
-    // =========================================
+    // ==================================================
+    // CREATE SESSION
+    // ==================================================
+
+    function createSession(user) {
+
+        const loginTime =
+            Date.now();
+
+
+        const expirationTime =
+            loginTime +
+            SESSION_DURATION;
+
+
+        const session = {
+
+            username:
+                user.username,
+
+            team:
+                user.team,
+
+            role:
+                user.role,
+
+            deviceId:
+                getDeviceId(),
+
+            loginTime:
+                loginTime,
+
+            expirationTime:
+                expirationTime
+
+        };
+
+
+        sessionStorage.setItem(
+
+            SESSION_KEY,
+
+            JSON.stringify(
+                session
+            )
+
+        );
+
+
+        return session;
+
+    }
+
+
+    // ==================================================
+    // GET CURRENT USER
+    // ==================================================
 
     function getCurrentUser() {
 
         const saved =
-            localStorage.getItem(
+            sessionStorage.getItem(
                 SESSION_KEY
             );
 
@@ -291,19 +323,13 @@
                 JSON.parse(saved);
 
 
-            // ---------------------------------
-            // Validate session
-            // ---------------------------------
-
             if (
                 !session ||
                 !session.username ||
-                !session.loginTime ||
-                !session.expirationTime ||
-                !session.deviceId
+                !session.expirationTime
             ) {
 
-                localStorage.removeItem(
+                sessionStorage.removeItem(
                     SESSION_KEY
                 );
 
@@ -312,9 +338,9 @@
             }
 
 
-            // ---------------------------------
-            // Check expiration
-            // ---------------------------------
+            // ------------------------------------------
+            // SESSION EXPIRATION
+            // ------------------------------------------
 
             if (
                 Date.now() >=
@@ -323,35 +349,30 @@
                 )
             ) {
 
-                console.log(
-                    "NS Toolkit session expired."
-                );
-
-
-                localStorage.removeItem(
+                sessionStorage.removeItem(
                     SESSION_KEY
                 );
-
 
                 return null;
 
             }
 
 
-            // ---------------------------------
-            // Check device ID
-            // ---------------------------------
+            // ------------------------------------------
+            // DEVICE CHECK
+            // ------------------------------------------
 
             const currentDevice =
                 getDeviceId();
 
 
             if (
+                session.deviceId &&
                 session.deviceId !==
                 currentDevice
             ) {
 
-                localStorage.removeItem(
+                sessionStorage.removeItem(
                     SESSION_KEY
                 );
 
@@ -360,9 +381,9 @@
             }
 
 
-            // ---------------------------------
-            // Check device owner
-            // ---------------------------------
+            // ------------------------------------------
+            // DEVICE OWNER CHECK
+            // ------------------------------------------
 
             const owner =
                 getDeviceOwner();
@@ -374,7 +395,7 @@
                 session.username.toLowerCase()
             ) {
 
-                localStorage.removeItem(
+                sessionStorage.removeItem(
                     SESSION_KEY
                 );
 
@@ -389,12 +410,12 @@
         } catch (error) {
 
             console.error(
-                "Invalid session data:",
+                "Session error:",
                 error
             );
 
 
-            localStorage.removeItem(
+            sessionStorage.removeItem(
                 SESSION_KEY
             );
 
@@ -406,88 +427,138 @@
     }
 
 
-    // =========================================
+    // ==================================================
+    // REQUIRE LOGIN
+    // ==================================================
+
+    function requireLogin() {
+
+        const user =
+            getCurrentUser();
+
+
+        if (!user) {
+
+            window.location.href =
+                "./index.html";
+
+            return false;
+
+        }
+
+
+        return true;
+
+    }
+
+
+    // ==================================================
     // LOGIN
-    // =========================================
+    // ==================================================
 
-    async function login() {
+    async function performLogin() {
 
-        const username =
-            document
-                .getElementById(
-                    "nsUsername"
-                )
-                .value
-                .trim()
-                .toLowerCase();
+        const usernameInput =
+            document.getElementById(
+                "nsUsername"
+            );
 
 
-        const pin =
-            document
-                .getElementById(
-                    "nsPin"
-                )
-                .value
-                .trim();
+        const pinInput =
+            document.getElementById(
+                "nsPin"
+            );
 
 
-        const error =
+        const errorElement =
             document.getElementById(
                 "nsLoginError"
             );
 
 
-        error.textContent = "";
+        const button =
+            document.getElementById(
+                "nsLoginButton"
+            );
 
 
-        // -------------------------------------
-        // Username
-        // -------------------------------------
+        const buttonText =
+            document.getElementById(
+                "nsLoginText"
+            );
+
+
+        const username =
+            usernameInput.value
+                .trim()
+                .toLowerCase();
+
+
+        const pin =
+            pinInput.value.trim();
+
+
+        errorElement.textContent =
+            "";
+
 
         if (!username) {
 
-            error.textContent =
-                "Enter your username.";
+            errorElement.textContent =
+                "Please enter your username.";
+
+            usernameInput.focus();
 
             return;
 
         }
 
 
-        // -------------------------------------
-        // PIN
-        // -------------------------------------
-
         if (!pin) {
 
-            error.textContent =
-                "Enter your PIN.";
+            errorElement.textContent =
+                "Please enter your PIN.";
+
+            pinInput.focus();
 
             return;
+
+        }
+
+
+        if (button) {
+
+            button.disabled =
+                true;
+
+        }
+
+
+        if (buttonText) {
+
+            buttonText.textContent =
+                "Checking...";
 
         }
 
 
         try {
 
-            // ---------------------------------
-            // Device
-            // ---------------------------------
+            // ------------------------------------------
+            // CHECK DEVICE OWNER
+            // ------------------------------------------
 
-            const deviceId =
-                getDeviceId();
+            const deviceOwner =
+                getDeviceOwner();
 
-
-            // ---------------------------------
-            // Check device ownership BEFORE
-            // checking another account
-            // ---------------------------------
 
             if (
-                !isDeviceAllowed(username)
+                deviceOwner &&
+                deviceOwner.toLowerCase() !==
+                username
             ) {
 
-                error.textContent =
+                errorElement.textContent =
                     "This device is already assigned to another account.";
 
                 return;
@@ -495,118 +566,97 @@
             }
 
 
-            // ---------------------------------
-            // Find username
-            // ---------------------------------
+            // ------------------------------------------
+            // FIND ACCOUNT
+            // ------------------------------------------
 
             const user =
-                USERS.find(
-                    account =>
-                        account.username
-                            .toLowerCase() ===
-                        username
-                );
+                findUser(username);
 
 
             if (!user) {
 
-                error.textContent =
+                errorElement.textContent =
                     "Invalid username or PIN.";
+
+                pinInput.value =
+                    "";
+
+                pinInput.focus();
 
                 return;
 
             }
 
 
-            // ---------------------------------
-            // Hash entered PIN
-            // ---------------------------------
+            // ------------------------------------------
+            // HASH PIN
+            // ------------------------------------------
 
-            const hash =
+            const enteredHash =
                 await sha256(pin);
 
 
-            // ---------------------------------
-            // Get active PIN
-            // ---------------------------------
+            // ------------------------------------------
+            // ACTIVE PIN
+            // ------------------------------------------
 
-            const storedPinHash =
-                getStoredPinHash(user);
+            const activePinHash =
+                getActivePinHash(user);
 
 
-            // ---------------------------------
-            // Verify PIN
-            // ---------------------------------
+            // ------------------------------------------
+            // VERIFY PIN
+            // ------------------------------------------
 
             if (
-                storedPinHash !==
-                hash
+                enteredHash !==
+                activePinHash
             ) {
 
-                error.textContent =
+                errorElement.textContent =
                     "Invalid username or PIN.";
+
+                pinInput.value =
+                    "";
+
+                pinInput.focus();
 
                 return;
 
             }
 
 
-            // ---------------------------------
-            // Assign this browser/device
-            // ---------------------------------
+            // ------------------------------------------
+            // ASSIGN DEVICE
+            // ------------------------------------------
 
-            assignDevice(
-                user.username
+            if (!deviceOwner) {
+
+                setDeviceOwner(
+                    user.username
+                );
+
+            }
+
+
+            // ------------------------------------------
+            // CREATE SESSION
+            // ------------------------------------------
+
+            const session =
+                createSession(user);
+
+
+            console.log(
+                "LOGIN SUCCESS:",
+                session
             );
 
 
-            // ---------------------------------
-            // Create session
-            // ---------------------------------
-
-            const now =
-                Date.now();
-
-
-            const session = {
-
-                username:
-                    user.username,
-
-                team:
-                    user.team,
-
-                role:
-                    user.role,
-
-                deviceId:
-                    deviceId,
-
-                loginTime:
-                    now,
-
-                expirationTime:
-                    now +
-                    SESSION_DURATION
-
-            };
-
-
-            // ---------------------------------
-            // Save session
-            // ---------------------------------
-
-            localStorage.setItem(
-                SESSION_KEY,
-                JSON.stringify(
-                    session
-                )
-            );
-
-
-            // ---------------------------------
-            // Hide login
-            // ---------------------------------
+            // ------------------------------------------
+            // HIDE LOGIN
+            // ------------------------------------------
 
             const overlay =
                 document.getElementById(
@@ -623,57 +673,58 @@
             }
 
 
-            // ---------------------------------
-            // Clear PIN field
-            // ---------------------------------
-
-            const pinInput =
-                document.getElementById(
-                    "nsPin"
-                );
-
-
-            if (pinInput) {
-
-                pinInput.value = "";
-
-            }
-
-
-            // ---------------------------------
-            // Login success event
-            // ---------------------------------
+            // ------------------------------------------
+            // NOTIFY WEBSITE
+            // ------------------------------------------
 
             document.dispatchEvent(
+
                 new CustomEvent(
                     "nsLoginSuccess",
                     {
                         detail: session
                     }
                 )
+
             );
 
 
-        } catch (err) {
+        } catch (error) {
 
             console.error(
                 "LOGIN ERROR:",
-                err
+                error
             );
 
 
-            error.textContent =
-                "Login error: " +
-                err.message;
+            errorElement.textContent =
+                "Unable to process login.";
+
+        } finally {
+
+            if (button) {
+
+                button.disabled =
+                    false;
+
+            }
+
+
+            if (buttonText) {
+
+                buttonText.textContent =
+                    "Sign In";
+
+            }
 
         }
 
     }
 
 
-    // =========================================
+    // ==================================================
     // CHANGE PIN
-    // =========================================
+    // ==================================================
 
     async function changePin(
         currentPin,
@@ -688,33 +739,25 @@
         if (!currentUser) {
 
             throw new Error(
-                "You must be logged in to change your PIN."
+                "Your session has expired. Please log in again."
             );
 
         }
 
-
-        // -------------------------------------
-        // Validate current PIN
-        // -------------------------------------
 
         if (!currentPin) {
 
             throw new Error(
-                "Enter your current PIN."
+                "Please enter your current PIN."
             );
 
         }
 
 
-        // -------------------------------------
-        // Validate new PIN
-        // -------------------------------------
-
         if (!newPin) {
 
             throw new Error(
-                "Enter your new PIN."
+                "Please enter your new PIN."
             );
 
         }
@@ -723,13 +766,16 @@
         if (newPin.length < 4) {
 
             throw new Error(
-                "PIN must be at least 4 characters."
+                "New PIN must be at least 4 characters."
             );
 
         }
 
 
-        if (newPin !== confirmPin) {
+        if (
+            newPin !==
+            confirmPin
+        ) {
 
             throw new Error(
                 "New PINs do not match."
@@ -738,17 +784,13 @@
         }
 
 
-        // -------------------------------------
-        // Find current account
-        // -------------------------------------
+        // ------------------------------------------
+        // FIND CURRENT USER
+        // ------------------------------------------
 
         const user =
-            USERS.find(
-                account =>
-                    account.username
-                        .toLowerCase() ===
-                    currentUser.username
-                        .toLowerCase()
+            findUser(
+                currentUser.username
             );
 
 
@@ -761,9 +803,9 @@
         }
 
 
-        // -------------------------------------
-        // Verify current PIN
-        // -------------------------------------
+        // ------------------------------------------
+        // VERIFY CURRENT PIN
+        // ------------------------------------------
 
         const currentHash =
             await sha256(
@@ -771,13 +813,13 @@
             );
 
 
-        const storedHash =
-            getStoredPinHash(user);
+        const activeHash =
+            getActivePinHash(user);
 
 
         if (
             currentHash !==
-            storedHash
+            activeHash
         ) {
 
             throw new Error(
@@ -787,9 +829,9 @@
         }
 
 
-        // -------------------------------------
-        // Hash new PIN
-        // -------------------------------------
+        // ------------------------------------------
+        // HASH NEW PIN
+        // ------------------------------------------
 
         const newHash =
             await sha256(
@@ -797,9 +839,9 @@
             );
 
 
-        // -------------------------------------
-        // Save new PIN locally
-        // -------------------------------------
+        // ------------------------------------------
+        // SAVE OVERRIDE
+        // ------------------------------------------
 
         const overrides =
             getPinOverrides();
@@ -816,24 +858,25 @@
         );
 
 
+        console.log(
+            "PIN changed successfully for:",
+            user.username
+        );
+
+
         return true;
 
     }
 
 
-    // =========================================
+    // ==================================================
     // LOGOUT
-    // =========================================
+    // ==================================================
 
     function logout() {
 
-        localStorage.removeItem(
+        sessionStorage.removeItem(
             SESSION_KEY
-        );
-
-
-        console.log(
-            "NS Toolkit user logged out."
         );
 
 
@@ -843,35 +886,35 @@
     }
 
 
-    // =========================================
-    // RESET DEVICE BINDING
-    // =========================================
-
-    function resetDeviceBinding() {
-
-        localStorage.removeItem(
-            DEVICE_OWNER_KEY
-        );
-
-        localStorage.removeItem(
-            SESSION_KEY
-        );
-
-    }
-
-
-    // =========================================
-    // START
-    // =========================================
+    // ==================================================
+    // INITIALIZE LOGIN PAGE
+    // ==================================================
 
     document.addEventListener(
         "DOMContentLoaded",
         function () {
 
+            const overlay =
+                document.getElementById(
+                    "nsLoginOverlay"
+                );
 
-            // ---------------------------------
+
+            // ------------------------------------------
+            // If this isn't the login page,
+            // don't do login-page initialization.
+            // ------------------------------------------
+
+            if (!overlay) {
+
+                return;
+
+            }
+
+
+            // ------------------------------------------
             // Existing session
-            // ---------------------------------
+            // ------------------------------------------
 
             const currentUser =
                 getCurrentUser();
@@ -879,112 +922,147 @@
 
             if (currentUser) {
 
-                console.log(
-                    "Existing session found:",
-                    currentUser
+                overlay.classList.add(
+                    "ns-login-hidden"
                 );
-
-
-                const overlay =
-                    document.getElementById(
-                        "nsLoginOverlay"
-                    );
-
-
-                if (overlay) {
-
-                    overlay.classList.add(
-                        "ns-login-hidden"
-                    );
-
-                }
 
             }
 
 
-            // ---------------------------------
+            // ------------------------------------------
             // Login button
-            // ---------------------------------
+            // ------------------------------------------
 
-            const button =
+            const loginButton =
                 document.getElementById(
                     "nsLoginButton"
                 );
 
 
-            if (!button) {
+            if (loginButton) {
 
-                console.error(
-                    "nsLoginButton was not found."
+                loginButton.addEventListener(
+                    "click",
+                    performLogin
                 );
-
-                return;
 
             }
 
 
-            button.addEventListener(
-                "click",
-                login
-            );
-
-
-            // ---------------------------------
+            // ------------------------------------------
             // Enter - Username
-            // ---------------------------------
+            // ------------------------------------------
 
-            document
-                .getElementById(
+            const usernameInput =
+                document.getElementById(
                     "nsUsername"
-                )
-                ?.addEventListener(
+                );
+
+
+            if (usernameInput) {
+
+                usernameInput.addEventListener(
                     "keydown",
-                    event => {
+                    function (event) {
 
                         if (
                             event.key ===
                             "Enter"
                         ) {
 
-                            login();
+                            performLogin();
 
                         }
 
                     }
                 );
 
+            }
 
-            // ---------------------------------
+
+            // ------------------------------------------
             // Enter - PIN
-            // ---------------------------------
+            // ------------------------------------------
 
-            document
-                .getElementById(
+            const pinInput =
+                document.getElementById(
                     "nsPin"
-                )
-                ?.addEventListener(
+                );
+
+
+            if (pinInput) {
+
+                pinInput.addEventListener(
                     "keydown",
-                    event => {
+                    function (event) {
 
                         if (
                             event.key ===
                             "Enter"
                         ) {
 
-                            login();
+                            performLogin();
 
                         }
 
                     }
                 );
+
+            }
+
+
+            // ------------------------------------------
+            // PIN visibility
+            // ------------------------------------------
+
+            const toggle =
+                document.getElementById(
+                    "nsTogglePin"
+                );
+
+
+            if (
+                toggle &&
+                pinInput
+            ) {
+
+                toggle.addEventListener(
+                    "click",
+                    function () {
+
+                        if (
+                            pinInput.type ===
+                            "password"
+                        ) {
+
+                            pinInput.type =
+                                "text";
+
+                            toggle.textContent =
+                                "Hide";
+
+                        } else {
+
+                            pinInput.type =
+                                "password";
+
+                            toggle.textContent =
+                                "Show";
+
+                        }
+
+                    }
+                );
+
+            }
 
         }
     );
 
 
-    // =========================================
+    // ==================================================
     // GLOBAL FUNCTIONS
-    // =========================================
+    // ==================================================
 
     window.nsGetCurrentUser =
         getCurrentUser;
@@ -995,19 +1073,19 @@
 
 
     window.nsLogin =
-        login;
+        performLogin;
 
 
     window.nsChangePin =
         changePin;
 
 
+    window.requireLogin =
+        requireLogin;
+
+
     window.nsGetDeviceId =
         getDeviceId;
-
-
-    window.nsResetDeviceBinding =
-        resetDeviceBinding;
 
 
 })();
