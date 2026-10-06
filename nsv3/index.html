@@ -2297,6 +2297,50 @@ body.ns-login-revealing .support-btn{
     animation:nsDynScreenOut 1.6s cubic-bezier(.16,1,.3,1) 1s forwards;
 }
 
+/* =========================================================
+   LOGIN VALIDATION ERROR STATE
+   ADDITION ONLY
+========================================================= */
+
+#nsLoginDynamicFX.ns-dyn-login-error .ns-dyn-card{
+    border-color:rgba(239,68,68,.55);
+    box-shadow:
+        0 30px 100px rgba(0,0,0,.75),
+        0 0 70px rgba(239,68,68,.18),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+#nsLoginDynamicFX.ns-dyn-login-error .ns-dyn-title{
+    color:#ef4444;
+    text-shadow:0 0 22px rgba(239,68,68,.35);
+}
+
+#nsLoginDynamicFX.ns-dyn-login-error .ns-dyn-detail{
+    color:rgba(255,255,255,.65);
+}
+
+#nsLoginDynamicFX .ns-dyn-spinner.login-error{
+    animation:none;
+    border:3px solid rgba(239,68,68,.25);
+    border-top-color:#ef4444;
+    border-right-color:#ef4444;
+    box-shadow:0 0 25px rgba(239,68,68,.20);
+    position:relative;
+}
+
+#nsLoginDynamicFX .ns-dyn-spinner.login-error::after{
+    content:"×";
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#ef4444;
+    font-size:34px;
+    font-weight:900;
+    line-height:1;
+}
+
 body.ns-login-revealing .content-reveal{
     animation:nsDynWebsiteReveal 1.5s cubic-bezier(.16,1,.3,1) .15s both !important;
 }
@@ -2519,6 +2563,7 @@ body.ns-login-revealing .content-reveal{
                      <a href="https://nstoolkits.site/nsv3/">Home</a>
                     <a href="about.html">About Us</a>
                     <a href="download.html">Download</a>
+                    <a href="dashboard.html">Dashboard</a>
                 </div>
             </div>
         </div>
@@ -2963,19 +3008,65 @@ document.addEventListener("contextmenu", e => e.preventDefault());
                 }
 
                 /*
-                 * Invalid credentials: let the normal auth error show,
-                 * then remove the validation screen.
+                 * Invalid credentials:
+                 * show the error inside the validation popup
+                 * instead of immediately removing it.
                  */
                 if (
                     errorBox &&
                     errorBox.textContent.trim() &&
                     !sessionIsValid()
                 ) {
+
+                    clearInterval(poll);
+                    poll = null;
+
+                    const card =
+                        fx.querySelector(".ns-dyn-card");
+
+                    const spinner =
+                        fx.querySelector(".ns-dyn-spinner");
+
+                    const title =
+                        fx.querySelector(".ns-dyn-title");
+
+                    const detail =
+                        fx.querySelector(".ns-dyn-detail");
+
+
+                    if (title) {
+                        title.textContent =
+                            "WRONG CREDENTIALS";
+                    }
+
+
+                    if (detail) {
+                        detail.textContent =
+                            "Username or PIN is incorrect.";
+                    }
+
+
+                    if (spinner) {
+                        spinner.classList.remove("verified");
+                        spinner.classList.add("login-error");
+                    }
+
+
+                    fx.classList.add(
+                        "ns-dyn-login-error"
+                    );
+
+
+                    if (card) {
+                        card.classList.add(
+                            "login-error"
+                        );
+                    }
+
+
                     setTimeout(function () {
-                        if (!sessionIsValid()) {
-                            removeEffect();
-                        }
-                    }, 250);
+                        removeEffect();
+                    }, 1800);
                 }
 
             }, 50);
