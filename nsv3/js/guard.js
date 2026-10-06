@@ -8,19 +8,67 @@
     // LOGIN ACCESS GUARD
     // ==========================================
 
+
+    // ==========================================
+    // SESSION SETTINGS
+    // ==========================================
+
     const SESSION_KEY =
         "nsToolkitUser";
 
 
-    // Main NS ToolKits login page
-    const LOGIN_PAGE =
-        "/nsv3/index.html";
-
-
-    // Session duration
     // 10 HOURS
     const SESSION_DURATION =
         10 * 60 * 60 * 1000;
+
+
+
+    // ==========================================
+    // LOGIN PAGE
+    // ==========================================
+
+    const LOGIN_PAGE =
+        new URL(
+            "./index.html",
+            window.location.href
+        ).href;
+
+
+
+    // ==========================================
+    // GET SESSION
+    // ==========================================
+
+    function getSavedSession() {
+
+        /*
+         * IMPORTANT:
+         *
+         * auth.js stores the login session
+         * inside sessionStorage.
+         *
+         * Do NOT use localStorage here.
+         */
+
+        return sessionStorage.getItem(
+            SESSION_KEY
+        );
+
+    }
+
+
+
+    // ==========================================
+    // REMOVE SESSION
+    // ==========================================
+
+    function clearSession() {
+
+        sessionStorage.removeItem(
+            SESSION_KEY
+        );
+
+    }
 
 
 
@@ -31,9 +79,7 @@
     function checkAuthentication() {
 
         const savedSession =
-            localStorage.getItem(
-                SESSION_KEY
-            );
+            getSavedSession();
 
 
         // --------------------------------------
@@ -70,10 +116,7 @@
             );
 
 
-            localStorage.removeItem(
-                SESSION_KEY
-            );
-
+            clearSession();
 
             redirectToMainPage();
 
@@ -83,11 +126,12 @@
 
 
         // --------------------------------------
-        // VALIDATE SESSION
+        // BASIC SESSION VALIDATION
         // --------------------------------------
 
         if (
             !session ||
+            typeof session !== "object" ||
             !session.username ||
             !session.loginTime ||
             !session.expirationTime
@@ -98,10 +142,107 @@
             );
 
 
-            localStorage.removeItem(
-                SESSION_KEY
+            clearSession();
+
+            redirectToMainPage();
+
+            return false;
+
+        }
+
+
+        // --------------------------------------
+        // CONVERT VALUES TO NUMBERS
+        // --------------------------------------
+
+        const loginTime =
+            Number(
+                session.loginTime
             );
 
+        const expirationTime =
+            Number(
+                session.expirationTime
+            );
+
+
+        // --------------------------------------
+        // INVALID SESSION TIMES
+        // --------------------------------------
+
+        if (
+            !Number.isFinite(loginTime) ||
+            !Number.isFinite(expirationTime)
+        ) {
+
+            console.warn(
+                "Invalid NS ToolKits session timestamps."
+            );
+
+
+            clearSession();
+
+            redirectToMainPage();
+
+            return false;
+
+        }
+
+
+        // --------------------------------------
+        // MAKE SURE EXPIRATION IS AFTER LOGIN
+        // --------------------------------------
+
+        if (
+            expirationTime <=
+            loginTime
+        ) {
+
+            console.warn(
+                "Invalid NS ToolKits expiration time."
+            );
+
+
+            clearSession();
+
+            redirectToMainPage();
+
+            return false;
+
+        }
+
+
+        // --------------------------------------
+        // OPTIONAL SAFETY CHECK
+        // --------------------------------------
+        //
+        // The session should be approximately
+        // 10 hours long.
+        //
+        // We allow a small tolerance instead of
+        // rejecting a legitimate session because
+        // of a minor timestamp difference.
+        //
+
+        const sessionLength =
+            expirationTime -
+            loginTime;
+
+        const tolerance =
+            60 * 1000;
+
+
+        if (
+            sessionLength >
+            SESSION_DURATION + tolerance
+        ) {
+
+            console.warn(
+                "Invalid NS ToolKits session duration."
+            );
+
+
+            clearSession();
 
             redirectToMainPage();
 
@@ -118,35 +259,6 @@
             Date.now();
 
 
-        const expirationTime =
-            Number(
-                session.expirationTime
-            );
-
-
-        // Invalid expiration
-        if (
-            !Number.isFinite(
-                expirationTime
-            )
-        ) {
-
-            localStorage.removeItem(
-                SESSION_KEY
-            );
-
-
-            redirectToMainPage();
-
-            return false;
-
-        }
-
-
-        // --------------------------------------
-        // 10-HOUR SESSION EXPIRED
-        // --------------------------------------
-
         if (
             now >=
             expirationTime
@@ -157,10 +269,7 @@
             );
 
 
-            localStorage.removeItem(
-                SESSION_KEY
-            );
-
+            clearSession();
 
             redirectToMainPage();
 
@@ -180,7 +289,7 @@
 
 
     // ==========================================
-    // REDIRECT TO MAIN PAGE
+    // REDIRECT TO LOGIN
     // ==========================================
 
     function redirectToMainPage() {
@@ -189,16 +298,24 @@
             window.location.pathname;
 
 
+        const loginPath =
+            new URL(
+                "./index.html",
+                window.location.href
+            ).pathname;
+
+
         // --------------------------------------
-        // Already on NS ToolKits main page
+        // ALREADY ON LOGIN PAGE
         // --------------------------------------
 
         if (
             currentPath ===
-                "/nsv3/" ||
+                loginPath ||
 
-            currentPath ===
-                "/nsv3/index.html"
+            currentPath.endsWith(
+                "/index.html"
+            )
         ) {
 
             return;
@@ -207,7 +324,7 @@
 
 
         // --------------------------------------
-        // Redirect
+        // REDIRECT
         // --------------------------------------
 
         window.location.replace(
@@ -264,11 +381,8 @@
 
 
     // ==========================================
-    // OPTIONAL PERIODIC CHECK
+    // PERIODIC SESSION CHECK
     // ==========================================
-    // Checks the session every minute.
-    // This catches expiration even if the
-    // user stays on the page for 10+ hours.
 
     const SESSION_CHECK_INTERVAL =
         60 * 1000;
