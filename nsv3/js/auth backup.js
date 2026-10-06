@@ -1,4 +1,3 @@
-```javascript
 (function () {
 
     "use strict";
@@ -15,20 +14,11 @@
 
 
     // =========================================
-    // STORAGE SETTINGS
+    // SESSION SETTINGS
     // =========================================
 
     const SESSION_KEY =
         "nsToolkitUser";
-
-    const DEVICE_KEY =
-        "nsToolkitDevice";
-
-    const DEVICE_OWNER_KEY =
-        "nsToolkitDeviceOwner";
-
-    const PIN_OVERRIDES_KEY =
-        "nsToolkitPinOverrides";
 
     const SESSION_DURATION =
         10 * 60 * 60 * 1000; // 10 HOURS
@@ -44,11 +34,13 @@
         const buffer =
             new TextEncoder().encode(value);
 
+
         const hash =
             await crypto.subtle.digest(
                 "SHA-256",
                 buffer
             );
+
 
         return Array
             .from(
@@ -61,231 +53,6 @@
                         .padStart(2, "0")
             )
             .join("");
-
-    }
-
-
-
-    // =========================================
-    // DEVICE ID
-    // =========================================
-
-    function getDeviceId() {
-
-        let deviceId =
-            localStorage.getItem(
-                DEVICE_KEY
-            );
-
-
-        // -------------------------------------
-        // Generate device ID if none exists
-        // -------------------------------------
-
-        if (!deviceId) {
-
-            if (
-                window.crypto &&
-                crypto.randomUUID
-            ) {
-
-                deviceId =
-                    crypto.randomUUID();
-
-            } else {
-
-                deviceId =
-                    "NS-" +
-                    Date.now() +
-                    "-" +
-                    Math.random()
-                        .toString(36)
-                        .substring(2);
-
-            }
-
-
-            localStorage.setItem(
-                DEVICE_KEY,
-                deviceId
-            );
-
-        }
-
-
-        return deviceId;
-
-    }
-
-
-
-    // =========================================
-    // DEVICE OWNER
-    // =========================================
-
-    function getDeviceOwner() {
-
-        return localStorage.getItem(
-            DEVICE_OWNER_KEY
-        );
-
-    }
-
-
-
-    // =========================================
-    // CHECK DEVICE ACCESS
-    // =========================================
-
-    function isDeviceAllowed(username) {
-
-        const owner =
-            getDeviceOwner();
-
-
-        // -------------------------------------
-        // Device has never been assigned
-        // -------------------------------------
-
-        if (!owner) {
-
-            return true;
-
-        }
-
-
-        // -------------------------------------
-        // Device already belongs to this user
-        // -------------------------------------
-
-        return (
-            owner.toLowerCase() ===
-            username.toLowerCase()
-        );
-
-    }
-
-
-
-    // =========================================
-    // ASSIGN DEVICE
-    // =========================================
-
-    function assignDevice(username) {
-
-        const existingOwner =
-            getDeviceOwner();
-
-
-        // Do not overwrite another owner
-        if (existingOwner) {
-
-            if (
-                existingOwner.toLowerCase() !==
-                username.toLowerCase()
-            ) {
-
-                throw new Error(
-                    "This device is already assigned to another account."
-                );
-
-            }
-
-            return;
-
-        }
-
-
-        localStorage.setItem(
-            DEVICE_OWNER_KEY,
-            username
-        );
-
-    }
-
-
-
-    // =========================================
-    // PIN OVERRIDES
-    // =========================================
-
-    function getPinOverrides() {
-
-        try {
-
-            const saved =
-                localStorage.getItem(
-                    PIN_OVERRIDES_KEY
-                );
-
-
-            if (!saved) {
-
-                return {};
-
-            }
-
-
-            return JSON.parse(saved) || {};
-
-        } catch (error) {
-
-            console.error(
-                "Unable to read PIN overrides:",
-                error
-            );
-
-            return {};
-
-        }
-
-    }
-
-
-
-    function savePinOverrides(data) {
-
-        localStorage.setItem(
-            PIN_OVERRIDES_KEY,
-            JSON.stringify(data)
-        );
-
-    }
-
-
-
-    // =========================================
-    // GET PIN HASH
-    // =========================================
-
-    function getStoredPinHash(user) {
-
-        const overrides =
-            getPinOverrides();
-
-
-        /*
-         * If the user changed their PIN,
-         * use the local PIN hash.
-         */
-
-        if (
-            overrides[user.username]
-        ) {
-
-            return overrides[
-                user.username
-            ];
-
-        }
-
-
-        /*
-         * Otherwise use the original
-         * hash from users.js.
-         */
-
-        return user.pinHash;
 
     }
 
@@ -328,8 +95,7 @@
                 !session ||
                 !session.username ||
                 !session.loginTime ||
-                !session.expirationTime ||
-                !session.deviceId
+                !session.expirationTime
             ) {
 
                 localStorage.removeItem(
@@ -361,51 +127,6 @@
                     SESSION_KEY
                 );
 
-
-                return null;
-
-            }
-
-
-            // ---------------------------------
-            // Check device
-            // ---------------------------------
-
-            const currentDevice =
-                getDeviceId();
-
-
-            if (
-                session.deviceId !==
-                currentDevice
-            ) {
-
-                localStorage.removeItem(
-                    SESSION_KEY
-                );
-
-                return null;
-
-            }
-
-
-            // ---------------------------------
-            // Check device owner
-            // ---------------------------------
-
-            const owner =
-                getDeviceOwner();
-
-
-            if (
-                owner &&
-                owner.toLowerCase() !==
-                session.username.toLowerCase()
-            ) {
-
-                localStorage.removeItem(
-                    SESSION_KEY
-                );
 
                 return null;
 
@@ -508,30 +229,6 @@
         try {
 
             // =================================
-            // GET DEVICE
-            // =================================
-
-            const deviceId =
-                getDeviceId();
-
-
-            // =================================
-            // CHECK DEVICE OWNER
-            // =================================
-
-            if (
-                !isDeviceAllowed(username)
-            ) {
-
-                error.textContent =
-                    "This device is already assigned to another account.";
-
-                return;
-
-            }
-
-
-            // =================================
             // HASH PIN
             // =================================
 
@@ -540,8 +237,27 @@
 
 
 
+            console.log(
+                "Entered username:",
+                username
+            );
+
+
+            console.log(
+                "Entered PIN hash:",
+                hash
+            );
+
+
+            console.log(
+                "Available users:",
+                USERS
+            );
+
+
+
             // =================================
-            // FIND USERNAME
+            // FIND USER
             // =================================
 
             const user =
@@ -550,11 +266,15 @@
                         account.username
                             .toLowerCase() ===
                         username
+                        &&
+                        account.pinHash ===
+                        hash
                 );
 
 
+
             // =================================
-            // INVALID USERNAME
+            // INVALID LOGIN
             // =================================
 
             if (!user) {
@@ -566,35 +286,6 @@
 
             }
 
-
-            // =================================
-            // CHECK PIN
-            // =================================
-
-            const storedPinHash =
-                getStoredPinHash(user);
-
-
-            if (
-                storedPinHash !==
-                hash
-            ) {
-
-                error.textContent =
-                    "Invalid username or PIN.";
-
-                return;
-
-            }
-
-
-            // =================================
-            // ASSIGN DEVICE
-            // =================================
-
-            assignDevice(
-                user.username
-            );
 
 
             // =================================
@@ -616,9 +307,6 @@
                 role:
                     user.role,
 
-                deviceId:
-                    deviceId,
-
                 loginTime:
                     now,
 
@@ -639,6 +327,12 @@
                 JSON.stringify(
                     session
                 )
+            );
+
+
+            console.log(
+                "LOGIN SUCCESS",
+                session
             );
 
 
@@ -714,144 +408,6 @@
 
 
     // =========================================
-    // CHANGE PIN
-    // =========================================
-
-    async function changePin(
-        currentPin,
-        newPin,
-        confirmPin
-    ) {
-
-        const currentUser =
-            getCurrentUser();
-
-
-        if (!currentUser) {
-
-            throw new Error(
-                "You must be logged in to change your PIN."
-            );
-
-        }
-
-
-        // -------------------------------------
-        // Validate new PIN
-        // -------------------------------------
-
-        if (!newPin) {
-
-            throw new Error(
-                "Enter your new PIN."
-            );
-
-        }
-
-
-        if (newPin.length < 4) {
-
-            throw new Error(
-                "PIN must be at least 4 characters."
-            );
-
-        }
-
-
-        if (newPin !== confirmPin) {
-
-            throw new Error(
-                "New PINs do not match."
-            );
-
-        }
-
-
-        // -------------------------------------
-        // Find account
-        // -------------------------------------
-
-        const user =
-            USERS.find(
-                account =>
-                    account.username
-                        .toLowerCase() ===
-                    currentUser.username
-                        .toLowerCase()
-            );
-
-
-        if (!user) {
-
-            throw new Error(
-                "Account could not be found."
-            );
-
-        }
-
-
-        // -------------------------------------
-        // Verify current PIN
-        // -------------------------------------
-
-        const currentHash =
-            await sha256(
-                currentPin
-            );
-
-
-        const storedHash =
-            getStoredPinHash(user);
-
-
-        if (
-            currentHash !==
-            storedHash
-        ) {
-
-            throw new Error(
-                "Current PIN is incorrect."
-            );
-
-        }
-
-
-        // -------------------------------------
-        // Hash new PIN
-        // -------------------------------------
-
-        const newHash =
-            await sha256(
-                newPin
-            );
-
-
-        // -------------------------------------
-        // Save local PIN override
-        // -------------------------------------
-
-        const overrides =
-            getPinOverrides();
-
-
-        overrides[
-            user.username
-        ] =
-            newHash;
-
-
-        savePinOverrides(
-            overrides
-        );
-
-
-        return true;
-
-    }
-
-
-
-    // =========================================
     // LOGOUT
     // =========================================
 
@@ -869,33 +425,6 @@
 
         window.location.href =
             "./index.html";
-
-    }
-
-
-
-    // =========================================
-    // RESET DEVICE
-    // =========================================
-
-    /*
-     * This removes the device assignment.
-     *
-     * IMPORTANT:
-     * Do not expose this function as a normal
-     * public button unless you specifically want
-     * users to be able to move their account.
-     */
-
-    function resetDeviceBinding() {
-
-        localStorage.removeItem(
-            DEVICE_OWNER_KEY
-        );
-
-        localStorage.removeItem(
-            SESSION_KEY
-        );
 
     }
 
@@ -925,6 +454,10 @@
                     currentUser
                 );
 
+
+                // -----------------------------
+                // User is already logged in
+                // -----------------------------
 
                 const overlay =
                     document.getElementById(
@@ -1043,105 +576,4 @@
         login;
 
 
-    window.nsChangePin =
-        changePin;
-
-
-    window.nsGetDeviceId =
-        getDeviceId;
-
-
-    window.nsResetDeviceBinding =
-        resetDeviceBinding;
-
-
 })();
-```
-
-### Add this to your Settings page
-
-You can create a simple settings section anywhere inside your existing dashboard:
-
-```html
-<section class="settings-panel">
-
-    <h2>Account Settings</h2>
-
-    <div class="setting-group">
-
-        <label for="currentPin">
-            Current PIN
-        </label>
-
-        <input
-            type="password"
-            id="currentPin"
-            placeholder="Enter current PIN"
-            autocomplete="current-password"
-        >
-
-    </div>
-
-
-    <div class="setting-group">
-
-        <label for="newPin">
-            New PIN
-        </label>
-
-        <input
-            type="password"
-            id="newPin"
-            placeholder="Enter new PIN"
-            autocomplete="new-password"
-        >
-
-    </div>
-
-
-    <div class="setting-group">
-
-        <label for="confirmPin">
-            Confirm New PIN
-        </label>
-
-        <input
-            type="password"
-            id="confirmPin"
-            placeholder="Confirm new PIN"
-            autocomplete="new-password"
-        >
-
-    </div>
-
-
-    <button
-        type="button"
-        id="changePinButton"
-    >
-        Change PIN
-    </button>
-
-
-    <div id="pinMessage"></div>
-
-</section>
-```
-
-Then add:
-
-```javascript
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const button =
-            document.getElementById(
-                "changePinButton"
-            );
-
-        const message =
-            document.getElementById(
-                "pinMessage"
-            )
-```
