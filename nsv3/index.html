@@ -55,13 +55,20 @@
 
         .nav-left h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
 
-        .nav-menu {
-            display: flex;
-            gap: 28px;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+        .nav-logout-btn {
+    align-self: center;
+    margin: 0;
+}
 
         .nav-menu a {
             color: #e6e6e6;
