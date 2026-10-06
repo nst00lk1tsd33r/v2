@@ -134,6 +134,9 @@ window.NS_USERS = [
   { username: "TeamKevin_09", pinHash: "542cacae1d41132ac9e10320dc19210336f60ee3b2d5bb64838eff7556132823", team: "TeamKevin", role: "member" },
   { username: "TeamKevin_010", pinHash: "1e12c1e01097cf3861ff603cd173c6b4376ee0a3e438ab7c92a7ae68a245dea8", team: "TeamKevin", role: "member" },
 
+  //DayShift
+  { username: "Lorenz1", pinHash: "1e12c1e01097cf3861ff603cd173c6b4376ee0a3e438ab7c92a7ae68a245dea8", team: "Day-Shift", role: "member" },
+
   // TeamFannie
   { username: "TeamFannie_01", pinHash: "e78f27ab3ef177a9926e6b90e572b9853ce6cf4d87512836e9ae85807ec9d7fe", team: "TeamFannie", role: "member" },
   { username: "TeamFannie_02", pinHash: "44961068d853255c4dc139a8473ccd203df401afb9aa50b11c4362ac6b8efb2b", team: "TeamFannie", role: "member" },
