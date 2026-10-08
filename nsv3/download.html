@@ -354,6 +354,574 @@
             opacity: 0.6;
         }
 
+/* =========================================================
+   NS TOOLKITS V3 - MODERN DOWNLOAD PAGE ENHANCEMENT
+   Additive styling only - does not replace existing styles
+   ========================================================= */
+
+/* ---------- GLOBAL ATMOSPHERE ---------- */
+
+body {
+    background:
+        radial-gradient(circle at 50% -10%, rgba(246, 201, 14, 0.09), transparent 35%),
+        radial-gradient(circle at 0% 45%, rgba(246, 201, 14, 0.035), transparent 30%),
+        radial-gradient(circle at 100% 70%, rgba(246, 201, 14, 0.025), transparent 30%),
+        #070707;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 70px 70px;
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+/* ---------- NAVBAR ---------- */
+
+.navbar {
+    background: rgba(7, 7, 7, 0.72);
+    border-bottom: 1px solid rgba(246, 201, 14, 0.12);
+    box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.35),
+        0 1px 0 rgba(255,255,255,0.025) inset;
+}
+
+.nav-inner {
+    max-width: 1250px;
+    min-height: 64px;
+}
+
+.nav-left h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 18px rgba(246, 201, 14, 0.18);
+    transition: 0.3s ease;
+}
+
+.nav-left h1:hover {
+    text-shadow: 0 0 25px rgba(246, 201, 14, 0.45);
+}
+
+.nav-menu {
+    gap: 8px;
+}
+
+.nav-menu a {
+    position: relative;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0.65;
+    transition:
+        color 0.25s ease,
+        background 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.nav-menu a:hover,
+.nav-menu a.active {
+    background: rgba(246, 201, 14, 0.07);
+    color: var(--accent);
+    opacity: 1;
+}
+
+.nav-menu a.active::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 2px;
+    height: 1px;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(246, 201, 14, 0.8);
+}
+
+/* ---------- MAIN CONTAINER ---------- */
+
+.container {
+    max-width: 1250px;
+    padding-top: 65px;
+}
+
+/* ---------- HEADER ---------- */
+
+.section-header {
+    position: relative;
+    margin-bottom: 42px;
+}
+
+.section-header::before {
+    content: "";
+    display: block;
+    width: 55px;
+    height: 3px;
+    margin: 0 auto 20px;
+    border-radius: 10px;
+    background: var(--accent);
+    box-shadow:
+        0 0 12px rgba(246, 201, 14, 0.6),
+        0 0 30px rgba(246, 201, 14, 0.25);
+}
+
+.section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.15;
+    letter-spacing: 2.5px;
+    text-shadow:
+        0 0 20px rgba(246, 201, 14, 0.12);
+}
+
+.section-sub {
+    margin-top: 12px;
+    color: #858585;
+    font-size: 0.9rem;
+    font-style: normal;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- OFFICIAL RELEASE NOTICE ---------- */
+
+.system-notice {
+    position: relative;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            100deg,
+            rgba(246, 201, 14, 0.075),
+            rgba(246, 201, 14, 0.018),
+            rgba(255,255,255,0.015)
+        );
+    border: 1px solid rgba(246, 201, 14, 0.16);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 38px;
+    box-shadow:
+        0 15px 45px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.035);
+}
+
+.system-notice::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    box-shadow: 0 0 18px rgba(246, 201, 14, 0.55);
+}
+
+.system-notice::after {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: -80px;
+    top: -100px;
+    background: rgba(246, 201, 14, 0.08);
+    filter: blur(35px);
+    border-radius: 50%;
+}
+
+.system-notice span.icon {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(246, 201, 14, 0.08);
+    border: 1px solid rgba(246, 201, 14, 0.15);
+    box-shadow: 0 0 20px rgba(246, 201, 14, 0.08);
+}
+
+/* ---------- DOWNLOAD GRID ---------- */
+
+.download-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 22px;
+}
+
+/* ---------- DOWNLOAD CARD ---------- */
+
+.download-card {
+    min-height: 285px;
+    padding: 25px;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,0.055),
+            rgba(255,255,255,0.018)
+        );
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 18px;
+    box-shadow:
+        0 15px 45px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.035);
+    transition:
+        transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+        border-color 0.3s ease,
+        box-shadow 0.35s ease,
+        background 0.35s ease;
+}
+
+/* Gold light sweep */
+
+.download-card::before {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: -120%;
+    width: 70%;
+    height: 300%;
+    transform: rotate(25deg);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(246, 201, 14, 0.045),
+        transparent
+    );
+    transition: left 0.7s ease;
+    pointer-events: none;
+}
+
+.download-card:hover::before {
+    left: 150%;
+}
+
+.download-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(246, 201, 14, 0.32);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(246, 201, 14, 0.055),
+            rgba(255,255,255,0.02)
+        );
+    box-shadow:
+        0 22px 55px rgba(0,0,0,0.42),
+        0 0 30px rgba(246, 201, 14, 0.045),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* ---------- CARD HEADER ---------- */
+
+.card-header {
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.card-header img {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    border-color: rgba(246, 201, 14, 0.28) !important;
+    box-shadow: 0 0 18px rgba(246, 201, 14, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.download-card:hover .card-header img {
+    transform: scale(1.07);
+    box-shadow: 0 0 22px rgba(246, 201, 14, 0.18);
+}
+
+/* ---------- VERSION BADGE ---------- */
+
+.version-badge {
+    padding: 5px 10px;
+    border-radius: 7px;
+    background: rgba(246, 201, 14, 0.065);
+    border: 1px solid rgba(246, 201, 14, 0.18);
+    font-size: 0.68rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* ---------- SOFTWARE NAME ---------- */
+
+.software-name {
+    font-size: 1.18rem;
+    font-weight: 650;
+    letter-spacing: 0.2px;
+    margin-bottom: 9px;
+    transition: color 0.25s ease;
+}
+
+.download-card:hover .software-name {
+    color: var(--accent);
+}
+
+.software-desc {
+    color: #929292;
+    font-size: 0.87rem;
+    line-height: 1.65;
+}
+
+/* ---------- DOWNLOAD BUTTON ---------- */
+
+.btn-download {
+    position: relative;
+    overflow: hidden;
+    min-height: 44px;
+    border-radius: 9px;
+    background:
+        linear-gradient(
+            135deg,
+            #f6c90e,
+            #e5b800
+        );
+    box-shadow:
+        0 5px 18px rgba(246, 201, 14, 0.08),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        background 0.25s ease;
+}
+
+.btn-download::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    transform: skewX(-25deg);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.4),
+        transparent
+    );
+    transition: left 0.6s ease;
+}
+
+.btn-download:hover::before {
+    left: 150%;
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(
+        135deg,
+        #ffe36b,
+        #f6c90e
+    );
+    box-shadow:
+        0 8px 28px rgba(246, 201, 14, 0.2),
+        0 0 20px rgba(246, 201, 14, 0.08);
+}
+
+.btn-download span {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---------- DOCUMENTATION SECTION ---------- */
+
+.doc-section {
+    position: relative;
+    overflow: hidden;
+    margin-top: 50px;
+    padding: 32px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(246, 201, 14, 0.045),
+            rgba(255,255,255,0.012)
+        );
+    border: 1px solid rgba(246, 201, 14, 0.14);
+    border-radius: 18px;
+    box-shadow:
+        0 20px 60px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.doc-section::after {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    right: -120px;
+    bottom: -150px;
+    border-radius: 50%;
+    background: rgba(246, 201, 14, 0.05);
+    filter: blur(45px);
+}
+
+.doc-title {
+    font-size: 1.2rem;
+    letter-spacing: 0.7px;
+    margin-bottom: 25px;
+}
+
+.doc-grid {
+    gap: 12px;
+}
+
+.doc-item {
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.055);
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        transform 0.25s ease;
+}
+
+.doc-item:hover {
+    transform: translateY(-3px);
+    background: rgba(246,201,14,0.035);
+    border-color: rgba(246,201,14,0.16);
+}
+
+.doc-item h4 {
+    font-size: 0.92rem;
+    margin-bottom: 9px;
+}
+
+.doc-item p {
+    line-height: 1.6;
+    font-size: 0.82rem;
+}
+
+.doc-item code {
+    border: 1px solid rgba(246,201,14,0.08);
+}
+
+/* ---------- FOOTER ---------- */
+
+footer {
+    margin-top: 65px;
+    padding-top: 25px;
+    color: #666;
+    border-top-color: rgba(255,255,255,0.045);
+    font-size: 0.75rem;
+}
+
+/* ---------- LOADER POLISH ---------- */
+
+#loader-wrapper {
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(246,201,14,0.035),
+            #060606 50%
+        );
+}
+
+.gold-ring {
+    width: 58px;
+    height: 58px;
+    border-width: 2px;
+    box-shadow:
+        0 0 20px rgba(246,201,14,0.1),
+        0 0 60px rgba(246,201,14,0.035);
+}
+
+.loader-text {
+    font-size: 9px;
+    letter-spacing: 6px;
+}
+
+/* ---------- SCROLLBAR ---------- */
+
+::-webkit-scrollbar {
+    width: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: #070707;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(246,201,14,0.22);
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(246,201,14,0.45);
+}
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 768px) {
+
+    .nav-inner {
+        padding: 12px 16px;
+    }
+
+    .nav-left h1 {
+        font-size: 16px;
+    }
+
+    .container {
+        padding: 42px 16px;
+    }
+
+    .section-header {
+        margin-bottom: 32px;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+        letter-spacing: 1.5px;
+    }
+
+    .section-sub {
+        font-size: 0.82rem;
+    }
+
+    .system-notice {
+        align-items: flex-start;
+        padding: 16px;
+        font-size: 0.82rem;
+    }
+
+    .download-grid {
+        gap: 16px;
+    }
+
+    .download-card {
+        min-height: 270px;
+        padding: 21px;
+        border-radius: 15px;
+    }
+
+    .doc-section {
+        padding: 22px;
+        border-radius: 15px;
+    }
+
+    .doc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- REDUCED MOTION ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
         @media (max-width: 768px) {
             .nav-menu { display: none; }
             .section-title { font-size: 2rem; }
@@ -406,7 +974,42 @@
         </div>
 
         <!-- SEPARATED SOFTWARE & ARCHITECTURE GRID -->
-        <div class="download-grid">
+        <div style="
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+    gap:15px;
+">
+    <div>
+        <div style="
+            color:#ffffff;
+            font-size:0.95rem;
+            font-weight:600;
+            letter-spacing:0.5px;
+        ">
+            Available Extensions
+        </div>
+
+        <div style="
+            color:#666;
+            font-size:0.76rem;
+            margin-top:3px;
+        ">
+            Official NS Toolkits releases
+        </div>
+    </div>
+
+    <div style="
+        width:8px;
+        height:8px;
+        border-radius:50%;
+        background:#f6c90e;
+        box-shadow:0 0 12px rgba(246,201,14,0.8);
+    "></div>
+</div>
+
+<div class="download-grid">
             
 <div class="download-card">
                 <div>
